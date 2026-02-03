@@ -2,9 +2,19 @@
 import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import { mkdirSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const db = new Database(join(__dirname, '../data/flywheel.db'));
+const dataDir = join(__dirname, '../data');
+
+// Ensure data directory exists
+try {
+  mkdirSync(dataDir, { recursive: true });
+} catch (e) {
+  // Directory might already exist
+}
+
+const db = new Database(join(dataDir, 'flywheel.db'));
 
 // Initialize tables
 db.exec(`
