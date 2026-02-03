@@ -142,14 +142,13 @@ function LandingPage({ user, token, onSelectProduct }) {
           </div>
           
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
-            <span className="text-white">Spin.</span>{' '}
+            <span className="text-white">Click.</span>{' '}
             <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Post.</span>{' '}
-            <span className="text-white">Profit.</span>
+            <span className="text-white">Grow.</span>
           </h1>
           
           <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Upload your product once. Then spin the wheel to instantly generate and post 
-            social content, blogs, emails — watch engagement roll in real-time.
+            Fly Wheel posts your product. Our Social Media engine builds the buzz. You watch it grow.
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
