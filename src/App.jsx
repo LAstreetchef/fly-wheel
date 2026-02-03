@@ -130,60 +130,9 @@ function LandingPage({ user, token, onSelectProduct }) {
         </nav>
       </header>
 
-      {/* Hero */}
-      <section className="relative z-10 px-6 pt-16 pb-24">
-        <div className="max-w-4xl mx-auto text-center">
-          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 rounded-full px-4 py-2 mb-8">
-            <span className="text-cyan-400 text-sm font-medium">Pay-as-you-go product promotion</span>
-          </div>
-          
-          <div className="flex justify-center mb-8">
-            <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-32 h-32 object-contain drop-shadow-2xl animate-bounce-slow" />
-          </div>
-          
-          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
-            <span className="text-white">Click.</span>{' '}
-            <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Post.</span>{' '}
-            <span className="text-white">Fly.</span>
-          </h1>
-          
-          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
-            Fly Wheel posts your product. Our Social Media engine builds the buzz. You watch it fly.
-          </p>
-          
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a href="#pricing" className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-8 py-4 rounded-full text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(0,255,255,0.4)]">
-              <span>Start Flying</span>
-              <span className="group-hover:rotate-12 transition-transform duration-500">→</span>
-            </a>
-          </div>
-          
-          <div className="flex flex-wrap justify-center gap-8 mt-16">
-            {[
-              { value: '$5', label: 'Starting at' },
-              { value: '< 5min', label: 'Delivery' },
-              { value: '100%', label: 'AI-Powered' },
-              { value: '0', label: 'Commitments' },
-            ].map((stat, i) => (
-              <div key={i} className="text-center">
-                <div className="text-2xl md:text-3xl font-black text-cyan-400">{stat.value}</div>
-                <div className="text-sm text-gray-500">{stat.label}</div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* Pricing */}
       <section id="pricing" className="relative z-10 px-6 py-24">
         <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
-              Pick Your <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Content</span>
-            </h2>
-            <p className="text-gray-400 text-lg">No subscriptions. No commitments. Just results.</p>
-          </div>
-          
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-16">
             <SpinCard 
               image="/fly-wheel/squad/luna.png"
@@ -240,6 +189,50 @@ function LandingPage({ user, token, onSelectProduct }) {
               productType="email"
               onSelect={onSelectProduct.setSelected}
             />
+          </div>
+        </div>
+      </section>
+
+      {/* Hero */}
+      <section className="relative z-10 px-6 pt-16 pb-24">
+        <div className="max-w-4xl mx-auto text-center">
+          <div className="inline-flex items-center gap-2 bg-gradient-to-r from-cyan-500/20 to-purple-500/20 border border-cyan-500/30 rounded-full px-4 py-2 mb-8">
+            <span className="text-cyan-400 text-sm font-medium">Pay-as-you-go product promotion</span>
+          </div>
+          
+          <div className="flex justify-center mb-8">
+            <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-32 h-32 object-contain drop-shadow-2xl animate-bounce-slow" />
+          </div>
+          
+          <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
+            <span className="text-white">Click.</span>{' '}
+            <span className="bg-gradient-to-r from-cyan-400 via-purple-400 to-pink-400 bg-clip-text text-transparent">Post.</span>{' '}
+            <span className="text-white">Fly.</span>
+          </h1>
+          
+          <p className="text-xl text-gray-400 mb-10 max-w-2xl mx-auto leading-relaxed">
+            Fly Wheel posts your product. Our Social Media engine builds the buzz. You watch it fly.
+          </p>
+          
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <a href="#pricing" className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-8 py-4 rounded-full text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(0,255,255,0.4)]">
+              <span>Start Flying</span>
+              <span className="group-hover:rotate-12 transition-transform duration-500">→</span>
+            </a>
+          </div>
+          
+          <div className="flex flex-wrap justify-center gap-8 mt-16">
+            {[
+              { value: '$5', label: 'Starting at' },
+              { value: '< 5min', label: 'Delivery' },
+              { value: '100%', label: 'AI-Powered' },
+              { value: '0', label: 'Commitments' },
+            ].map((stat, i) => (
+              <div key={i} className="text-center">
+                <div className="text-2xl md:text-3xl font-black text-cyan-400">{stat.value}</div>
+                <div className="text-sm text-gray-500">{stat.label}</div>
+              </div>
+            ))}
           </div>
         </div>
       </section>
