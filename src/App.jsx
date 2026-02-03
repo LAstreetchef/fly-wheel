@@ -282,7 +282,7 @@ function SpinCard({ image, title, price, description, color, productType, popula
   return (
     <button
       onClick={() => onSelect(productType)}
-      className={`group relative bg-gray-900/80 backdrop-blur-sm border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105 hover:-translate-y-2 text-left w-full ${
+      className={`group relative bg-gray-900/80 backdrop-blur-sm border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105 hover:-translate-y-2 text-left w-full h-full flex flex-col ${
         popular 
           ? 'border-yellow-500/50 hover:border-yellow-400 hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]' 
           : 'border-gray-700 hover:border-cyan-400 hover:shadow-[0_0_40px_rgba(0,255,255,0.2)]'
@@ -297,8 +297,8 @@ function SpinCard({ image, title, price, description, color, productType, popula
         <img src={image} alt={title} className="w-full h-full object-contain drop-shadow-lg" />
       </div>
       <h3 className="text-xl font-bold text-white mb-2 text-center">{title}</h3>
-      <p className="text-gray-400 text-sm mb-4 leading-relaxed text-center">{description}</p>
-      <div className="flex items-center justify-between">
+      <p className="text-gray-400 text-sm mb-4 leading-relaxed text-center flex-grow">{description}</p>
+      <div className="flex items-center justify-between mt-auto">
         <span className="text-3xl font-black text-cyan-400">${price}</span>
         <span className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold">FLY →</span>
       </div>
