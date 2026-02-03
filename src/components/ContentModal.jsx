@@ -54,7 +54,7 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
       const genRes = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
@@ -75,7 +75,7 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
       const createRes = await fetch(`${API_URL}/api/content/create`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
@@ -107,7 +107,7 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
       const pubRes = await fetch(`${API_URL}/api/posts/${postId}/publish`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({

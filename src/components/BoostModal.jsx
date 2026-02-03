@@ -57,7 +57,7 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
     try {
       const res = await fetch(
         `${API_URL}/api/blogs/search?keywords=${encodeURIComponent(productData.keywords)}`,
-        { headers: { Authorization: `Bearer ${token}` } }
+        { headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' } }
       )
       const data = await res.json()
       
@@ -89,7 +89,7 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
       const genRes = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
@@ -114,7 +114,7 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
       const createRes = await fetch(`${API_URL}/api/content/create`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
@@ -156,7 +156,7 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
         const createRes = await fetch(`${API_URL}/api/content/create`, {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
+            'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
             Authorization: `Bearer ${token}`
           },
           body: JSON.stringify({
@@ -182,7 +182,7 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
       const pubRes = await fetch(`${API_URL}/api/posts/${finalPostId}/publish`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({

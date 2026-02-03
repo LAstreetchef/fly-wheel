@@ -30,10 +30,10 @@ export default function Dashboard({ user, token, onLogout }) {
     try {
       const [statsRes, postsRes] = await Promise.all([
         fetch(`${API_URL}/api/dashboard`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
         }),
         fetch(`${API_URL}/api/posts`, {
-          headers: { Authorization: `Bearer ${token}` }
+          headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
         })
       ])
       
@@ -52,7 +52,7 @@ export default function Dashboard({ user, token, onLogout }) {
   const connectTwitter = async () => {
     try {
       const res = await fetch(`${API_URL}/api/twitter/auth`, {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
       })
       const data = await res.json()
       if (data.url) {
@@ -69,7 +69,7 @@ export default function Dashboard({ user, token, onLogout }) {
     try {
       await fetch(`${API_URL}/api/twitter/disconnect`, {
         method: 'POST',
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
       })
       fetchDashboard()
     } catch (error) {
