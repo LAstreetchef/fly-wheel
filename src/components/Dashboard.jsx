@@ -241,12 +241,12 @@ export default function Dashboard({ user, token, onLogout }) {
           {posts.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
               <div className="text-4xl mb-4">🎰</div>
-              <p>No content yet. Start growing!</p>
+              <p>No content yet. Start flying!</p>
               <a
                 href="/fly-wheel/#pricing"
                 className="inline-block mt-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-6 py-2 rounded-full font-bold"
               >
-                Start Growing
+                Start Flying
               </a>
             </div>
           ) : (
