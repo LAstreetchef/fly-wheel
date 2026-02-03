@@ -298,9 +298,9 @@ function SpinCard({ image, title, price, description, color, productType, popula
       </div>
       <h3 className="text-xl font-bold text-white mb-2 text-center">{title}</h3>
       <p className="text-gray-400 text-sm mb-4 leading-relaxed text-center flex-grow">{description}</p>
-      <div className="flex items-center justify-between mt-auto">
+      <div className="flex flex-col items-center gap-3 mt-auto">
         <span className="text-3xl font-black text-cyan-400">${price}</span>
-        <span className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold">FLY →</span>
+        <span className="bg-white/10 text-white px-6 py-2 rounded-full text-sm font-semibold">FLY →</span>
       </div>
     </button>
   )
