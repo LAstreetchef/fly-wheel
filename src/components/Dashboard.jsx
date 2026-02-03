@@ -1,6 +1,16 @@
 import { useState, useEffect } from 'react'
+import BoostModal from './BoostModal'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
+
+const PRODUCTS = [
+  { type: 'boost', name: 'Blog Boost', price: '7.50', emoji: '🚀', description: 'X post + relevant blog link', color: 'from-orange-500 to-red-500' },
+  { type: 'social', name: 'Social Post', price: '5', emoji: '📱', description: 'Single post with hashtags', color: 'from-cyan-500 to-blue-500' },
+  { type: 'carousel', name: 'Carousel', price: '10', emoji: '🎠', description: '5-slide Instagram carousel', color: 'from-purple-500 to-pink-500' },
+  { type: 'video', name: 'Video Script', price: '15', emoji: '🎬', description: 'TikTok/Reel script', color: 'from-pink-500 to-rose-500' },
+  { type: 'blog', name: 'Blog Post', price: '20', emoji: '📝', description: '500-word SEO snippet', color: 'from-yellow-500 to-orange-500' },
+  { type: 'email', name: 'Email Blast', price: '25', emoji: '📧', description: 'Subject + body copy', color: 'from-green-500 to-emerald-500' },
+]
 
 export default function Dashboard({ user, token, onLogout }) {
   const [stats, setStats] = useState(null)
@@ -8,6 +18,8 @@ export default function Dashboard({ user, token, onLogout }) {
   const [loading, setLoading] = useState(true)
   const [publishing, setPublishing] = useState(null)
   const [productUrl, setProductUrl] = useState('')
+  const [showBoostModal, setShowBoostModal] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState(null)
 
   useEffect(() => {
     fetchDashboard()
@@ -131,6 +143,17 @@ export default function Dashboard({ user, token, onLogout }) {
         </div>
       </header>
 
+      <BoostModal
+        isOpen={showBoostModal}
+        onClose={() => setShowBoostModal(false)}
+        user={user}
+        token={token}
+        onSuccess={() => {
+          setShowBoostModal(false)
+          fetchDashboard()
+        }}
+      />
+
       <main className="max-w-6xl mx-auto px-6 py-8">
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
@@ -166,6 +189,34 @@ export default function Dashboard({ user, token, onLogout }) {
                 Connect X
               </button>
             )}
+          </div>
+        </div>
+
+        {/* Create New Content */}
+        <div className="mb-8">
+          <h2 className="text-xl font-bold mb-4">Create New Content</h2>
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
+            {PRODUCTS.map((product) => (
+              <button
+                key={product.type}
+                onClick={() => {
+                  if (product.type === 'boost') {
+                    setShowBoostModal(true)
+                  } else {
+                    // For other products, go to landing page pricing
+                    window.location.href = '/fly-wheel/#pricing'
+                  }
+                }}
+                className={`group relative bg-gradient-to-br ${product.color} p-[2px] rounded-xl transition-all hover:scale-105 hover:shadow-lg`}
+              >
+                <div className="bg-gray-900 rounded-xl p-4 h-full">
+                  <div className="text-3xl mb-2">{product.emoji}</div>
+                  <div className="font-bold text-white text-sm">{product.name}</div>
+                  <div className="text-gray-400 text-xs mt-1">{product.description}</div>
+                  <div className="text-cyan-400 font-bold mt-2">${product.price}</div>
+                </div>
+              </button>
+            ))}
           </div>
         </div>
 
