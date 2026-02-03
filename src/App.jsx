@@ -153,7 +153,7 @@ function LandingPage({ user, token, onSelectProduct }) {
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <a href="#pricing" className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-8 py-4 rounded-full text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(0,255,255,0.4)]">
-              <span>Start Spinning</span>
+              <span>Start Growing</span>
               <span className="group-hover:rotate-12 transition-transform duration-500">→</span>
             </a>
           </div>
@@ -179,7 +179,7 @@ function LandingPage({ user, token, onSelectProduct }) {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
             <h2 className="text-4xl md:text-5xl font-black mb-4">
-              Pick Your <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Spin</span>
+              Pick Your <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Content</span>
             </h2>
             <p className="text-gray-400 text-lg">No subscriptions. No commitments. Just results.</p>
           </div>
@@ -307,7 +307,7 @@ function SpinCard({ image, title, price, description, color, productType, popula
       <p className="text-gray-400 text-sm mb-4 leading-relaxed text-center">{description}</p>
       <div className="flex items-center justify-between">
         <span className="text-3xl font-black text-cyan-400">${price}</span>
-        <span className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold">SPIN →</span>
+        <span className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold">GROW →</span>
       </div>
     </button>
   )

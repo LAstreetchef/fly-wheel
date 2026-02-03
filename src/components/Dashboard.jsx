@@ -171,7 +171,7 @@ export default function Dashboard({ user, token, onLogout }) {
         {/* Stats Cards */}
         <div className="grid md:grid-cols-4 gap-6 mb-8">
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="text-gray-400 text-sm mb-1">Total Spins</div>
+            <div className="text-gray-400 text-sm mb-1">Total Posts</div>
             <div className="text-3xl font-bold text-white">{stats?.totalPosts || 0}</div>
           </div>
           <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
@@ -241,12 +241,12 @@ export default function Dashboard({ user, token, onLogout }) {
           {posts.length === 0 ? (
             <div className="p-12 text-center text-gray-500">
               <div className="text-4xl mb-4">🎰</div>
-              <p>No spins yet. Go create some content!</p>
+              <p>No content yet. Start growing!</p>
               <a
                 href="/fly-wheel/#pricing"
                 className="inline-block mt-4 bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-6 py-2 rounded-full font-bold"
               >
-                Start Spinning
+                Start Growing
               </a>
             </div>
           ) : (
