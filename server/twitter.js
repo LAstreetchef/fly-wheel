@@ -34,6 +34,7 @@ export function getAuthUrl(userId) {
   
   // Store state for verification
   oauthStates.set(state, { userId, codeVerifier, createdAt: Date.now() });
+  console.log(`[Twitter] State stored: ${state.substring(0, 10)}... for user ${userId}. Total states: ${oauthStates.size}`);
   
   // Clean old states (older than 10 minutes)
   for (const [key, value] of oauthStates.entries()) {
@@ -46,10 +47,14 @@ export function getAuthUrl(userId) {
 }
 
 export async function handleCallback(code, state) {
+  console.log(`[Twitter] Callback received. State: ${state?.substring(0, 10)}... Total stored states: ${oauthStates.size}`);
+  console.log(`[Twitter] Stored states:`, [...oauthStates.keys()].map(k => k.substring(0, 10)));
   const storedState = oauthStates.get(state);
   if (!storedState) {
+    console.log(`[Twitter] State NOT FOUND in storage!`);
     throw new Error('Invalid or expired state');
   }
+  console.log(`[Twitter] State found for user ${storedState.userId}`);
   
   oauthStates.delete(state);
   

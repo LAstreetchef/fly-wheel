@@ -149,7 +149,9 @@ app.get('/api/twitter/callback', async (req, res) => {
     const frontendUrl = getFrontendUrl();
     res.redirect(`${frontendUrl}/dashboard?twitter=connected&username=${result.twitterUsername}`);
   } catch (error) {
-    console.error('Twitter callback error:', error);
+    console.error('Twitter callback error:', error.message, error.stack);
+    const fs = await import('fs');
+    fs.appendFileSync('twitter-errors.log', `${new Date().toISOString()} - ${error.message}\n${error.stack}\n\n`);
     const frontendUrl = getFrontendUrl();
     res.redirect(`${frontendUrl}/dashboard?twitter=error`);
   }
