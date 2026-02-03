@@ -1,160 +1,107 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
+import Dashboard from './components/Dashboard'
+import Auth from './components/Auth'
+import BoostModal from './components/BoostModal'
 
-// Stripe Payment Links (placeholder - update with real links)
-const PAYMENT_LINKS = {
-  social: 'https://buy.stripe.com/flywheel-social',
-  carousel: 'https://buy.stripe.com/flywheel-carousel', 
-  video: 'https://buy.stripe.com/flywheel-video',
-  blog: 'https://buy.stripe.com/flywheel-blog',
-  email: 'https://buy.stripe.com/flywheel-email',
-  credits50: 'https://buy.stripe.com/flywheel-credits-50',
-  credits100: 'https://buy.stripe.com/flywheel-credits-100',
-}
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
-// Neon glow animation component
-const NeonGlow = ({ color = 'cyan', children, className = '' }) => (
-  <div className={`relative ${className}`}>
-    <div className={`absolute inset-0 blur-xl opacity-50 bg-${color}-500`} />
-    <div className="relative">{children}</div>
-  </div>
-)
+// Landing Page Component
+function LandingPage({ user, token, onSelectProduct }) {
+  const [searchParams] = useSearchParams()
+  const [showSuccess, setShowSuccess] = useState(false)
+  const [sessionData, setSessionData] = useState(null)
+  const [content, setContent] = useState(null)
+  const [showBoostModal, setShowBoostModal] = useState(false)
+  const navigate = useNavigate()
 
-// Animated slot machine reels background
-const SlotBackground = () => (
-  <div className="fixed inset-0 overflow-hidden pointer-events-none">
-    {/* Gradient overlay */}
-    <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />
+  useEffect(() => {
+    const success = searchParams.get('success')
+    const sessionId = searchParams.get('session_id')
+    const twitterStatus = searchParams.get('twitter')
     
-    {/* Animated grid */}
-    <div 
-      className="absolute inset-0 opacity-10"
-      style={{
-        backgroundImage: `
-          linear-gradient(rgba(0, 255, 255, 0.1) 1px, transparent 1px),
-          linear-gradient(90deg, rgba(0, 255, 255, 0.1) 1px, transparent 1px)
-        `,
-        backgroundSize: '50px 50px',
-      }}
-    />
+    // Handle Twitter OAuth callback
+    if (twitterStatus === 'connected') {
+      navigate('/dashboard')
+      return
+    }
     
-    {/* Floating coins/tokens */}
-    {[...Array(20)].map((_, i) => (
-      <div
-        key={i}
-        className="absolute w-4 h-4 rounded-full animate-float"
-        style={{
-          background: `linear-gradient(135deg, #ffd700, #ffaa00)`,
-          left: `${Math.random() * 100}%`,
-          top: `${Math.random() * 100}%`,
-          animationDelay: `${Math.random() * 5}s`,
-          animationDuration: `${3 + Math.random() * 4}s`,
-          opacity: 0.3,
-        }}
-      />
-    ))}
-    
-    {/* Neon corner accents */}
-    <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-cyan-500/20 to-transparent" />
-    <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-500/20 to-transparent" />
-    <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-pink-500/20 to-transparent" />
-    <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-yellow-500/20 to-transparent" />
-  </div>
-)
-
-// Spin item card component
-const SpinCard = ({ image, title, price, description, color, link, popular }) => (
-  <a
-    href={link}
-    className={`group relative bg-gray-900/80 backdrop-blur-sm border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105 hover:-translate-y-2 ${
-      popular 
-        ? 'border-yellow-500/50 hover:border-yellow-400 hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]' 
-        : `border-${color}-500/30 hover:border-${color}-400 hover:shadow-[0_0_40px_rgba(0,255,255,0.2)]`
-    }`}
-  >
-    {popular && (
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold px-4 py-1 rounded-full">
-        🔥 POPULAR
-      </div>
-    )}
-    
-    <div className="w-20 h-20 mx-auto mb-4 transform group-hover:scale-110 transition-transform">
-      <img src={image} alt={title} className="w-full h-full object-contain drop-shadow-lg" />
-    </div>
-    
-    <h3 className="text-xl font-bold text-white mb-2 text-center">{title}</h3>
-    <p className="text-gray-400 text-sm mb-4 leading-relaxed text-center">{description}</p>
-    
-    <div className="flex items-center justify-between">
-      <span className={`text-3xl font-black text-${color}-400`}>${price}</span>
-      <span className="bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors">
-        SPIN →
-      </span>
-    </div>
-  </a>
-)
-
-// Credit pack card
-const CreditPack = ({ amount, bonus, price, link, featured }) => (
-  <a
-    href={link}
-    className={`group relative bg-gradient-to-br ${
-      featured 
-        ? 'from-yellow-500/20 to-orange-500/20 border-yellow-500/50 hover:border-yellow-400' 
-        : 'from-gray-900 to-gray-800 border-gray-700 hover:border-cyan-500'
-    } border-2 rounded-2xl p-6 text-center transition-all duration-300 hover:scale-105`}
-  >
-    {featured && (
-      <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full">
-        BEST VALUE
-      </div>
-    )}
-    
-    <div className="text-4xl mb-2">💳</div>
-    <div className="text-3xl font-black text-white mb-1">${amount}</div>
-    {bonus > 0 && (
-      <div className="text-green-400 text-sm font-semibold mb-2">+${bonus} BONUS</div>
-    )}
-    <div className="text-gray-400 text-sm">{Math.floor((amount + bonus) / 5)} spins</div>
-    <div className="mt-4 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-full text-sm font-semibold transition-colors">
-      BUY CREDITS
-    </div>
-  </a>
-)
-
-// Live feed item
-const LiveFeedItem = ({ type, product, time }) => (
-  <div className="flex items-center gap-3 bg-gray-900/50 rounded-lg px-4 py-3 animate-slide-in">
-    <div className="text-2xl">
-      {type === 'social' && '📱'}
-      {type === 'carousel' && '🎠'}
-      {type === 'video' && '🎬'}
-      {type === 'blog' && '📝'}
-      {type === 'email' && '📧'}
-    </div>
-    <div className="flex-1">
-      <div className="text-white text-sm font-medium">{product}</div>
-      <div className="text-gray-500 text-xs">{type} posted • {time}</div>
-    </div>
-    <div className="text-green-400 text-xs">✓ LIVE</div>
-  </div>
-)
-
-function App() {
-  const [activeTab, setActiveTab] = useState('spins')
+    if (success === 'true' && sessionId) {
+      setShowSuccess(true)
+      window.history.replaceState({}, '', window.location.pathname)
+      
+      const fetchContent = async () => {
+        try {
+          const response = await fetch(`${API_URL}/api/session/${sessionId}`)
+          const data = await response.json()
+          setSessionData(data)
+          
+          if (data.content) {
+            setContent(data.content)
+          } else {
+            let attempts = 0
+            const poll = setInterval(async () => {
+              attempts++
+              const res = await fetch(`${API_URL}/api/content/${sessionId}`)
+              if (res.ok) {
+                const contentData = await res.json()
+                setContent(contentData)
+                clearInterval(poll)
+              } else if (attempts > 30) {
+                clearInterval(poll)
+              }
+            }, 1000)
+          }
+        } catch (error) {
+          console.error('Error fetching session:', error)
+        }
+      }
+      
+      fetchContent()
+    }
+  }, [searchParams, navigate])
 
   return (
     <div className="min-h-screen bg-black text-white overflow-x-hidden">
       <SlotBackground />
       
+      <ProductModal
+        isOpen={!!onSelectProduct.selected && onSelectProduct.selected !== 'boost'}
+        onClose={() => onSelectProduct.setSelected(null)}
+        productType={onSelectProduct.selected}
+        onCheckout={onSelectProduct.checkout}
+        userId={user?.id}
+      />
+      
+      <BoostModal
+        isOpen={showBoostModal || onSelectProduct.selected === 'boost'}
+        onClose={() => {
+          setShowBoostModal(false)
+          onSelectProduct.setSelected(null)
+        }}
+        user={user}
+        token={token}
+        onSuccess={() => {}}
+      />
+      
+      <SuccessModal
+        isOpen={showSuccess}
+        onClose={() => {
+          setShowSuccess(false)
+          setSessionData(null)
+          setContent(null)
+        }}
+        sessionData={sessionData}
+        content={content}
+        user={user}
+        onViewDashboard={() => navigate('/dashboard')}
+      />
+      
       {/* Header */}
       <header className="relative z-50 px-6 py-4">
         <nav className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img 
-              src="/fly-wheel/logo-header.svg" 
-              alt="FlyWheel" 
-              className="h-10"
-            />
+            <img src="/fly-wheel/logo-header.svg" alt="FlyWheel" className="h-10" />
           </div>
           
           <div className="flex items-center gap-4">
@@ -164,12 +111,21 @@ function App() {
             <a href="#how" className="text-gray-400 hover:text-white transition-colors text-sm font-medium">
               How It Works
             </a>
-            <a 
-              href={PAYMENT_LINKS.credits50}
-              className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-5 py-2 rounded-full text-sm font-bold transition-all hover:scale-105"
-            >
-              Get Credits
-            </a>
+            {user ? (
+              <button 
+                onClick={() => navigate('/dashboard')}
+                className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-5 py-2 rounded-full text-sm font-bold transition-all hover:scale-105"
+              >
+                Dashboard
+              </button>
+            ) : (
+              <button 
+                onClick={() => navigate('/login')}
+                className="bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-5 py-2 rounded-full text-sm font-bold transition-all hover:scale-105"
+              >
+                Login
+              </button>
+            )}
           </div>
         </nav>
       </header>
@@ -182,11 +138,7 @@ function App() {
           </div>
           
           <div className="flex justify-center mb-8">
-            <img 
-              src="/fly-wheel/squad/stella.png" 
-              alt="Stella" 
-              className="w-32 h-32 object-contain drop-shadow-2xl animate-bounce-slow"
-            />
+            <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-32 h-32 object-contain drop-shadow-2xl animate-bounce-slow" />
           </div>
           
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
@@ -201,22 +153,12 @@ function App() {
           </p>
           
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <a 
-              href="#pricing"
-              className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-8 py-4 rounded-full text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(0,255,255,0.4)]"
-            >
+            <a href="#pricing" className="group inline-flex items-center justify-center gap-2 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-8 py-4 rounded-full text-lg font-bold transition-all hover:scale-105 hover:shadow-[0_0_40px_rgba(0,255,255,0.4)]">
               <span>Start Spinning</span>
               <span className="group-hover:rotate-12 transition-transform duration-500">→</span>
             </a>
-            <a 
-              href="#how"
-              className="inline-flex items-center justify-center gap-2 border-2 border-white/20 hover:border-white/40 text-white px-8 py-4 rounded-full text-lg font-semibold transition-all hover:bg-white/5"
-            >
-              See How It Works
-            </a>
           </div>
           
-          {/* Quick stats */}
           <div className="flex flex-wrap justify-center gap-8 mt-16">
             {[
               { value: '$5', label: 'Starting at' },
@@ -233,53 +175,7 @@ function App() {
         </div>
       </section>
 
-      {/* How It Works */}
-      <section id="how" className="relative z-10 px-6 py-24 bg-gradient-to-b from-transparent via-gray-950/50 to-transparent">
-        <div className="max-w-5xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-4xl md:text-5xl font-black mb-4">
-              How It <span className="text-cyan-400">Works</span>
-            </h2>
-            <p className="text-gray-400 text-lg">Three steps. Zero friction.</p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {[
-              {
-                step: '01',
-                image: '/fly-wheel/squad/luna.png',
-                title: 'Upload Once',
-                description: 'Add your product photos, name, description, and what makes it special. Takes 2 minutes.',
-              },
-              {
-                step: '02', 
-                image: '/fly-wheel/squad/nova.png',
-                title: 'Spin & Pay',
-                description: 'Pick what you want — social post, carousel, blog, email. Pay per spin. No subscriptions.',
-              },
-              {
-                step: '03',
-                image: '/fly-wheel/squad/max.png',
-                title: 'Watch It Go Live',
-                description: 'AI generates your content and posts it instantly. Watch engagement roll in real-time.',
-              },
-            ].map((item, i) => (
-              <div key={i} className="relative bg-gray-900/50 border border-gray-800 rounded-2xl p-8 text-center group hover:border-cyan-500/50 transition-colors">
-                <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-cyan-500 text-black text-xs font-bold px-3 py-1 rounded-full">
-                  STEP {item.step}
-                </div>
-                <div className="w-20 h-20 mx-auto mb-4 group-hover:scale-110 transition-transform">
-                  <img src={item.image} alt={item.title} className="w-full h-full object-contain drop-shadow-lg" />
-                </div>
-                <h3 className="text-xl font-bold text-white mb-3">{item.title}</h3>
-                <p className="text-gray-400 leading-relaxed">{item.description}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing - Spin Menu */}
+      {/* Pricing */}
       <section id="pricing" className="relative z-10 px-6 py-24">
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-16">
@@ -289,14 +185,25 @@ function App() {
             <p className="text-gray-400 text-lg">No subscriptions. No commitments. Just results.</p>
           </div>
           
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6 mb-16">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 mb-16">
             <SpinCard 
               image="/fly-wheel/squad/luna.png"
               title="Social Post"
               price="5"
               description="Single post for Instagram, Twitter, or TikTok. Caption + hashtags included."
               color="cyan"
-              link={PAYMENT_LINKS.social}
+              productType="social"
+              onSelect={onSelectProduct.setSelected}
+            />
+            <SpinCard 
+              image="/fly-wheel/squad/max.png"
+              title="Blog Boost"
+              price="7.50"
+              description="X post promoting a relevant blog + your product. 2-for-1 exposure!"
+              color="orange"
+              productType="boost"
+              popular
+              onSelect={onSelectProduct.setSelected}
             />
             <SpinCard 
               image="/fly-wheel/squad/nova.png"
@@ -304,8 +211,8 @@ function App() {
               price="10"
               description="5-slide Instagram carousel with hooks, benefits, and CTA."
               color="purple"
-              link={PAYMENT_LINKS.carousel}
-              popular
+              productType="carousel"
+              onSelect={onSelectProduct.setSelected}
             />
             <SpinCard 
               image="/fly-wheel/squad/max.png"
@@ -313,7 +220,8 @@ function App() {
               price="15"
               description="TikTok/Reel script with hooks, talking points, and trending sounds."
               color="pink"
-              link={PAYMENT_LINKS.video}
+              productType="video"
+              onSelect={onSelectProduct.setSelected}
             />
             <SpinCard 
               image="/fly-wheel/squad/stella.png"
@@ -321,7 +229,8 @@ function App() {
               price="20"
               description="500-word SEO blog snippet. Perfect for product pages and updates."
               color="yellow"
-              link={PAYMENT_LINKS.blog}
+              productType="blog"
+              onSelect={onSelectProduct.setSelected}
             />
             <SpinCard 
               image="/fly-wheel/squad/nova.png"
@@ -329,67 +238,10 @@ function App() {
               price="25"
               description="Subject line + body copy. Ready to send to your list."
               color="green"
-              link={PAYMENT_LINKS.email}
+              productType="email"
+              onSelect={onSelectProduct.setSelected}
             />
           </div>
-          
-          {/* Credit Packs */}
-          <div className="bg-gradient-to-r from-gray-900/80 to-gray-800/80 backdrop-blur-sm border border-gray-700 rounded-3xl p-8 md:p-12">
-            <div className="text-center mb-8">
-              <h3 className="text-2xl font-bold text-white mb-2">Credit Packs</h3>
-              <p className="text-gray-400">Buy in bulk, spin more, save more</p>
-            </div>
-            
-            <div className="grid sm:grid-cols-3 gap-6 max-w-3xl mx-auto">
-              <CreditPack amount={25} bonus={0} price={25} link={PAYMENT_LINKS.credits50} />
-              <CreditPack amount={50} bonus={10} price={50} link={PAYMENT_LINKS.credits50} featured />
-              <CreditPack amount={100} bonus={25} price={100} link={PAYMENT_LINKS.credits100} />
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Live Feed Preview */}
-      <section className="relative z-10 px-6 py-24 bg-gradient-to-b from-transparent via-purple-950/20 to-transparent">
-        <div className="max-w-4xl mx-auto">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-black mb-4">
-              🔴 Live <span className="text-cyan-400">Feed</span>
-            </h2>
-            <p className="text-gray-400">Watch content go live in real-time</p>
-          </div>
-          
-          <div className="bg-gray-900/50 border border-gray-800 rounded-2xl p-6 space-y-3">
-            <LiveFeedItem type="social" product="Devil's Garden Hot Sauce" time="2 min ago" />
-            <LiveFeedItem type="carousel" product="Wireless Earbuds Pro" time="5 min ago" />
-            <LiveFeedItem type="email" product="Organic Coffee Beans" time="8 min ago" />
-            <LiveFeedItem type="blog" product="Fitness Resistance Bands" time="12 min ago" />
-            <LiveFeedItem type="video" product="Natural Skincare Set" time="15 min ago" />
-            
-            <div className="text-center pt-4">
-              <span className="text-gray-500 text-sm">Your product could be next...</span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* CTA */}
-      <section className="relative z-10 px-6 py-24">
-        <div className="max-w-3xl mx-auto text-center">
-          <h2 className="text-4xl md:text-5xl font-black mb-6">
-            Ready to <span className="bg-gradient-to-r from-cyan-400 to-purple-400 bg-clip-text text-transparent">Spin</span>?
-          </h2>
-          <p className="text-xl text-gray-400 mb-10">
-            No subscriptions. No contracts. Just pay, spin, and watch your product blow up.
-          </p>
-          <a 
-            href={PAYMENT_LINKS.credits50}
-            className="inline-flex items-center justify-center gap-3 bg-gradient-to-r from-cyan-500 to-purple-500 hover:from-cyan-400 hover:to-purple-400 text-white px-10 py-5 rounded-full text-xl font-bold transition-all hover:scale-105 hover:shadow-[0_0_60px_rgba(0,255,255,0.4)]"
-          >
-            Get $50 in Credits
-            <span className="text-2xl">→</span>
-          </a>
-          <p className="text-gray-500 text-sm mt-4">+$10 bonus on your first purchase</p>
         </div>
       </section>
 
@@ -400,16 +252,7 @@ function App() {
             <span className="font-bold text-white">FlyWheel</span>
             <span className="text-gray-500 text-sm">by Blog Squad</span>
           </div>
-          
-          <div className="flex items-center gap-6 text-sm text-gray-500">
-            <a href="#" className="hover:text-white transition-colors">Terms</a>
-            <a href="#" className="hover:text-white transition-colors">Privacy</a>
-            <a href="https://blogsquad.ai" className="hover:text-white transition-colors">Blog Squad</a>
-          </div>
-          
-          <div className="text-gray-500 text-sm">
-            © 2026 FlyWheel. All rights reserved.
-          </div>
+          <div className="text-gray-500 text-sm">© 2026 FlyWheel. All rights reserved.</div>
         </div>
       </footer>
 
@@ -418,25 +261,217 @@ function App() {
           0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.3; }
           50% { transform: translateY(-20px) rotate(180deg); opacity: 0.6; }
         }
-        .animate-float {
-          animation: float 4s ease-in-out infinite;
-        }
-        @keyframes slide-in {
-          from { opacity: 0; transform: translateX(-20px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-        .animate-slide-in {
-          animation: slide-in 0.3s ease-out;
-        }
+        .animate-float { animation: float 4s ease-in-out infinite; }
         @keyframes bounce-slow {
           0%, 100% { transform: translateY(0); }
           50% { transform: translateY(-10px); }
         }
-        .animate-bounce-slow {
-          animation: bounce-slow 3s ease-in-out infinite;
-        }
+        .animate-bounce-slow { animation: bounce-slow 3s ease-in-out infinite; }
       `}</style>
     </div>
+  )
+}
+
+// Background Component
+function SlotBackground() {
+  return (
+    <div className="fixed inset-0 overflow-hidden pointer-events-none">
+      <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />
+      <div className="absolute top-0 left-0 w-64 h-64 bg-gradient-to-br from-cyan-500/20 to-transparent" />
+      <div className="absolute top-0 right-0 w-64 h-64 bg-gradient-to-bl from-purple-500/20 to-transparent" />
+      <div className="absolute bottom-0 left-0 w-64 h-64 bg-gradient-to-tr from-pink-500/20 to-transparent" />
+      <div className="absolute bottom-0 right-0 w-64 h-64 bg-gradient-to-tl from-yellow-500/20 to-transparent" />
+    </div>
+  )
+}
+
+// Spin Card Component
+function SpinCard({ image, title, price, description, color, productType, popular, onSelect }) {
+  return (
+    <button
+      onClick={() => onSelect(productType)}
+      className={`group relative bg-gray-900/80 backdrop-blur-sm border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105 hover:-translate-y-2 text-left w-full ${
+        popular 
+          ? 'border-yellow-500/50 hover:border-yellow-400 hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]' 
+          : 'border-gray-700 hover:border-cyan-400 hover:shadow-[0_0_40px_rgba(0,255,255,0.2)]'
+      }`}
+    >
+      {popular && (
+        <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-gradient-to-r from-yellow-500 to-orange-500 text-black text-xs font-bold px-4 py-1 rounded-full">
+          🔥 POPULAR
+        </div>
+      )}
+      <div className="w-20 h-20 mx-auto mb-4 transform group-hover:scale-110 transition-transform">
+        <img src={image} alt={title} className="w-full h-full object-contain drop-shadow-lg" />
+      </div>
+      <h3 className="text-xl font-bold text-white mb-2 text-center">{title}</h3>
+      <p className="text-gray-400 text-sm mb-4 leading-relaxed text-center">{description}</p>
+      <div className="flex items-center justify-between">
+        <span className="text-3xl font-black text-cyan-400">${price}</span>
+        <span className="bg-white/10 text-white px-4 py-2 rounded-full text-sm font-semibold">SPIN →</span>
+      </div>
+    </button>
+  )
+}
+
+// Product Modal Component
+function ProductModal({ isOpen, onClose, productType, onCheckout, userId }) {
+  const [productData, setProductData] = useState({ name: '', description: '', features: '', audience: '' })
+  const [loading, setLoading] = useState(false)
+
+  if (!isOpen) return null
+
+  const handleSubmit = async (e) => {
+    e.preventDefault()
+    setLoading(true)
+    await onCheckout(productType, productData, userId)
+    setLoading(false)
+  }
+
+  const productNames = {
+    social: 'Social Post', carousel: 'Carousel', video: 'Video Script', blog: 'Blog Post', email: 'Email Blast'
+  }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-lg w-full">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+        <h2 className="text-2xl font-bold text-white mb-2">Create Your {productNames[productType]}</h2>
+        <p className="text-gray-400 mb-6">Tell us about your product.</p>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <input type="text" required value={productData.name} onChange={(e) => setProductData({ ...productData, name: e.target.value })} placeholder="Product Name *" className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500" />
+          <textarea required value={productData.description} onChange={(e) => setProductData({ ...productData, description: e.target.value })} placeholder="Description *" rows={3} className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500" />
+          <input type="text" value={productData.features} onChange={(e) => setProductData({ ...productData, features: e.target.value })} placeholder="Key Features (optional)" className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500" />
+          <input type="text" value={productData.audience} onChange={(e) => setProductData({ ...productData, audience: e.target.value })} placeholder="Target Audience (optional)" className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500" />
+          <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50">
+            {loading ? 'Processing...' : 'Continue to Payment →'}
+          </button>
+        </form>
+      </div>
+    </div>
+  )
+}
+
+// Success Modal Component  
+function SuccessModal({ isOpen, onClose, sessionData, content, user, onViewDashboard }) {
+  const [copied, setCopied] = useState(false)
+
+  if (!isOpen) return null
+
+  const handleCopy = () => {
+    navigator.clipboard.writeText(content?.content || '')
+    setCopied(true)
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const productNames = { social: 'Social Post', carousel: 'Carousel', video: 'Video Script', blog: 'Blog Post', email: 'Email Blast' }
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+      <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative bg-gray-900 border border-gray-700 rounded-2xl p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+        <button onClick={onClose} className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">&times;</button>
+        <div className="text-center mb-6">
+          <div className="text-6xl mb-4">🎉</div>
+          <h2 className="text-3xl font-bold text-white mb-2">Content Generated!</h2>
+          <p className="text-gray-400">Your {productNames[sessionData?.metadata?.productType] || 'content'} is ready</p>
+        </div>
+        {content ? (
+          <div className="space-y-4">
+            <div className="bg-gray-800 rounded-xl p-6">
+              <pre className="whitespace-pre-wrap text-gray-200 font-mono text-sm leading-relaxed">{content.content}</pre>
+            </div>
+            <div className="flex gap-4">
+              <button onClick={handleCopy} className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-500 text-white py-3 rounded-xl font-bold">
+                {copied ? '✓ Copied!' : '📋 Copy'}
+              </button>
+              {user && (
+                <button onClick={onViewDashboard} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold">
+                  View Dashboard →
+                </button>
+              )}
+            </div>
+            {!user && (
+              <p className="text-center text-gray-400 text-sm">
+                <a href="/fly-wheel/login" className="text-cyan-400 hover:underline">Login</a> to save and post to X
+              </p>
+            )}
+          </div>
+        ) : (
+          <div className="text-center py-8">
+            <div className="animate-spin text-4xl mb-4">⚡</div>
+            <p className="text-gray-400">Generating your content...</p>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
+
+// Main App Component
+function App() {
+  const [user, setUser] = useState(null)
+  const [token, setToken] = useState(null)
+  const [selectedProduct, setSelectedProduct] = useState(null)
+
+  useEffect(() => {
+    const savedToken = localStorage.getItem('flywheel_token')
+    const savedUser = localStorage.getItem('flywheel_user')
+    if (savedToken && savedUser) {
+      setToken(savedToken)
+      setUser(JSON.parse(savedUser))
+    }
+  }, [])
+
+  const handleLogin = (user, token) => {
+    setUser(user)
+    setToken(token)
+    localStorage.setItem('flywheel_token', token)
+    localStorage.setItem('flywheel_user', JSON.stringify(user))
+  }
+
+  const handleLogout = () => {
+    setUser(null)
+    setToken(null)
+    localStorage.removeItem('flywheel_token')
+    localStorage.removeItem('flywheel_user')
+  }
+
+  const checkoutSpin = async (productType, productData, userId) => {
+    try {
+      const response = await fetch(`${API_URL}/api/checkout/spin`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ productType, productData, userId }),
+      })
+      const data = await response.json()
+      if (data.url) {
+        window.location.href = data.url
+      } else {
+        alert('Error: ' + (data.error || 'Could not create checkout'))
+      }
+    } catch (error) {
+      alert('Error connecting to payment server.')
+    }
+  }
+
+  const productSelector = {
+    selected: selectedProduct,
+    setSelected: setSelectedProduct,
+    checkout: checkoutSpin,
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<LandingPage user={user} token={token} onSelectProduct={productSelector} />} />
+      <Route path="/login" element={
+        user ? <Dashboard user={user} token={token} onLogout={handleLogout} /> : <Auth onLogin={handleLogin} />
+      } />
+      <Route path="/dashboard" element={
+        user ? <Dashboard user={user} token={token} onLogout={handleLogout} /> : <Auth onLogin={handleLogin} />
+      } />
+    </Routes>
   )
 }
 
