@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import BoostModal from './BoostModal'
+import ContentModal from './ContentModal'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -153,6 +154,18 @@ export default function Dashboard({ user, token, onLogout }) {
           fetchDashboard()
         }}
       />
+      
+      <ContentModal
+        isOpen={!!selectedProduct && selectedProduct !== 'boost'}
+        onClose={() => setSelectedProduct(null)}
+        productType={selectedProduct}
+        user={user}
+        token={token}
+        onSuccess={() => {
+          setSelectedProduct(null)
+          fetchDashboard()
+        }}
+      />
 
       <main className="max-w-6xl mx-auto px-6 py-8">
         {/* Stats Cards */}
@@ -203,8 +216,7 @@ export default function Dashboard({ user, token, onLogout }) {
                   if (product.type === 'boost') {
                     setShowBoostModal(true)
                   } else {
-                    // For other products, go to landing page pricing
-                    window.location.href = '/fly-wheel/#pricing'
+                    setSelectedProduct(product.type)
                   }
                 }}
                 className={`group relative bg-gradient-to-br ${product.color} p-[2px] rounded-xl transition-all hover:scale-105 hover:shadow-lg`}
