@@ -26,6 +26,17 @@ export default function Dashboard({ user, token, onLogout }) {
     fetchDashboard()
   }, [])
 
+  // Load Twitter widget script
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://platform.twitter.com/widgets.js'
+    script.async = true
+    document.body.appendChild(script)
+    return () => {
+      document.body.removeChild(script)
+    }
+  }, [])
+
   const fetchDashboard = async () => {
     try {
       const [statsRes, postsRes] = await Promise.all([
@@ -325,6 +336,23 @@ export default function Dashboard({ user, token, onLogout }) {
               ))}
             </div>
           )}
+        </div>
+        {/* Twitter Feed */}
+        <div className="bg-gray-900 border border-gray-800 rounded-xl overflow-hidden mt-8">
+          <div className="px-6 py-4 border-b border-gray-800">
+            <h2 className="text-xl font-bold">@FlyWheelSquad Feed</h2>
+          </div>
+          <div className="p-4">
+            <a 
+              className="twitter-timeline" 
+              data-theme="dark"
+              data-height="500"
+              data-chrome="noheader nofooter noborders transparent"
+              href="https://twitter.com/flywheelsquad?ref_src=twsrc%5Etfw"
+            >
+              Loading tweets...
+            </a>
+          </div>
         </div>
       </main>
     </div>
