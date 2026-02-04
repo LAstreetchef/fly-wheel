@@ -172,7 +172,8 @@ function LandingPage({ user, token, onSelectProduct }) {
               onSelect={onSelectProduct.setSelected}
             />
             <SpinCard 
-              image="/fly-wheel/squad/stella.png"
+              image="/fly-wheel/squad/stella.mp4"
+              isVideo
               title="Blog Post"
               price="20"
               description="500-word SEO blog snippet. Perfect for product pages and updates."
@@ -201,7 +202,7 @@ function LandingPage({ user, token, onSelectProduct }) {
           </div>
           
           <div className="flex justify-center mb-8">
-            <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-32 h-32 object-contain drop-shadow-2xl animate-bounce-slow" />
+            <video src="/fly-wheel/squad/stella.mp4" autoPlay loop muted playsInline className="w-32 h-32 object-contain drop-shadow-2xl animate-bounce-slow" />
           </div>
           
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
@@ -278,7 +279,7 @@ function SlotBackground() {
 }
 
 // Spin Card Component
-function SpinCard({ image, title, price, description, color, productType, popular, onSelect }) {
+function SpinCard({ image, isVideo, title, price, description, color, productType, popular, onSelect }) {
   return (
     <button
       onClick={() => onSelect(productType)}
@@ -294,7 +295,11 @@ function SpinCard({ image, title, price, description, color, productType, popula
         </div>
       )}
       <div className="w-20 h-20 mx-auto mb-4 transform group-hover:scale-110 transition-transform">
-        <img src={image} alt={title} className="w-full h-full object-contain drop-shadow-lg" />
+        {isVideo ? (
+          <video src={image} autoPlay loop muted playsInline className="w-full h-full object-contain drop-shadow-lg" />
+        ) : (
+          <img src={image} alt={title} className="w-full h-full object-contain drop-shadow-lg" />
+        )}
       </div>
       <h3 className="text-xl font-bold text-white mb-2 text-center">{title}</h3>
       <p className="text-gray-400 text-sm mb-4 leading-relaxed text-center flex-grow">{description}</p>
