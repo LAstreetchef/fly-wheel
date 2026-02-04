@@ -266,18 +266,24 @@ export async function generateContent(productType, productData) {
   const product = typeof productData === 'string' ? JSON.parse(productData) : productData;
   
   // If no product data, use defaults
+  // Support Shopify product format
   const productInfo = {
-    name: product.name || 'Amazing Product',
+    name: product.name || product.title || 'Amazing Product',
     description: product.description || 'A fantastic product that solves your problems.',
-    features: product.features || '',
+    features: product.features || product.tags?.join(', ') || '',
     audience: product.audience || '',
-    keywords: product.keywords || '',
+    keywords: product.keywords || product.tags?.join(', ') || '',
     offer: product.offer || '',
+    // Shopify-specific fields
+    price: product.price || '',
+    vendor: product.vendor || '',
+    productType: product.productType || '',
+    image: product.image || '',
     // Boost fields
     blogTitle: product.blogTitle || '',
     blogUrl: product.blogUrl || '',
     blogSnippet: product.blogSnippet || '',
-    productUrl: product.productUrl || '',
+    productUrl: product.productUrl || product.url || '',
   };
 
   // If no Anthropic key, use mock content

@@ -49,3 +49,301 @@ a {
 .animate-slide-up {
   animation: slideUp 0.3s ease-out forwards;
 }
+
+/* ============================================
+   Shopify Connect Component
+   ============================================ */
+
+.shopify-connect {
+  font-size: 0.875rem;
+}
+
+.shopify-connect.loading {
+  color: #9ca3af;
+}
+
+.shopify-connect.connected .connection-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.shopify-connect.connected .connection-info .icon {
+  font-size: 1.25rem;
+}
+
+.shopify-connect.connected .connection-info div {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}
+
+.shopify-connect.connected .connection-info strong {
+  color: white;
+  font-size: 0.875rem;
+}
+
+.shopify-connect.connected .connection-info .domain {
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+.shopify-connect.connected .badge {
+  background: #065f46;
+  color: #6ee7b7;
+  padding: 0.125rem 0.5rem;
+  border-radius: 9999px;
+  font-size: 0.625rem;
+  font-weight: 600;
+}
+
+.shopify-connect .btn-disconnect {
+  color: #f87171;
+  font-size: 0.75rem;
+  margin-top: 0.5rem;
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+.shopify-connect .btn-disconnect:hover {
+  color: #fca5a5;
+}
+
+.shopify-connect.disconnected .connection-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+}
+
+.shopify-connect .btn-connect {
+  background: linear-gradient(135deg, #95bf47 0%, #5e8e3e 100%);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  width: 100%;
+}
+
+.shopify-connect .btn-connect:hover {
+  opacity: 0.9;
+}
+
+.shopify-connect.form {
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.75rem;
+  padding: 1.5rem;
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  margin-top: 0.5rem;
+}
+
+.shopify-connect.form h3 {
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
+}
+
+.shopify-connect .form-group {
+  margin-bottom: 1rem;
+}
+
+.shopify-connect .form-group label {
+  display: block;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  margin-bottom: 0.25rem;
+}
+
+.shopify-connect .form-group input {
+  width: 100%;
+  background: #111827;
+  border: 1px solid #374151;
+  border-radius: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.shopify-connect .form-group input:focus {
+  outline: none;
+  border-color: #95bf47;
+}
+
+.shopify-connect .form-group small {
+  display: block;
+  color: #6b7280;
+  font-size: 0.625rem;
+  margin-top: 0.25rem;
+}
+
+.shopify-connect .advanced-options {
+  margin-bottom: 1rem;
+}
+
+.shopify-connect .advanced-options summary {
+  color: #6b7280;
+  font-size: 0.75rem;
+  cursor: pointer;
+}
+
+.shopify-connect .error {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #f87171;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  font-size: 0.75rem;
+  margin-bottom: 1rem;
+}
+
+.shopify-connect .form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.shopify-connect .btn-cancel {
+  flex: 1;
+  background: #374151;
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.shopify-connect .btn-submit {
+  flex: 1;
+  background: linear-gradient(135deg, #95bf47 0%, #5e8e3e 100%);
+  color: white;
+  padding: 0.5rem;
+  border-radius: 0.375rem;
+  border: none;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 600;
+}
+
+.shopify-connect .btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+/* ============================================
+   Product Picker / Dropdown
+   ============================================ */
+
+.product-dropdown {
+  position: relative;
+}
+
+.product-dropdown .dropdown-trigger {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  padding: 0.75rem;
+  color: white;
+  font-size: 0.875rem;
+  cursor: pointer;
+  text-align: left;
+}
+
+.product-dropdown .dropdown-trigger:hover {
+  border-color: #4b5563;
+}
+
+.product-dropdown .dropdown-trigger img {
+  width: 2rem;
+  height: 2rem;
+  object-fit: cover;
+  border-radius: 0.25rem;
+}
+
+.product-dropdown .dropdown-trigger span {
+  flex: 1;
+}
+
+.product-dropdown .dropdown-trigger .arrow {
+  color: #6b7280;
+  font-size: 0.625rem;
+}
+
+.product-dropdown .dropdown-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: #1f2937;
+  border: 1px solid #374151;
+  border-radius: 0.5rem;
+  margin-top: 0.25rem;
+  max-height: 16rem;
+  overflow-y: auto;
+  z-index: 50;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+}
+
+.product-dropdown .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem;
+  cursor: pointer;
+  border-bottom: 1px solid #374151;
+}
+
+.product-dropdown .dropdown-item:last-child {
+  border-bottom: none;
+}
+
+.product-dropdown .dropdown-item:hover {
+  background: #374151;
+}
+
+.product-dropdown .dropdown-item.selected {
+  background: rgba(149, 191, 71, 0.1);
+}
+
+.product-dropdown .dropdown-item.clear {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.product-dropdown .dropdown-item img {
+  width: 2.5rem;
+  height: 2.5rem;
+  object-fit: cover;
+  border-radius: 0.25rem;
+}
+
+.product-dropdown .dropdown-item span {
+  flex: 1;
+  color: white;
+  font-size: 0.875rem;
+}
+
+.product-dropdown .dropdown-item .price {
+  color: #6ee7b7;
+  font-weight: 600;
+  flex: none;
+}
+
+.loading-inline {
+  color: #6b7280;
+  font-size: 0.75rem;
+}

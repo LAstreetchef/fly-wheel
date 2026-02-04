@@ -109,7 +109,7 @@ export function disconnectTwitter(userId) {
   db.prepare('DELETE FROM twitter_connections WHERE user_id = ?').run(userId);
 }
 
-export async function postTweet(userId, text) {
+export async function postTweet(userId, text, mediaIds = []) {
   const connection = db.prepare(
     'SELECT access_token FROM twitter_connections WHERE user_id = ?'
   ).get(userId);
@@ -121,7 +121,10 @@ export async function postTweet(userId, text) {
   const client = new TwitterApi(connection.access_token);
   
   try {
-    const { data } = await client.v2.tweet(text);
+    const tweetOptions = mediaIds.length > 0 
+      ? { text, media: { media_ids: mediaIds } }
+      : text;
+    const { data } = await client.v2.tweet(tweetOptions);
     return {
       id: data.id,
       url: `https://twitter.com/i/status/${data.id}`,
@@ -131,6 +134,26 @@ export async function postTweet(userId, text) {
     if (error.code === 401) {
       throw new Error('Twitter token expired. Please reconnect.');
     }
+    throw error;
+  }
+}
+
+export async function uploadMedia(userId, imagePath) {
+  const connection = db.prepare(
+    'SELECT access_token FROM twitter_connections WHERE user_id = ?'
+  ).get(userId);
+  
+  if (!connection) {
+    throw new Error('Twitter not connected');
+  }
+  
+  const client = new TwitterApi(connection.access_token);
+  
+  try {
+    const mediaId = await client.v1.uploadMedia(imagePath);
+    return mediaId;
+  } catch (error) {
+    console.error('Media upload error:', error);
     throw error;
   }
 }

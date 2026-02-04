@@ -1,4 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
+import { ProductDropdown } from './ProductPicker'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -15,6 +16,9 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   
+  const [selectedShopifyProduct, setSelectedShopifyProduct] = useState(null)
+  const [shopifyConnected, setShopifyConnected] = useState(false)
+  
   const [productData, setProductData] = useState({
     name: '',
     description: '',
@@ -28,11 +32,47 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
   const [publishResult, setPublishResult] = useState(null)
 
   const product = PRODUCT_INFO[productType] || {}
+  
+  // Check Shopify connection on mount
+  useEffect(() => {
+    if (isOpen && token) {
+      fetch(`${API_URL}/api/shopify/status`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => r.json())
+        .then(d => setShopifyConnected(d.connected))
+        .catch(() => setShopifyConnected(false))
+    }
+  }, [isOpen, token])
+  
+  // When a Shopify product is selected, pre-fill the form
+  const handleShopifyProductSelect = (shopifyProduct) => {
+    setSelectedShopifyProduct(shopifyProduct)
+    if (shopifyProduct) {
+      setProductData({
+        name: shopifyProduct.title || '',
+        description: shopifyProduct.description || '',
+        features: shopifyProduct.tags?.join(', ') || '',
+        audience: '',
+        productUrl: shopifyProduct.url || ''
+      })
+    } else {
+      // Clear form if no product selected
+      setProductData({
+        name: '',
+        description: '',
+        features: '',
+        audience: '',
+        productUrl: ''
+      })
+    }
+  }
 
   const reset = () => {
     setStep(1)
     setLoading(false)
     setError(null)
+    setSelectedShopifyProduct(null)
     setProductData({ name: '', description: '', features: '', audience: '', productUrl: '' })
     setGeneratedContent(null)
     setPostId(null)
@@ -179,6 +219,31 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
             </div>
             
             <form onSubmit={generateContent} className="space-y-4">
+              {/* Shopify Product Picker */}
+              {shopifyConnected && (
+                <div className="mb-4">
+                  <label className="block text-sm text-gray-400 mb-2">
+                    🛍️ Import from Shopify
+                  </label>
+                  <ProductDropdown
+                    token={token}
+                    selectedProduct={selectedShopifyProduct}
+                    onSelect={handleShopifyProductSelect}
+                  />
+                  {selectedShopifyProduct && (
+                    <p className="text-xs text-cyan-400 mt-1">
+                      ✓ Product loaded from Shopify - edit below if needed
+                    </p>
+                  )}
+                </div>
+              )}
+              
+              {!shopifyConnected && (
+                <div className="text-center text-gray-500 text-sm mb-4 py-2 border border-dashed border-gray-700 rounded-lg">
+                  💡 Connect Shopify in settings to import products automatically
+                </div>
+              )}
+              
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Product Name *</label>
                 <input

@@ -8,6 +8,7 @@ import { createTrackedLink, getLink, recordClick, getUserLinks, getLinkStats } f
 import { isTwitterConfigured, getAuthUrl, handleCallback, getConnection, disconnectTwitter, getFrontendUrl } from './server/twitter.js';
 import { createPost, getPost, getPostBySession, getUserPosts, publishToTwitter, getPostAnalytics, getDashboardStats } from './server/posts.js';
 import { searchBlogs, isSearchConfigured } from './server/blog-search.js';
+import { connectStore, getStoreConnection, disconnectStore, verifyConnection, fetchProducts, fetchProduct, getCachedProducts, refreshToken } from './server/shopify.js';
 import db from './server/db.js';
 
 const app = express();
@@ -160,6 +161,112 @@ app.get('/api/twitter/callback', async (req, res) => {
 app.post('/api/twitter/disconnect', authMiddleware, (req, res) => {
   disconnectTwitter(req.user.id);
   res.json({ success: true });
+});
+
+// ============================================
+// Shopify Integration Routes
+// ============================================
+
+// Connect Shopify store
+app.post('/api/shopify/connect', authMiddleware, async (req, res) => {
+  try {
+    const { storeDomain, accessToken, clientId, clientSecret } = req.body;
+    
+    if (!storeDomain || !accessToken) {
+      return res.status(400).json({ error: 'Store domain and access token required' });
+    }
+    
+    const result = connectStore(req.user.id, storeDomain, accessToken, clientId, clientSecret);
+    
+    // Verify connection works
+    const verification = await verifyConnection(req.user.id);
+    if (!verification.connected) {
+      // Rollback connection if verification fails
+      disconnectStore(req.user.id);
+      return res.status(400).json({ error: `Connection failed: ${verification.error}` });
+    }
+    
+    res.json({ 
+      success: true, 
+      storeDomain: result.storeDomain,
+      shop: verification.shop,
+    });
+  } catch (error) {
+    console.error('Shopify connect error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get Shopify connection status
+app.get('/api/shopify/status', authMiddleware, async (req, res) => {
+  try {
+    const connection = getStoreConnection(req.user.id);
+    
+    if (!connection) {
+      return res.json({ connected: false });
+    }
+    
+    // Optionally verify the connection is still valid
+    const verification = await verifyConnection(req.user.id);
+    
+    res.json({
+      connected: verification.connected,
+      storeDomain: connection.store_domain,
+      shop: verification.shop || null,
+      connectedAt: connection.connected_at,
+    });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Fetch products from connected store
+app.get('/api/shopify/products', authMiddleware, async (req, res) => {
+  try {
+    const { refresh } = req.query;
+    
+    // If not forcing refresh, try cached products first
+    if (!refresh) {
+      const cached = getCachedProducts(req.user.id);
+      if (cached.length > 0) {
+        return res.json({ products: cached, cached: true });
+      }
+    }
+    
+    // Fetch fresh from Shopify
+    const products = await fetchProducts(req.user.id);
+    res.json({ products, cached: false });
+  } catch (error) {
+    console.error('Shopify products error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get single product details
+app.get('/api/shopify/products/:productId', authMiddleware, async (req, res) => {
+  try {
+    const product = await fetchProduct(req.user.id, req.params.productId);
+    res.json({ product });
+  } catch (error) {
+    console.error('Shopify product error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Disconnect Shopify store
+app.post('/api/shopify/disconnect', authMiddleware, (req, res) => {
+  const result = disconnectStore(req.user.id);
+  res.json({ success: result });
+});
+
+// Refresh Shopify token (for client credentials flow)
+app.post('/api/shopify/refresh-token', authMiddleware, async (req, res) => {
+  try {
+    const result = await refreshToken(req.user.id);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ============================================
