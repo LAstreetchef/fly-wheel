@@ -9,6 +9,7 @@ import { isTwitterConfigured, getAuthUrl, handleCallback, getConnection, disconn
 import { createPost, getPost, getPostBySession, getUserPosts, publishToTwitter, getPostAnalytics, getDashboardStats } from './server/posts.js';
 import { searchBlogs, isSearchConfigured } from './server/blog-search.js';
 import { connectStore, getStoreConnection, disconnectStore, verifyConnection, fetchProducts, fetchProduct, getCachedProducts, refreshToken } from './server/shopify.js';
+import { fetchProductFromUrl } from './server/product-scraper.js';
 import db from './server/db.js';
 
 const app = express();
@@ -164,7 +165,28 @@ app.post('/api/twitter/disconnect', authMiddleware, (req, res) => {
 });
 
 // ============================================
-// Shopify Integration Routes
+// Product URL Import (No API key needed!)
+// ============================================
+
+// Fetch product data from any supported URL
+app.post('/api/product/import', authMiddleware, async (req, res) => {
+  try {
+    const { url } = req.body;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'Product URL required' });
+    }
+    
+    const result = await fetchProductFromUrl(url);
+    res.json(result);
+  } catch (error) {
+    console.error('Product import error:', error);
+    res.status(400).json({ error: error.message });
+  }
+});
+
+// ============================================
+// Shopify Integration Routes (Advanced/Optional)
 // ============================================
 
 // Connect Shopify store

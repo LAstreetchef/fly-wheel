@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react'
-import { ProductDropdown } from './ProductPicker'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -16,8 +15,9 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   
-  const [selectedShopifyProduct, setSelectedShopifyProduct] = useState(null)
-  const [shopifyConnected, setShopifyConnected] = useState(false)
+  const [importUrl, setImportUrl] = useState('')
+  const [importing, setImporting] = useState(false)
+  const [importError, setImportError] = useState('')
   
   const [productData, setProductData] = useState({
     name: '',
@@ -33,38 +33,44 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
 
   const product = PRODUCT_INFO[productType] || {}
   
-  // Check Shopify connection on mount
-  useEffect(() => {
-    if (isOpen && token) {
-      fetch(`${API_URL}/api/shopify/status`, {
-        headers: { Authorization: `Bearer ${token}` }
+  // Import product from URL (Shopify, etc.)
+  const importFromUrl = async () => {
+    if (!importUrl.trim()) return
+    
+    setImporting(true)
+    setImportError('')
+    
+    try {
+      const res = await fetch(`${API_URL}/api/product/import`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ url: importUrl })
       })
-        .then(r => r.json())
-        .then(d => setShopifyConnected(d.connected))
-        .catch(() => setShopifyConnected(false))
-    }
-  }, [isOpen, token])
-  
-  // When a Shopify product is selected, pre-fill the form
-  const handleShopifyProductSelect = (shopifyProduct) => {
-    setSelectedShopifyProduct(shopifyProduct)
-    if (shopifyProduct) {
+      
+      const data = await res.json()
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Import failed')
+      }
+      
+      // Pre-fill form with imported product data
+      const p = data.product
       setProductData({
-        name: shopifyProduct.title || '',
-        description: shopifyProduct.description || '',
-        features: shopifyProduct.tags?.join(', ') || '',
+        name: p.title || '',
+        description: p.description || '',
+        features: p.tags?.join(', ') || '',
         audience: '',
-        productUrl: shopifyProduct.url || ''
+        productUrl: p.url || importUrl.split('?')[0]
       })
-    } else {
-      // Clear form if no product selected
-      setProductData({
-        name: '',
-        description: '',
-        features: '',
-        audience: '',
-        productUrl: ''
-      })
+      
+      setImportUrl('')  // Clear the URL field
+    } catch (e) {
+      setImportError(e.message)
+    } finally {
+      setImporting(false)
     }
   }
 
@@ -72,7 +78,8 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
     setStep(1)
     setLoading(false)
     setError(null)
-    setSelectedShopifyProduct(null)
+    setImportUrl('')
+    setImportError('')
     setProductData({ name: '', description: '', features: '', audience: '', productUrl: '' })
     setGeneratedContent(null)
     setPostId(null)
@@ -219,30 +226,40 @@ export default function ContentModal({ isOpen, onClose, productType, user, token
             </div>
             
             <form onSubmit={generateContent} className="space-y-4">
-              {/* Shopify Product Picker */}
-              {shopifyConnected && (
-                <div className="mb-4">
-                  <label className="block text-sm text-gray-400 mb-2">
-                    🛍️ Import from Shopify
-                  </label>
-                  <ProductDropdown
-                    token={token}
-                    selectedProduct={selectedShopifyProduct}
-                    onSelect={handleShopifyProductSelect}
+              {/* Quick Import from URL */}
+              <div className="bg-gray-800/50 rounded-xl p-4 mb-2">
+                <label className="block text-sm text-gray-400 mb-2">
+                  🔗 Quick Import from Product URL
+                </label>
+                <div className="flex gap-2">
+                  <input
+                    type="url"
+                    value={importUrl}
+                    onChange={(e) => setImportUrl(e.target.value)}
+                    placeholder="Paste your Shopify product link..."
+                    className="flex-1 bg-gray-900 border border-gray-600 rounded-lg px-3 py-2 text-white text-sm placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                   />
-                  {selectedShopifyProduct && (
-                    <p className="text-xs text-cyan-400 mt-1">
-                      ✓ Product loaded from Shopify - edit below if needed
-                    </p>
-                  )}
+                  <button
+                    type="button"
+                    onClick={importFromUrl}
+                    disabled={importing || !importUrl.trim()}
+                    className="bg-gradient-to-r from-green-500 to-emerald-500 text-white px-4 py-2 rounded-lg text-sm font-bold disabled:opacity-50 whitespace-nowrap"
+                  >
+                    {importing ? '...' : 'Import'}
+                  </button>
                 </div>
-              )}
+                {importError && (
+                  <p className="text-xs text-red-400 mt-2">{importError}</p>
+                )}
+                {productData.name && !importUrl && (
+                  <p className="text-xs text-green-400 mt-2">✓ Product imported! Edit details below if needed.</p>
+                )}
+                <p className="text-xs text-gray-500 mt-2">
+                  Works with Shopify stores. Just paste the product page URL.
+                </p>
+              </div>
               
-              {!shopifyConnected && (
-                <div className="text-center text-gray-500 text-sm mb-4 py-2 border border-dashed border-gray-700 rounded-lg">
-                  💡 Connect Shopify in settings to import products automatically
-                </div>
-              )}
+              <div className="border-t border-gray-700 pt-4"></div>
               
               <div>
                 <label className="block text-sm text-gray-400 mb-1">Product Name *</label>
