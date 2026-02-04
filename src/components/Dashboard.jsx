@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react'
 import BoostModal from './BoostModal'
 import ContentModal from './ContentModal'
-import ShopifyConnect from './ShopifyConnect'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -214,10 +213,6 @@ export default function Dashboard({ user, token, onLogout }) {
                 Connect X
               </button>
             )}
-          </div>
-          <div className="bg-gray-900 border border-gray-800 rounded-xl p-6">
-            <div className="text-gray-400 text-sm mb-1">Shopify Store</div>
-            <ShopifyConnect token={token} onConnect={() => fetchDashboard()} />
           </div>
         </div>
 
