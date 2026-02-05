@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
 import Dashboard from './components/Dashboard'
 import Auth from './components/Auth'
@@ -13,6 +13,8 @@ function LandingPage({ user, token, onSelectProduct }) {
   const [sessionData, setSessionData] = useState(null)
   const [content, setContent] = useState(null)
   const [showBoostModal, setShowBoostModal] = useState(false)
+  const [stellaMuted, setStellaMuted] = useState(true)
+  const stellaVideoRef = useRef(null)
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -201,8 +203,27 @@ function LandingPage({ user, token, onSelectProduct }) {
             <span className="text-cyan-400 text-sm font-medium">Pay-as-you-go product promotion</span>
           </div>
           
-          <div className="flex justify-center mb-8">
-            <video src="/fly-wheel/squad/stella.mp4" autoPlay loop muted playsInline className="w-32 h-32 object-contain drop-shadow-2xl animate-bounce-slow" />
+          <div className="flex justify-center mb-8 relative">
+            <video 
+              ref={stellaVideoRef}
+              src="/fly-wheel/squad/stella.mp4" 
+              autoPlay 
+              loop 
+              muted={stellaMuted}
+              playsInline 
+              className="w-32 h-32 object-contain drop-shadow-2xl animate-bounce-slow" 
+            />
+            <button
+              onClick={() => {
+                setStellaMuted(!stellaMuted)
+                if (stellaVideoRef.current) {
+                  stellaVideoRef.current.muted = !stellaMuted
+                }
+              }}
+              className="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-gray-800/90 hover:bg-gray-700 border border-gray-600 text-white px-3 py-1 rounded-full text-xs font-medium transition-all hover:scale-105 flex items-center gap-1"
+            >
+              {stellaMuted ? '🔇 Unmute' : '🔊 Mute'}
+            </button>
           </div>
           
           <h1 className="text-5xl md:text-7xl font-black mb-6 leading-tight">
