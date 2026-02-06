@@ -567,7 +567,8 @@ app.get('/api/twitter/status', authMiddleware, (req, res) => {
 
 app.get('/api/twitter/auth', authMiddleware, (req, res) => {
   try {
-    const url = getAuthUrl(req.user.id);
+    const returnTo = req.query.returnTo || null;
+    const url = getAuthUrl(req.user.id, returnTo);
     res.json({ url });
   } catch (error) {
     res.status(500).json({ error: error.message });
@@ -579,9 +580,10 @@ app.get('/api/twitter/callback', async (req, res) => {
     const { code, state } = req.query;
     const result = await handleCallback(code, state);
     
-    // Redirect to frontend dashboard with success
+    // Redirect to returnTo page or default to dashboard
     const frontendUrl = getFrontendUrl();
-    res.redirect(`${frontendUrl}/dashboard?twitter=connected&username=${result.twitterUsername}`);
+    const returnPath = result.returnTo || '/dashboard';
+    res.redirect(`${frontendUrl}${returnPath}?twitter=connected&username=${result.twitterUsername}`);
   } catch (error) {
     console.error('Twitter callback error:', error.message, error.stack);
     const fs = await import('fs');
@@ -795,8 +797,18 @@ app.get('/api/posts/:id', authMiddleware, async (req, res) => {
 
 app.post('/api/posts/:id/publish', authMiddleware, async (req, res) => {
   try {
-    const { platform, productUrl, blogUrl } = req.body;
+    const { platform, productUrl, blogUrl, useBoostCredit } = req.body;
     const postId = parseInt(req.params.id);
+    
+    // Check and deduct boost credit if requested
+    if (useBoostCredit) {
+      const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
+      if (!user || user.boost_credits < 1) {
+        return res.status(400).json({ error: 'Insufficient boost credits. Please purchase more.' });
+      }
+      // Deduct credit
+      db.prepare('UPDATE users SET boost_credits = boost_credits - 1 WHERE id = ?').run(req.user.id);
+    }
     
     if (platform === 'twitter') {
       const result = await publishToTwitter(postId, productUrl, blogUrl);
@@ -863,6 +875,109 @@ app.post('/api/posts/quick-publish', authMiddleware, async (req, res) => {
     res.status(500).json({ error: error.message });
   }
 });
+
+// ============================================
+// Boost Credits System
+// ============================================
+
+const BOOST_PACKS = {
+  single: { id: 'single', name: '1 Boost', boosts: 1, price: 750 },
+  starter: { id: 'starter', name: '10 Boosts', boosts: 10, price: 6000 },
+  growth: { id: 'growth', name: '50 Boosts', boosts: 50, price: 25000 },
+  scale: { id: 'scale', name: '100 Boosts', boosts: 100, price: 45000 },
+};
+
+// Ensure boost_credits column exists
+try {
+  db.exec(`ALTER TABLE users ADD COLUMN boost_credits INTEGER DEFAULT 0`);
+} catch (e) {
+  // Column already exists
+}
+
+// Get boost balance
+app.get('/api/boosts/balance', authMiddleware, (req, res) => {
+  try {
+    const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
+    res.json({ boosts: user?.boost_credits || 0 });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create payment intent for boost pack
+app.post('/api/boosts/create-intent', async (req, res) => {
+  try {
+    const { packId, userId } = req.body;
+    
+    const pack = BOOST_PACKS[packId];
+    if (!pack) {
+      return res.status(400).json({ error: 'Invalid pack' });
+    }
+    
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: pack.price,
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        type: 'boost_pack',
+        packId,
+        boosts: pack.boosts,
+        userId: userId || '',
+      },
+    });
+    
+    res.json({ clientSecret: paymentIntent.client_secret });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Add boosts after successful payment
+app.post('/api/boosts/add', authMiddleware, async (req, res) => {
+  try {
+    const { paymentIntentId, packId, boosts } = req.body;
+    
+    // Verify payment
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Payment not completed' });
+    }
+    
+    // Check if already processed
+    const existing = db.prepare('SELECT * FROM boost_transactions WHERE payment_intent_id = ?').get(paymentIntentId);
+    if (existing) {
+      const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
+      return res.json({ success: true, newBalance: user?.boost_credits || 0, alreadyProcessed: true });
+    }
+    
+    // Add boosts to user
+    db.prepare('UPDATE users SET boost_credits = boost_credits + ? WHERE id = ?').run(boosts, req.user.id);
+    
+    // Record transaction
+    db.prepare('INSERT INTO boost_transactions (user_id, payment_intent_id, pack_id, boosts, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)').run(req.user.id, paymentIntentId, packId, boosts);
+    
+    const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
+    res.json({ success: true, newBalance: user?.boost_credits || 0 });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create boost_transactions table if needed
+try {
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS boost_transactions (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      user_id INTEGER NOT NULL,
+      payment_intent_id TEXT UNIQUE,
+      pack_id TEXT,
+      boosts INTEGER,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+    )
+  `);
+} catch (e) {
+  // Table already exists
+}
 
 // ============================================
 // Stripe Checkout

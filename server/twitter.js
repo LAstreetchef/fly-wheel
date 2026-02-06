@@ -18,7 +18,7 @@ export function getFrontendUrl() {
   return FRONTEND_URL;
 }
 
-export function getAuthUrl(userId) {
+export function getAuthUrl(userId, returnTo = null) {
   if (!isTwitterConfigured()) {
     throw new Error('Twitter API not configured');
   }
@@ -32,8 +32,8 @@ export function getAuthUrl(userId) {
     scope: ['tweet.read', 'tweet.write', 'users.read', 'offline.access'],
   });
   
-  // Store state for verification
-  oauthStates.set(state, { userId, codeVerifier, createdAt: Date.now() });
+  // Store state for verification (including returnTo for redirect after auth)
+  oauthStates.set(state, { userId, codeVerifier, returnTo, createdAt: Date.now() });
   console.log(`[Twitter] State stored: ${state.substring(0, 10)}... for user ${userId}. Total states: ${oauthStates.size}`);
   
   // Clean old states (older than 10 minutes)
@@ -94,6 +94,7 @@ export async function handleCallback(code, state) {
   return {
     userId: storedState.userId,
     twitterUsername: twitterUser.username,
+    returnTo: storedState.returnTo,
   };
 }
 
