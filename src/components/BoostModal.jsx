@@ -15,12 +15,11 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
     keywords: ''
   })
   
-  // Step 2: Blog selection (for inspiration/topic)
+  // Step 2: Blog selection
   const [blogs, setBlogs] = useState([])
   const [selectedBlog, setSelectedBlog] = useState(null)
   
-  // Step 3: Created blog + generated promo
-  const [blogData, setBlogData] = useState(null)
+  // Step 3: Generated content
   const [generatedContent, setGeneratedContent] = useState(null)
   const [postId, setPostId] = useState(null)
   
@@ -34,7 +33,6 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
     setProductData({ name: '', description: '', productUrl: '', keywords: '' })
     setBlogs([])
     setSelectedBlog(null)
-    setBlogData(null)
     setGeneratedContent(null)
     setPostId(null)
     setPublishResult(null)
@@ -45,11 +43,11 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
     onClose()
   }
 
-  // Step 1 -> 2: Search for topic inspiration
+  // Step 1 -> 2: Search for blogs
   const searchBlogs = async (e) => {
     e.preventDefault()
     if (!productData.keywords.trim()) {
-      setError('Enter keywords to find relevant topics')
+      setError('Enter keywords to find relevant blogs')
       return
     }
     
@@ -67,7 +65,7 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
         setBlogs(data.results)
         setStep(2)
       } else {
-        setError('No relevant topics found. Try different keywords.')
+        setError('No relevant blogs found. Try different keywords.')
       }
     } catch (err) {
       setError('Search failed: ' + err.message)
@@ -76,10 +74,10 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
     }
   }
 
-  // Step 2 -> 3: Create blog post + generate promo
+  // Step 2 -> 3: Generate boost content
   const generateBoost = async () => {
     if (!selectedBlog) {
-      setError('Select a topic first')
+      setError('Select a blog first')
       return
     }
     
@@ -87,33 +85,56 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
     setError(null)
     
     try {
-      // Create blog post using the topic as inspiration
-      const blogRes = await fetch(`${API_URL}/api/blog/create`, {
+      // Generate content
+      const genRes = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
+          productType: 'boost',
           productData: {
             ...productData,
-            // Use selected blog as topic inspiration
-            topicTitle: selectedBlog.title,
-            topicSnippet: selectedBlog.snippet
+            blogTitle: selectedBlog.title,
+            blogUrl: selectedBlog.url,
+            blogSnippet: selectedBlog.snippet
+          }
+        })
+      })
+      const genData = await genRes.json()
+      
+      if (genData.error) {
+        throw new Error(genData.error)
+      }
+      
+      setGeneratedContent(genData.content)
+      
+      // Create post record
+      const createRes = await fetch(`${API_URL}/api/content/create`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          productType: 'boost',
+          content: genData.content,
+          productData: {
+            ...productData,
+            blogUrl: selectedBlog.url,
+            blogTitle: selectedBlog.title
           }
         })
       })
       
-      const blogResult = await blogRes.json()
-      
-      if (blogResult.error) {
-        throw new Error(blogResult.error)
+      if (createRes.ok) {
+        const createData = await createRes.json()
+        setPostId(createData.id)
+      } else {
+        // Fallback - post will be created on publish
+        console.warn('Could not pre-create post')
       }
-      
-      setBlogData(blogResult.blog)
-      setGeneratedContent(blogResult.promo)
-      setPostId(blogResult.postId)
       
       setStep(3)
     } catch (err) {
@@ -129,30 +150,51 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
     setError(null)
     
     try {
-      const pubRes = await fetch(`${API_URL}/api/posts/quick-publish`, {
+      // If we don't have a postId, create the post first
+      let finalPostId = postId
+      if (!finalPostId) {
+        const createRes = await fetch(`${API_URL}/api/content/create`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
+            Authorization: `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            productType: 'boost',
+            content: generatedContent,
+            productData: {
+              ...productData,
+              blogUrl: selectedBlog.url
+            }
+          })
+        })
+        
+        if (!createRes.ok) {
+          throw new Error('Could not save post')
+        }
+        
+        const createData = await createRes.json()
+        finalPostId = createData.id
+        setPostId(finalPostId)
+      }
+      
+      // Publish
+      const pubRes = await fetch(`${API_URL}/api/posts/${finalPostId}/publish`, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
+          'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true',
           Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
-          content: generatedContent,
-          productType: 'boost',
-          productData: {
-            ...productData,
-            blogId: blogData?.id,
-            blogUrl: blogData?.url,
-            blogTitle: blogData?.title
-          },
-          blogUrl: blogData?.url,
-          productUrl: productData.productUrl
+          platform: 'twitter',
+          productUrl: productData.productUrl,
+          blogUrl: selectedBlog.url
         })
       })
       
       const pubData = await pubRes.json()
       
-      if (!pubRes.ok || pubData.error) {
+      if (!pubRes.ok) {
         throw new Error(pubData.error || 'Publish failed')
       }
       
@@ -165,6 +207,14 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
     } finally {
       setLoading(false)
     }
+  }
+
+  // Preview the final tweet
+  const getPreview = () => {
+    if (!generatedContent || !selectedBlog) return ''
+    return generatedContent
+      .replace('[BLOG_LINK]', selectedBlog.url)
+      .replace('[PRODUCT_LINK]', productData.productUrl || '[your-product-url]')
   }
 
   if (!isOpen) return null
@@ -209,7 +259,7 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
             <div className="text-center mb-6">
               <div className="text-4xl mb-2">🚀</div>
               <h2 className="text-2xl font-bold text-white">Blog Boost</h2>
-              <p className="text-gray-400">Create a blog post + promo tweet for your product</p>
+              <p className="text-gray-400">Promote your product alongside relevant content</p>
             </div>
             
             <form onSubmit={searchBlogs} className="space-y-4">
@@ -220,7 +270,7 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
                   required
                   value={productData.name}
                   onChange={(e) => setProductData({ ...productData, name: e.target.value })}
-                  placeholder="e.g., SwordPay"
+                  placeholder="e.g., Living Nectar Palmyra Sugar"
                   className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                 />
               </div>
@@ -250,16 +300,16 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
               </div>
               
               <div>
-                <label className="block text-sm text-gray-400 mb-1">Topic Keywords *</label>
+                <label className="block text-sm text-gray-400 mb-1">Search Keywords *</label>
                 <input
                   type="text"
                   required
                   value={productData.keywords}
                   onChange={(e) => setProductData({ ...productData, keywords: e.target.value })}
-                  placeholder="e.g., creator payments fintech"
+                  placeholder="e.g., natural sweeteners health benefits"
                   className="w-full bg-gray-800 border border-gray-600 rounded-lg px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyan-500"
                 />
-                <p className="text-xs text-gray-500 mt-1">We'll find trending topics to inspire your blog post</p>
+                <p className="text-xs text-gray-500 mt-1">We'll find blogs matching these keywords</p>
               </div>
               
               <button
@@ -267,21 +317,21 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
                 disabled={loading}
                 className="w-full bg-gradient-to-r from-cyan-500 to-purple-500 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50"
               >
-                {loading ? 'Searching...' : 'Find Topics →'}
+                {loading ? 'Searching...' : 'Find Relevant Blogs →'}
               </button>
             </form>
           </>
         )}
 
-        {/* Step 2: Select Topic for Blog */}
+        {/* Step 2: Select Blog */}
         {step === 2 && (
           <>
             <div className="text-center mb-6">
-              <h2 className="text-2xl font-bold text-white mb-2">Choose a Topic</h2>
-              <p className="text-gray-400">Select a topic to inspire your blog post about <span className="text-cyan-400">{productData.name}</span></p>
+              <h2 className="text-2xl font-bold text-white mb-2">Select a Blog</h2>
+              <p className="text-gray-400">Pick a blog to promote alongside your product</p>
             </div>
             
-            <div className="space-y-3 mb-6 max-h-[40vh] overflow-y-auto">
+            <div className="space-y-3 mb-6">
               {blogs.map((blog, i) => (
                 <button
                   key={i}
@@ -311,48 +361,41 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
                 disabled={loading || !selectedBlog}
                 className="flex-1 bg-gradient-to-r from-cyan-500 to-purple-500 text-white py-3 rounded-xl font-bold disabled:opacity-50"
               >
-                {loading ? 'Creating Blog...' : 'Generate Boost →'}
+                {loading ? 'Generating...' : 'Generate Boost →'}
               </button>
             </div>
           </>
         )}
 
-        {/* Step 3: Preview Blog + Promo */}
-        {step === 3 && blogData && (
+        {/* Step 3: Preview & Publish */}
+        {step === 3 && (
           <>
             <div className="text-center mb-6">
               <div className="text-4xl mb-2">✨</div>
               <h2 className="text-2xl font-bold text-white mb-2">Your Boost is Ready!</h2>
-              <p className="text-gray-400">Blog post created + promo tweet generated</p>
+              <p className="text-gray-400">Review and publish to X</p>
             </div>
             
-            {/* Blog Preview */}
-            <div className="mb-4">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">📝</span>
-                <span className="text-sm font-semibold text-gray-300">Blog Post</span>
-                <span className="text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">LIVE</span>
-              </div>
-              <a
-                href={blogData.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block bg-gray-800 rounded-xl p-4 border border-gray-700 hover:border-cyan-500/50 transition-colors"
-              >
-                <div className="font-bold text-white mb-2">{blogData.title}</div>
-                <div className="text-sm text-gray-400 line-clamp-2 mb-2">{blogData.excerpt}</div>
-                <div className="text-cyan-400 text-sm">View Blog Post →</div>
-              </a>
+            <div className="bg-gray-800 rounded-xl p-4 mb-4">
+              <div className="text-xs text-gray-500 mb-2">PREVIEW</div>
+              <div className="text-white whitespace-pre-wrap">{getPreview()}</div>
             </div>
             
-            {/* Tweet Preview */}
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-lg">🐦</span>
-                <span className="text-sm font-semibold text-gray-300">Promo Tweet</span>
+            <div className="bg-gray-800/50 rounded-xl p-4 mb-6">
+              <div className="flex items-center gap-2 text-sm">
+                <span className="text-gray-400">Blog:</span>
+                <a 
+                  href={selectedBlog?.url} 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="text-cyan-400 hover:underline truncate"
+                >
+                  {selectedBlog?.title}
+                </a>
               </div>
-              <div className="bg-gray-800 rounded-xl p-4 border border-gray-700">
-                <div className="text-white whitespace-pre-wrap">{generatedContent}</div>
+              <div className="flex items-center gap-2 text-sm mt-1">
+                <span className="text-gray-400">Product:</span>
+                <span className="text-white truncate">{productData.productUrl}</span>
               </div>
             </div>
             
@@ -374,12 +417,12 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
             
             <button
               onClick={() => {
-                navigator.clipboard.writeText(generatedContent)
+                navigator.clipboard.writeText(getPreview())
                 alert('Copied!')
               }}
               className="w-full mt-3 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded-xl text-sm"
             >
-              📋 Copy tweet to clipboard
+              📋 Copy to clipboard instead
             </button>
           </>
         )}
@@ -388,32 +431,21 @@ export default function BoostModal({ isOpen, onClose, user, token, onSuccess }) 
         {step === 4 && (
           <div className="text-center">
             <div className="text-6xl mb-4">🎉</div>
-            <h2 className="text-3xl font-bold text-white mb-2">Posted!</h2>
-            <p className="text-gray-400 mb-6">Your blog post and tweet are live</p>
+            <h2 className="text-3xl font-bold text-white mb-2">Boost Posted!</h2>
+            <p className="text-gray-400 mb-6">Your content is live on X</p>
             
-            <div className="space-y-3 mb-6">
-              <a
-                href={publishResult?.tweetUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-xl font-bold transition-colors"
-              >
-                View Tweet on X →
-              </a>
-              
-              <a
-                href={blogData?.url}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="block w-full bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-semibold transition-colors"
-              >
-                View Blog Post →
-              </a>
-            </div>
+            <a
+              href={publishResult?.tweetUrl?.replace('twitter.com', 'x.com')}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-block bg-gradient-to-r from-cyan-500 to-purple-500 text-white px-8 py-4 rounded-xl font-bold text-lg mb-4"
+            >
+              View on X →
+            </a>
             
             {publishResult?.trackedLink && (
               <p className="text-sm text-gray-400 mb-6">
-                Tracking: <code className="text-cyan-400">{publishResult.trackedLink}</code>
+                Tracking clicks at: <code className="text-cyan-400">{publishResult.trackedLink}</code>
               </p>
             )}
             
