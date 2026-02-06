@@ -162,6 +162,10 @@ export default function BlogBoostPage({ user, token, onLogin }) {
       })
       const data = await res.json()
       
+      if (!res.ok) {
+        throw new Error(data.error || `Server error: ${res.status}`)
+      }
+      
       if (data.url) {
         window.open(data.url, '_blank', 'width=600,height=700')
         const pollInterval = setInterval(async () => {
@@ -169,9 +173,12 @@ export default function BlogBoostPage({ user, token, onLogin }) {
           if (connected) clearInterval(pollInterval)
         }, 2000)
         setTimeout(() => clearInterval(pollInterval), 120000)
+      } else {
+        throw new Error('No auth URL returned from server')
       }
     } catch (err) {
-      setError('Failed to start Twitter auth')
+      console.error('Twitter auth error:', err)
+      setError(`Twitter auth failed: ${err.message}`)
     }
   }
 
