@@ -396,7 +396,7 @@ export default function BlogBoostPage({ user, token, onLogin }) {
           <h1 className="text-3xl md:text-4xl font-black mb-2">
             Promote Your Product with <span className="text-orange-400">Relevant Content</span>
           </h1>
-          <p className="text-gray-400">Talk to Stella — she'll guide you through creating the perfect promo</p>
+          <p className="text-gray-400">Promote your product alongside relevant blog content — 2-for-1 exposure!</p>
         </div>
 
         {/* Two Column Layout */}
@@ -404,37 +404,48 @@ export default function BlogBoostPage({ user, token, onLogin }) {
           {/* Left: Katana Agent */}
           <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 flex flex-col">
             <div className="flex items-center gap-3 mb-4">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-pink-500 flex items-center justify-center overflow-hidden">
-                <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-full h-full object-cover" />
+              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-lg">
+                🚀
               </div>
-              <div>
-                <h2 className="font-bold text-white">Stella</h2>
-                <p className="text-xs text-gray-400">Your AI Guide</p>
-              </div>
+              <h2 className="font-bold text-white">Blog Boost</h2>
             </div>
             
-            <div className="flex-1 flex flex-col items-center justify-center bg-gray-800/50 rounded-xl relative overflow-hidden p-6">
-              {/* Stella Video */}
-              <video 
-                src="/fly-wheel/squad/stella.mp4" 
-                autoPlay 
-                loop 
-                muted
-                playsInline 
-                className="w-48 h-48 object-contain mb-6 drop-shadow-2xl"
-              />
-              
-              {/* ElevenLabs Widget */}
-              <div 
-                className="w-full flex justify-center"
-                dangerouslySetInnerHTML={{
-                  __html: `<elevenlabs-convai agent-id="agent_0501kgsz28fveqbvb5td8k3zpeqb"></elevenlabs-convai>`
-                }}
-              />
+            <div className="flex-1 flex flex-col bg-gray-800/50 rounded-xl relative overflow-hidden p-6">
+              {/* Quick Explainer */}
+              <div className="space-y-4">
+                <h3 className="text-lg font-bold text-white">How it works:</h3>
+                
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">1</span>
+                  <p className="text-gray-300 text-sm">Enter your product name and keywords</p>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">2</span>
+                  <p className="text-gray-300 text-sm">Pick a relevant blog from our search results</p>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">3</span>
+                  <p className="text-gray-300 text-sm">Review your AI-generated promo tweet</p>
+                </div>
+                
+                <div className="flex items-start gap-3">
+                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">4</span>
+                  <p className="text-gray-300 text-sm">Post to X and watch your product fly! 🚀</p>
+                </div>
+
+                <div className="mt-6 pt-4 border-t border-gray-700">
+                  <p className="text-gray-400 text-sm mb-3">Questions? Ask Stella!</p>
+                  {/* ElevenLabs Widget */}
+                  <div 
+                    dangerouslySetInnerHTML={{
+                      __html: `<elevenlabs-convai agent-id="agent_0501kgsz28fveqbvb5td8k3zpeqb"></elevenlabs-convai>`
+                    }}
+                  />
+                </div>
+              </div>
             </div>
-            
-            <p className="text-xs text-gray-500 mt-4 text-center">
-              Click "Start a call" to talk with Stella. She'll help you create your Blog Boost.</p>
           </div>
 
           {/* Right: Manual Form + Progress */}
