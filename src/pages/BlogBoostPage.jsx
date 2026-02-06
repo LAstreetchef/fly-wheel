@@ -403,40 +403,40 @@ export default function BlogBoostPage({ user, token, onLogin }) {
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left: Katana Agent */}
           <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 flex flex-col">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-lg">
+            <div className="flex items-center gap-3 mb-6">
+              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-xl shadow-lg shadow-orange-500/40">
                 🚀
               </div>
-              <h2 className="font-bold text-white">Blog Boost</h2>
+              <h2 className="text-xl font-black bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">Blog Boost</h2>
             </div>
             
-            <div className="flex-1 flex flex-col bg-gray-800/50 rounded-xl relative overflow-hidden p-6">
+            <div className="flex-1 flex flex-col bg-gray-800/50 rounded-xl relative overflow-hidden p-8">
               {/* Quick Explainer */}
-              <div className="space-y-4">
-                <h3 className="text-lg font-bold text-white">How it works:</h3>
+              <div className="space-y-6">
+                <h3 className="text-2xl font-black text-white">How it works<span className="text-orange-400">:</span></h3>
                 
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">1</span>
-                  <p className="text-gray-300 text-sm">Enter your product name and keywords</p>
+                <div className="flex items-center gap-4">
+                  <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black shadow-lg shadow-orange-500/30">1</span>
+                  <p className="text-white text-lg">Enter your <span className="font-bold text-orange-400">product name</span> and <span className="font-bold text-yellow-400">keywords</span></p>
                 </div>
                 
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">2</span>
-                  <p className="text-gray-300 text-sm">Pick a relevant blog from our search results</p>
+                <div className="flex items-center gap-4">
+                  <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black shadow-lg shadow-orange-500/30">2</span>
+                  <p className="text-white text-lg">Pick a <span className="font-bold text-orange-400">relevant blog</span> from our search</p>
                 </div>
                 
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">3</span>
-                  <p className="text-gray-300 text-sm">Review your AI-generated promo tweet</p>
+                <div className="flex items-center gap-4">
+                  <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black shadow-lg shadow-orange-500/30">3</span>
+                  <p className="text-white text-lg">Review your <span className="font-bold text-yellow-400">AI-generated</span> promo</p>
                 </div>
                 
-                <div className="flex items-start gap-3">
-                  <span className="flex-shrink-0 w-7 h-7 rounded-full bg-orange-500/20 text-orange-400 flex items-center justify-center text-sm font-bold">4</span>
-                  <p className="text-gray-300 text-sm">Post to X and watch your product fly! 🚀</p>
+                <div className="flex items-center gap-4">
+                  <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black shadow-lg shadow-orange-500/30">4</span>
+                  <p className="text-white text-lg"><span className="font-bold text-orange-400">Post to X</span> and watch it fly! 🚀</p>
                 </div>
 
-                <div className="mt-6 pt-4 border-t border-gray-700">
-                  <p className="text-gray-400 text-sm mb-3">Questions? Ask Stella!</p>
+                <div className="mt-8 pt-6 border-t border-gray-700/50">
+                  <p className="text-gray-300 text-base mb-4">Questions? <span className="font-bold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">Ask Stella!</span></p>
                   {/* ElevenLabs Widget */}
                   <div 
                     dangerouslySetInnerHTML={{
