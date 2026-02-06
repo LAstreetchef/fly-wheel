@@ -10,6 +10,7 @@ import { createPost, getPost, getPostBySession, getUserPosts, publishToTwitter, 
 import { searchBlogs, isSearchConfigured } from './server/blog-search.js';
 import { connectStore, getStoreConnection, disconnectStore, verifyConnection, fetchProducts, fetchProduct, getCachedProducts, refreshToken } from './server/shopify.js';
 import { fetchProductFromUrl } from './server/product-scraper.js';
+import { createBlogPost, getBlogPostBySlug, getBlogPostById, incrementViews, getRecentPosts, getBlogUrl } from './server/blog.js';
 import db from './server/db.js';
 
 const app = express();
@@ -128,6 +129,283 @@ app.post('/api/demo/generate', async (req, res) => {
   } catch (error) {
     console.error('Demo generate error:', error);
     res.status(500).json({ error: 'Generation failed: ' + error.message });
+  }
+});
+
+// ============================================
+// Blog Post Routes (Public)
+// ============================================
+
+// Create a blog post + promo tweet (demo - no auth, rate limited)
+app.post('/api/demo/blog/create', async (req, res) => {
+  try {
+    const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+    
+    if (!checkDemoRateLimit(ip)) {
+      return res.status(429).json({ error: 'Demo rate limit exceeded. Sign up for unlimited access!' });
+    }
+    
+    const { productData } = req.body;
+    
+    if (!productData?.name || !productData?.description) {
+      return res.status(400).json({ error: 'Product name and description required' });
+    }
+    
+    // Generate full blog post
+    const blogContent = await generateContent('blog-full', {
+      ...productData,
+      format: 'full-blog'
+    });
+    
+    const blogText = typeof blogContent === 'string' ? blogContent : blogContent?.content || '';
+    
+    // Extract title from first line or generate one
+    const lines = blogText.split('\n').filter(l => l.trim());
+    let title = lines[0]?.replace(/^#\s*/, '').trim() || `Why ${productData.name} Changes Everything`;
+    let content = lines.slice(1).join('\n').trim() || blogText;
+    
+    // Create the blog post
+    const blogPost = createBlogPost({
+      title,
+      content,
+      excerpt: productData.description,
+      productName: productData.name,
+      productUrl: productData.productUrl,
+      authorName: productData.authorName || 'FlyWheel',
+      userId: null
+    });
+    
+    const blogUrl = getBlogUrl(blogPost.slug);
+    
+    // Generate promo tweet for the blog
+    const promoContent = await generateContent('boost', {
+      ...productData,
+      blogTitle: title,
+      blogUrl: blogUrl,
+      blogSnippet: blogPost.excerpt
+    });
+    
+    const promoText = typeof promoContent === 'string' ? promoContent : promoContent?.content || '';
+    
+    res.json({
+      blog: {
+        id: blogPost.id,
+        slug: blogPost.slug,
+        title: blogPost.title,
+        url: blogUrl,
+        excerpt: blogPost.excerpt
+      },
+      promo: promoText.replace('[BLOG_LINK]', blogUrl).replace('[PRODUCT_LINK]', productData.productUrl || ''),
+      demo: true
+    });
+  } catch (error) {
+    console.error('Demo blog create error:', error);
+    res.status(500).json({ error: 'Blog creation failed: ' + error.message });
+  }
+});
+
+// Get a blog post by slug (public)
+app.get('/api/blog/:slug', (req, res) => {
+  try {
+    const { slug } = req.params;
+    const post = getBlogPostBySlug(slug);
+    
+    if (!post) {
+      return res.status(404).json({ error: 'Blog post not found' });
+    }
+    
+    // Increment views
+    incrementViews(slug);
+    
+    res.json(post);
+  } catch (error) {
+    console.error('Get blog error:', error);
+    res.status(500).json({ error: 'Failed to fetch blog post' });
+  }
+});
+
+// Get recent blog posts (public)
+app.get('/api/blog', (req, res) => {
+  try {
+    const limit = parseInt(req.query.limit) || 10;
+    const posts = getRecentPosts(limit);
+    res.json({ posts });
+  } catch (error) {
+    console.error('Get recent blogs error:', error);
+    res.status(500).json({ error: 'Failed to fetch blog posts' });
+  }
+});
+
+// Serve blog post HTML page (for social sharing / SEO)
+app.get('/blog/:slug', (req, res) => {
+  try {
+    const { slug } = req.params;
+    const post = getBlogPostBySlug(slug);
+    
+    if (!post) {
+      return res.status(404).send('Blog post not found');
+    }
+    
+    // Increment views
+    incrementViews(slug);
+    
+    const frontendUrl = process.env.FRONTEND_URL || 'https://lastreetchef.github.io/fly-wheel';
+    
+    // Generate HTML page
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${post.title} | FlyWheel</title>
+  <meta name="description" content="${post.excerpt?.replace(/"/g, '&quot;')}">
+  <meta property="og:title" content="${post.title}">
+  <meta property="og:description" content="${post.excerpt?.replace(/"/g, '&quot;')}">
+  <meta property="og:type" content="article">
+  <meta property="og:url" content="${frontendUrl}/blog/${slug}">
+  <meta property="og:image" content="${post.cover_image || frontendUrl + '/og-image.png'}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${post.title}">
+  <meta name="twitter:description" content="${post.excerpt?.replace(/"/g, '&quot;')}">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
+      color: #e5e7eb;
+      min-height: 100vh;
+      line-height: 1.7;
+    }
+    .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 20px 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+      margin-bottom: 40px;
+    }
+    .logo {
+      font-size: 24px;
+      font-weight: 800;
+      background: linear-gradient(135deg, #06b6d4, #a855f7);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      text-decoration: none;
+    }
+    .cta-btn {
+      background: linear-gradient(135deg, #06b6d4, #a855f7);
+      color: #fff;
+      padding: 10px 20px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    h1 {
+      font-size: clamp(28px, 5vw, 42px);
+      font-weight: 700;
+      margin-bottom: 16px;
+      line-height: 1.2;
+    }
+    .meta {
+      color: #9ca3af;
+      font-size: 14px;
+      margin-bottom: 32px;
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+    .content {
+      font-size: 17px;
+      color: #d1d5db;
+    }
+    .content p { margin-bottom: 20px; }
+    .content h2 { font-size: 24px; color: #fff; margin: 32px 0 16px; }
+    .content h3 { font-size: 20px; color: #fff; margin: 24px 0 12px; }
+    .content ul, .content ol { margin: 16px 0 16px 24px; }
+    .content li { margin-bottom: 8px; }
+    .content a { color: #06b6d4; }
+    .content blockquote {
+      border-left: 3px solid #a855f7;
+      padding-left: 20px;
+      margin: 24px 0;
+      font-style: italic;
+      color: #9ca3af;
+    }
+    .product-cta {
+      background: rgba(6,182,212,0.1);
+      border: 1px solid rgba(6,182,212,0.3);
+      border-radius: 16px;
+      padding: 24px;
+      margin: 40px 0;
+      text-align: center;
+    }
+    .product-cta h3 { color: #fff; margin-bottom: 12px; }
+    .product-cta p { color: #9ca3af; margin-bottom: 16px; }
+    .product-cta a {
+      display: inline-block;
+      background: linear-gradient(135deg, #06b6d4, #a855f7);
+      color: #fff;
+      padding: 12px 28px;
+      border-radius: 25px;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    footer {
+      margin-top: 60px;
+      padding-top: 20px;
+      border-top: 1px solid rgba(255,255,255,0.1);
+      text-align: center;
+      color: #6b7280;
+      font-size: 13px;
+    }
+    footer a { color: #06b6d4; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <a href="${frontendUrl}" class="logo">🎰 FlyWheel</a>
+      <a href="${frontendUrl}" class="cta-btn">Create Your Content →</a>
+    </header>
+    
+    <article>
+      <h1>${post.title}</h1>
+      <div class="meta">
+        <span>By ${post.author_name || 'FlyWheel'}</span>
+        <span>•</span>
+        <span>${new Date(post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+        <span>•</span>
+        <span>${post.views || 0} views</span>
+      </div>
+      
+      <div class="content">
+        ${post.content.split('\n').map(p => p.trim() ? (p.startsWith('#') ? `<h2>${p.replace(/^#+\s*/, '')}</h2>` : `<p>${p}</p>`) : '').join('\n')}
+      </div>
+      
+      ${post.product_name && post.product_url ? `
+      <div class="product-cta">
+        <h3>Check out ${post.product_name}</h3>
+        <p>${post.excerpt}</p>
+        <a href="${post.product_url}" target="_blank" rel="noopener">Learn More →</a>
+      </div>
+      ` : ''}
+    </article>
+    
+    <footer>
+      <p>Published with <a href="${frontendUrl}">FlyWheel</a> — AI-powered product promotion</p>
+    </footer>
+  </div>
+</body>
+</html>`;
+    
+    res.setHeader('Content-Type', 'text/html');
+    res.send(html);
+  } catch (error) {
+    console.error('Serve blog error:', error);
+    res.status(500).send('Error loading blog post');
   }
 });
 

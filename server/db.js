@@ -77,6 +77,25 @@ db.exec(`
     clicked_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (link_id) REFERENCES links(id)
   );
+
+  -- Blog posts
+  CREATE TABLE IF NOT EXISTS blog_posts (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    slug TEXT UNIQUE NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    excerpt TEXT,
+    product_name TEXT,
+    product_url TEXT,
+    author_name TEXT DEFAULT 'FlyWheel',
+    cover_image TEXT,
+    user_id INTEGER,
+    views INTEGER DEFAULT 0,
+    published INTEGER DEFAULT 1,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+  );
 `);
 
 export default db;

@@ -134,6 +134,28 @@ Create:
   - P.S. line
 
 Keep it scannable and under 200 words for the body.`,
+
+  'blog-full': (product) => `Write a complete, engaging blog post about this product/topic:
+
+Product Name: ${product.name}
+Description: ${product.description}
+Key Features: ${product.features || 'Not specified'}
+Target Audience: ${product.audience || 'General'}
+Keywords: ${product.keywords || product.name}
+Product URL: ${product.productUrl || ''}
+
+Write a ~600 word blog post that:
+1. Has an attention-grabbing title (start with this as the first line, prefixed with #)
+2. Opens with a hook that addresses a pain point or desire
+3. Naturally introduces the product as a solution
+4. Includes 2-3 subheadings (use ##)
+5. Provides genuine value - tips, insights, or information
+6. Has a conversational, authentic tone (not salesy)
+7. Ends with a soft CTA
+
+The post should read like helpful content that happens to mention the product, NOT an advertisement.
+
+Important: Start with the title on line 1 (# Title Here), then content. No meta descriptions or other markup.`,
 };
 
 // Mock content for testing without API key
@@ -260,6 +282,43 @@ Talk soon,
 The Team
 
 P.S. ${product.offer || 'This intro price won\'t last forever. Just saying.'} 👀`,
+
+  'blog-full': (product) => `# Why ${product.name || 'This Product'} Is Changing the Game
+
+We've all been there. You're looking for a solution that actually works, scrolling through endless options, reading reviews that sound suspiciously fake, and wondering if anything will actually deliver on its promises.
+
+That's exactly the frustration that led us to discover ${product.name || 'this product'}.
+
+## The Problem We All Face
+
+${product.description || 'Finding quality solutions in a crowded market is harder than ever. Most products over-promise and under-deliver, leaving you back at square one.'}
+
+Here's the truth: most options out there are designed for the masses, not for people who actually care about quality and results. That's where things need to change.
+
+## What Makes This Different
+
+After trying countless alternatives, ${product.name || 'this solution'} stood out for a few key reasons:
+
+**1. It Actually Works**
+No gimmicks, no fine print. Just straightforward results that you can see and feel from day one.
+
+**2. Built for Real People**
+${product.features || 'The design philosophy here is refreshingly simple: make something that works for real people, in real situations, without requiring a manual or tutorial.'}
+
+**3. The Details Matter**
+From the packaging to the experience, every touchpoint has been thoughtfully considered. It's the kind of attention to detail that's increasingly rare.
+
+## Who Is This For?
+
+${product.audience || 'If you value quality over quantity, if you\'re tired of disposable solutions, and if you want something that actually delivers on its promises — this is for you.'}
+
+You don't need to be an expert. You don't need special equipment. You just need to be ready for something better.
+
+## The Bottom Line
+
+In a world of endless choices, ${product.name || 'this product'} cuts through the noise. It's not trying to be everything to everyone — it's focused on being excellent at what matters.
+
+Ready to see for yourself? ${product.productUrl ? `Check it out at ${product.productUrl}` : 'Give it a try and experience the difference.'} Your future self will thank you.`,
 };
 
 export async function generateContent(productType, productData) {
