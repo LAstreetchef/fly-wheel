@@ -413,19 +413,12 @@ export default function BlogBoostPage({ user, token, onLogin }) {
               </div>
             </div>
             
-            <div className="flex-1 min-h-[400px] flex items-center justify-center bg-gray-800/50 rounded-xl relative overflow-hidden">
-              {/* ElevenLabs Widget Container */}
-              <elevenlabs-convai 
-                agent-id={ELEVENLABS_AGENT_ID}
-                avatar-orb-color-1="#f97316"
-                avatar-orb-color-2="#eab308"
-                action-text="Talk to Katana"
-                start-call-text="Start"
-                end-call-text="End"
-                listening-text="Listening..."
-                speaking-text="Katana is speaking"
-              ></elevenlabs-convai>
-            </div>
+            <div 
+              className="flex-1 min-h-[400px] flex items-center justify-center bg-gray-800/50 rounded-xl relative overflow-hidden"
+              dangerouslySetInnerHTML={{
+                __html: `<elevenlabs-convai agent-id="agent_0501kgsz28fveqbvb5td8k3zpeqb"></elevenlabs-convai>`
+              }}
+            />
             
             <p className="text-xs text-gray-500 mt-4 text-center">
               Click to start a voice conversation with Katana. She'll help you create your Blog Boost.
