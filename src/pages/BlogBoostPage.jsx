@@ -396,7 +396,7 @@ export default function BlogBoostPage({ user, token, onLogin }) {
           <h1 className="text-3xl md:text-4xl font-black mb-2">
             Promote Your Product with <span className="text-orange-400">Relevant Content</span>
           </h1>
-          <p className="text-gray-400">Promote your product alongside relevant blog content — 2-for-1 exposure!</p>
+          <p className="text-gray-400">We find the Daily Active Users</p>
         </div>
 
         {/* Two Column Layout */}
