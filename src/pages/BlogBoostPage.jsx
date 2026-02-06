@@ -269,11 +269,11 @@ export default function BlogBoostPage({ user, token, onLogin }) {
       return
     }
     
-    // Check if user has boosts
-    if (boostCredits < 1) {
-      setError('You need boost credits to publish. Purchase a pack below!')
-      return
-    }
+    // TODO: Re-enable boost credit check after testing
+    // if (boostCredits < 1) {
+    //   setError('You need boost credits to publish. Purchase a pack below!')
+    //   return
+    // }
     
     setLoading(true)
     setError(null)
@@ -529,16 +529,18 @@ export default function BlogBoostPage({ user, token, onLogin }) {
                   </div>
                 )}
                 
+                {/* TODO: Re-enable after testing
                 {boostCredits < 1 && user && (
                   <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
                     <p className="text-orange-400 text-sm">You need boost credits to publish. Get some below! 👇</p>
                   </div>
                 )}
+                */}
                 
                 <div className="flex gap-3">
                   <button onClick={() => setStep('selectBlog')} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold">← Back</button>
                   <button onClick={() => navigator.clipboard.writeText(getPreview())} className="bg-gray-800 hover:bg-gray-700 text-gray-300 py-3 px-4 rounded-xl border border-gray-700">📋</button>
-                  <button onClick={user ? handlePublish : onLogin} disabled={loading || (user && (twitterStatus === 'not_connected' || boostCredits < 1))} className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 rounded-xl font-bold disabled:opacity-50">
+                  <button onClick={user ? handlePublish : onLogin} disabled={loading || (user && twitterStatus === 'not_connected')} className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 rounded-xl font-bold disabled:opacity-50">
                     {loading ? '...' : user ? '🚀 Post to X (1 boost)' : '🔐 Login'}
                   </button>
                 </div>

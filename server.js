@@ -800,15 +800,14 @@ app.post('/api/posts/:id/publish', authMiddleware, async (req, res) => {
     const { platform, productUrl, blogUrl, useBoostCredit } = req.body;
     const postId = parseInt(req.params.id);
     
-    // Check and deduct boost credit if requested
-    if (useBoostCredit) {
-      const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
-      if (!user || user.boost_credits < 1) {
-        return res.status(400).json({ error: 'Insufficient boost credits. Please purchase more.' });
-      }
-      // Deduct credit
-      db.prepare('UPDATE users SET boost_credits = boost_credits - 1 WHERE id = ?').run(req.user.id);
-    }
+    // TODO: Re-enable boost credit check after testing
+    // if (useBoostCredit) {
+    //   const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
+    //   if (!user || user.boost_credits < 1) {
+    //     return res.status(400).json({ error: 'Insufficient boost credits. Please purchase more.' });
+    //   }
+    //   db.prepare('UPDATE users SET boost_credits = boost_credits - 1 WHERE id = ?').run(req.user.id);
+    // }
     
     if (platform === 'twitter') {
       const result = await publishToTwitter(postId, productUrl, blogUrl);
