@@ -406,35 +406,6 @@ export default function BlogBoostPage({ user, token, onLogin }) {
           <p className="text-gray-400">We find the Daily Active Users</p>
         </div>
 
-        {/* Connection Status Banner */}
-        {!user ? (
-          <div className="mb-8 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-2xl p-6 text-center">
-            <h3 className="text-xl font-bold text-white mb-2">👋 First, let's get you set up</h3>
-            <p className="text-gray-300 mb-4">Login to connect your X account and start posting</p>
-            <button
-              onClick={onLogin}
-              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all hover:scale-105"
-            >
-              🔐 Login to Get Started
-            </button>
-          </div>
-        ) : twitterStatus === 'not_connected' ? (
-          <div className="mb-8 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border border-orange-500/30 rounded-2xl p-6 text-center">
-            <h3 className="text-xl font-bold text-white mb-2">🔗 Connect your X account</h3>
-            <p className="text-gray-300 mb-4">You'll need this to post your Blog Boost</p>
-            <button
-              onClick={connectTwitter}
-              className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-400 hover:to-yellow-400 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all hover:scale-105"
-            >
-              Connect X Account →
-            </button>
-          </div>
-        ) : twitterStatus === 'connected' ? (
-          <div className="mb-8 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-4 text-center">
-            <p className="text-green-400 font-semibold">✅ X account connected — You're ready to boost!</p>
-          </div>
-        ) : null}
-
         {/* Two Column Layout */}
         <div className="grid lg:grid-cols-2 gap-8">
           {/* Left: Katana Agent */}
@@ -561,10 +532,37 @@ export default function BlogBoostPage({ user, token, onLogin }) {
                     className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>
+                {/* Connect X Button - shown if not connected */}
+                {!user ? (
+                  <button
+                    type="button"
+                    onClick={onLogin}
+                    className="w-full bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white py-4 rounded-xl font-bold transition-all hover:scale-[1.02] mb-3"
+                  >
+                    🔐 Login to Connect X
+                  </button>
+                ) : twitterStatus === 'not_connected' ? (
+                  <button
+                    type="button"
+                    onClick={connectTwitter}
+                    className="w-full bg-gradient-to-r from-blue-500 to-cyan-500 hover:from-blue-400 hover:to-cyan-400 text-white py-4 rounded-xl font-bold transition-all hover:scale-[1.02] mb-3"
+                  >
+                    🔗 Connect X Account
+                  </button>
+                ) : twitterStatus === 'connected' ? (
+                  <div className="text-center text-green-400 text-sm font-semibold mb-3">
+                    ✅ X Connected
+                  </div>
+                ) : null}
+
                 <button
                   type="submit"
-                  disabled={loading}
-                  className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-400 hover:to-yellow-400 text-white py-4 rounded-xl font-bold transition-all hover:scale-[1.02] disabled:opacity-50"
+                  disabled={loading || !user || twitterStatus !== 'connected'}
+                  className={`w-full py-4 rounded-xl font-bold transition-all disabled:opacity-50 ${
+                    user && twitterStatus === 'connected'
+                      ? 'bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-400 hover:to-yellow-400 text-white hover:scale-[1.02]'
+                      : 'bg-gray-700 text-gray-400 cursor-not-allowed'
+                  }`}
                 >
                   {loading ? 'Searching...' : 'Find Relevant Blogs →'}
                 </button>
