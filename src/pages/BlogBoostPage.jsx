@@ -404,9 +404,7 @@ export default function BlogBoostPage({ user, token, onLogin }) {
           {/* Left: Katana Agent */}
           <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 flex flex-col">
             <div className="flex items-center gap-3 mb-6">
-              <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-xl shadow-lg shadow-orange-500/40">
-                🚀
-              </div>
+              <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-12 h-12 object-contain drop-shadow-lg" />
               <h2 className="text-xl font-black bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">Blog Boost</h2>
             </div>
             
