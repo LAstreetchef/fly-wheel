@@ -196,7 +196,10 @@ export default function BlogBoostPage({ user, token, onLogin }) {
     try {
       const res = await fetch(
         `${API_URL}/api/blogs/search?keywords=${encodeURIComponent(data.keywords)}`,
-        { headers: { 'ngrok-skip-browser-warning': 'true' } }
+        { headers: { 
+          'ngrok-skip-browser-warning': 'true',
+          ...(token && { 'Authorization': `Bearer ${token}` })
+        } }
       )
       const result = await res.json()
       
