@@ -204,6 +204,77 @@ app.post('/api/demo/blog/create', async (req, res) => {
   }
 });
 
+// Create a blog post (authenticated)
+app.post('/api/blog/create', authMiddleware, async (req, res) => {
+  try {
+    const { productData } = req.body;
+    
+    if (!productData?.name || !productData?.description) {
+      return res.status(400).json({ error: 'Product name and description required' });
+    }
+    
+    // Generate full blog post
+    const blogContent = await generateContent('blog-full', {
+      ...productData,
+      format: 'full-blog'
+    });
+    
+    const blogText = typeof blogContent === 'string' ? blogContent : blogContent?.content || '';
+    
+    // Extract title from first line or generate one
+    const lines = blogText.split('\n').filter(l => l.trim());
+    let title = lines[0]?.replace(/^#\s*/, '').trim() || `Why ${productData.name} Changes Everything`;
+    let content = lines.slice(1).join('\n').trim() || blogText;
+    
+    // Create the blog post
+    const blogPost = createBlogPost({
+      title,
+      content,
+      excerpt: productData.description,
+      productName: productData.name,
+      productUrl: productData.productUrl,
+      authorName: 'FlyWheel',
+      userId: req.user.id
+    });
+    
+    const blogUrl = getBlogUrl(blogPost.slug);
+    
+    // Generate promo tweet for the blog
+    const promoContent = await generateContent('boost', {
+      ...productData,
+      blogTitle: title,
+      blogUrl: blogUrl,
+      blogSnippet: blogPost.excerpt
+    });
+    
+    const promoText = typeof promoContent === 'string' ? promoContent : promoContent?.content || '';
+    
+    // Create a post record for the promo
+    const post = createPost(
+      req.user.id,
+      null,
+      'boost',
+      { ...productData, blogId: blogPost.id, blogUrl },
+      promoText.replace('[BLOG_LINK]', blogUrl).replace('[PRODUCT_LINK]', productData.productUrl || '')
+    );
+    
+    res.json({
+      blog: {
+        id: blogPost.id,
+        slug: blogPost.slug,
+        title: blogPost.title,
+        url: blogUrl,
+        excerpt: blogPost.excerpt
+      },
+      promo: promoText.replace('[BLOG_LINK]', blogUrl).replace('[PRODUCT_LINK]', productData.productUrl || ''),
+      postId: post.id
+    });
+  } catch (error) {
+    console.error('Blog create error:', error);
+    res.status(500).json({ error: 'Blog creation failed: ' + error.message });
+  }
+});
+
 // Get a blog post by slug (public)
 app.get('/api/blog/:slug', (req, res) => {
   try {
