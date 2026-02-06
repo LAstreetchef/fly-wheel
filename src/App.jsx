@@ -4,6 +4,7 @@ import Dashboard from './components/Dashboard'
 import Auth from './components/Auth'
 import BoostModal from './components/BoostModal'
 import DemoModal from './components/DemoModal'
+import BlogBoostPage from './pages/BlogBoostPage'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -231,7 +232,7 @@ function LandingPage({ user, token, onSelectProduct }) {
               popular
               hasDemo
               onSelect={onSelectProduct.setSelected}
-              onDemo={() => setShowDemoModal(true)}
+              onDemo={() => navigate('/boost')}
             />
             <SpinCard 
               image="/fly-wheel/squad/nova.png"
@@ -463,6 +464,18 @@ function SuccessModal({ isOpen, onClose, sessionData, content, user, onViewDashb
   )
 }
 
+// Blog Boost Page Wrapper
+function BlogBoostWrapper({ user, token, onLogin }) {
+  const navigate = useNavigate()
+  return (
+    <BlogBoostPage 
+      user={user} 
+      token={token} 
+      onLogin={() => navigate('/login')}
+    />
+  )
+}
+
 // Main App Component
 function App() {
   const [user, setUser] = useState(null)
@@ -524,6 +537,9 @@ function App() {
       } />
       <Route path="/dashboard" element={
         user ? <Dashboard user={user} token={token} onLogout={handleLogout} /> : <Auth onLogin={handleLogin} />
+      } />
+      <Route path="/boost" element={
+        <BlogBoostWrapper user={user} token={token} onLogin={handleLogin} />
       } />
     </Routes>
   )
