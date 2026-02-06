@@ -55,6 +55,83 @@ app.get('/api/health', (req, res) => {
 });
 
 // ============================================
+// Demo Routes (Public, Rate Limited)
+// ============================================
+
+// Simple in-memory rate limiter for demo endpoints
+const demoRateLimits = new Map();
+const DEMO_RATE_LIMIT = 10; // requests per hour
+const DEMO_RATE_WINDOW = 60 * 60 * 1000; // 1 hour
+
+function checkDemoRateLimit(ip) {
+  const now = Date.now();
+  const record = demoRateLimits.get(ip);
+  
+  if (!record || now - record.windowStart > DEMO_RATE_WINDOW) {
+    demoRateLimits.set(ip, { windowStart: now, count: 1 });
+    return true;
+  }
+  
+  if (record.count >= DEMO_RATE_LIMIT) {
+    return false;
+  }
+  
+  record.count++;
+  return true;
+}
+
+// Demo blog search (no auth required)
+app.get('/api/demo/blogs/search', async (req, res) => {
+  try {
+    const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+    
+    if (!checkDemoRateLimit(ip)) {
+      return res.status(429).json({ error: 'Demo rate limit exceeded. Sign up for unlimited access!' });
+    }
+    
+    const { keywords, count } = req.query;
+    
+    if (!keywords) {
+      return res.status(400).json({ error: 'Keywords required' });
+    }
+    
+    const results = await searchBlogs(keywords, parseInt(count) || 5);
+    res.json({ results, demo: true });
+  } catch (error) {
+    console.error('Demo blog search error:', error);
+    res.status(500).json({ error: 'Search failed' });
+  }
+});
+
+// Demo content generation (no auth required)
+app.post('/api/demo/generate', async (req, res) => {
+  try {
+    const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+    
+    if (!checkDemoRateLimit(ip)) {
+      return res.status(429).json({ error: 'Demo rate limit exceeded. Sign up for unlimited access!' });
+    }
+    
+    const { productType, productData } = req.body;
+    
+    if (!productType || !productData) {
+      return res.status(400).json({ error: 'productType and productData required' });
+    }
+    
+    // Only allow boost type in demo
+    if (productType !== 'boost') {
+      return res.status(400).json({ error: 'Demo only supports Blog Boost. Sign up to access all content types!' });
+    }
+    
+    const content = await generateContent(productType, productData);
+    res.json({ content, demo: true });
+  } catch (error) {
+    console.error('Demo generate error:', error);
+    res.status(500).json({ error: 'Generation failed: ' + error.message });
+  }
+});
+
+// ============================================
 // Blog Search Routes
 // ============================================
 

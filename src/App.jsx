@@ -3,6 +3,7 @@ import { Routes, Route, useNavigate, useSearchParams } from 'react-router-dom'
 import Dashboard from './components/Dashboard'
 import Auth from './components/Auth'
 import BoostModal from './components/BoostModal'
+import DemoModal from './components/DemoModal'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
 
@@ -13,6 +14,7 @@ function LandingPage({ user, token, onSelectProduct }) {
   const [sessionData, setSessionData] = useState(null)
   const [content, setContent] = useState(null)
   const [showBoostModal, setShowBoostModal] = useState(false)
+  const [showDemoModal, setShowDemoModal] = useState(false)
   const [stellaMuted, setStellaMuted] = useState(true)
   const stellaVideoRef = useRef(null)
   const navigate = useNavigate()
@@ -84,6 +86,21 @@ function LandingPage({ user, token, onSelectProduct }) {
         user={user}
         token={token}
         onSuccess={() => {}}
+      />
+      
+      <DemoModal
+        isOpen={showDemoModal}
+        onClose={() => setShowDemoModal(null)}
+        onPurchase={(data) => {
+          setShowDemoModal(false)
+          // If logged in, go straight to boost modal with data pre-filled
+          // Otherwise redirect to login
+          if (user) {
+            onSelectProduct.setSelected('boost')
+          } else {
+            navigate('/login')
+          }
+        }}
       />
       
       <SuccessModal
@@ -216,7 +233,9 @@ function LandingPage({ user, token, onSelectProduct }) {
               color="orange"
               productType="boost"
               popular
+              hasDemo
               onSelect={onSelectProduct.setSelected}
+              onDemo={() => setShowDemoModal(true)}
             />
             <SpinCard 
               image="/fly-wheel/squad/nova.png"
@@ -300,10 +319,9 @@ function SlotBackground() {
 }
 
 // Spin Card Component
-function SpinCard({ image, isVideo, title, price, description, color, productType, popular, onSelect }) {
+function SpinCard({ image, isVideo, title, price, description, color, productType, popular, hasDemo, onSelect, onDemo }) {
   return (
-    <button
-      onClick={() => onSelect(productType)}
+    <div
       className={`group relative bg-gray-900/80 backdrop-blur-sm border-2 rounded-2xl p-6 transition-all duration-300 hover:scale-105 hover:-translate-y-2 text-left w-full h-full flex flex-col ${
         popular 
           ? 'border-yellow-500/50 hover:border-yellow-400 hover:shadow-[0_0_40px_rgba(234,179,8,0.3)]' 
@@ -326,9 +344,31 @@ function SpinCard({ image, isVideo, title, price, description, color, productTyp
       <p className="text-gray-400 text-sm mb-4 leading-relaxed text-center flex-grow">{description}</p>
       <div className="flex flex-col items-center gap-3 mt-auto">
         <span className="text-3xl font-black text-cyan-400">${price}</span>
-        <span className="bg-white/10 text-white px-6 py-2 rounded-full text-sm font-semibold">FLY →</span>
+        {hasDemo ? (
+          <div className="flex gap-2 w-full">
+            <button 
+              onClick={onDemo}
+              className="flex-1 bg-gradient-to-r from-yellow-500/20 to-orange-500/20 border border-yellow-500/50 text-yellow-400 px-3 py-2 rounded-full text-xs font-bold hover:bg-yellow-500/30 transition-colors"
+            >
+              🎮 Try Demo
+            </button>
+            <button 
+              onClick={() => onSelect(productType)}
+              className="flex-1 bg-white/10 text-white px-3 py-2 rounded-full text-xs font-semibold hover:bg-white/20 transition-colors"
+            >
+              FLY →
+            </button>
+          </div>
+        ) : (
+          <button 
+            onClick={() => onSelect(productType)}
+            className="bg-white/10 text-white px-6 py-2 rounded-full text-sm font-semibold hover:bg-white/20 transition-colors"
+          >
+            FLY →
+          </button>
+        )}
       </div>
-    </button>
+    </div>
   )
 }
 
