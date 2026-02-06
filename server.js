@@ -952,6 +952,76 @@ app.post('/api/checkout/credits', async (req, res) => {
   }
 });
 
+// Embedded checkout - create PaymentIntent
+app.post('/api/checkout/create-intent', async (req, res) => {
+  try {
+    const { productType, productData, userId } = req.body;
+    
+    if (!PRODUCTS[productType]) {
+      return res.status(400).json({ error: 'Invalid product type' });
+    }
+
+    const product = PRODUCTS[productType];
+    
+    const paymentIntent = await stripe.paymentIntents.create({
+      amount: product.price,
+      currency: 'usd',
+      automatic_payment_methods: { enabled: true },
+      metadata: {
+        type: 'spin',
+        productType,
+        productData: JSON.stringify(productData || {}),
+        userId: userId || '',
+      },
+    });
+
+    res.json({ 
+      clientSecret: paymentIntent.client_secret,
+      amount: product.price,
+      productName: product.name
+    });
+  } catch (error) {
+    console.error('PaymentIntent error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Confirm embedded payment and generate content
+app.post('/api/checkout/confirm', authMiddleware, async (req, res) => {
+  try {
+    const { paymentIntentId, productType, productData } = req.body;
+    
+    // Verify the payment succeeded
+    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+    
+    if (paymentIntent.status !== 'succeeded') {
+      return res.status(400).json({ error: 'Payment not completed' });
+    }
+    
+    // Generate the content
+    console.log(`🎨 Generating ${productType} content after payment...`);
+    const result = await generateContent(productType, productData);
+    
+    // Create the post in the database
+    const post = createPost(
+      req.user.id,
+      paymentIntentId,
+      productType,
+      productData,
+      result.content
+    );
+    
+    res.json({
+      success: true,
+      postId: post.id,
+      content: result.content
+    });
+  } catch (error) {
+    console.error('Confirm payment error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Get session details + generated content
 app.get('/api/session/:sessionId', async (req, res) => {
   try {
