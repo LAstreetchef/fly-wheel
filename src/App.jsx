@@ -90,16 +90,12 @@ function LandingPage({ user, token, onSelectProduct }) {
       
       <DemoModal
         isOpen={showDemoModal}
-        onClose={() => setShowDemoModal(null)}
-        onPurchase={(data) => {
+        onClose={() => setShowDemoModal(false)}
+        user={user}
+        token={token}
+        onNeedLogin={() => {
           setShowDemoModal(false)
-          // If logged in, go straight to boost modal with data pre-filled
-          // Otherwise redirect to login
-          if (user) {
-            onSelectProduct.setSelected('boost')
-          } else {
-            navigate('/login')
-          }
+          navigate('/login')
         }}
       />
       

@@ -750,6 +750,45 @@ app.post('/api/content/create', authMiddleware, (req, res) => {
   }
 });
 
+// Quick publish: create post and immediately publish to Twitter
+app.post('/api/posts/quick-publish', authMiddleware, async (req, res) => {
+  try {
+    const { content, productType, productData, blogUrl, productUrl } = req.body;
+    
+    if (!content) {
+      return res.status(400).json({ error: 'Content required' });
+    }
+    
+    // Check Twitter connection
+    const twitterConnection = getConnection(req.user.id);
+    if (!twitterConnection) {
+      return res.status(400).json({ error: 'Twitter not connected. Please connect your X account first.' });
+    }
+    
+    // Create the post record
+    const post = createPost(
+      req.user.id, 
+      null, 
+      productType || 'boost', 
+      productData || {}, 
+      content
+    );
+    
+    // Publish to Twitter
+    const result = await publishToTwitter(post.id, productUrl, blogUrl);
+    
+    res.json({
+      postId: post.id,
+      tweetId: result.tweetId,
+      tweetUrl: result.tweetUrl,
+      trackedLink: result.trackedLink
+    });
+  } catch (error) {
+    console.error('Quick publish error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================
 // Stripe Checkout
 // ============================================
