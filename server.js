@@ -471,6 +471,10 @@ app.get('/blog/:slug', (req, res) => {
       <p>Published with <a href="${frontendUrl}">FlyWheel</a> — AI-powered product promotion</p>
     </footer>
   </div>
+  
+  <!-- ElevenLabs Conversational AI Widget -->
+  <script src="https://elevenlabs.io/convai-widget/index.js" async></script>
+  <elevenlabs-convai agent-id="agent_0501kgsz28fveqbvb5td8k3zpeqb"></elevenlabs-convai>
 </body>
 </html>`;
     
