@@ -119,6 +119,13 @@ export default function BlogBoostPage({ user, token, onLogin }) {
     return () => clearInterval(interval)
   }, [blogs, selectedBlog, generatedContent, user, step])
 
+  // Check Twitter connection on page load
+  useEffect(() => {
+    if (user && token) {
+      checkTwitterConnection()
+    }
+  }, [user, token])
+
   // Check Twitter connection
   const checkTwitterConnection = async () => {
     if (!user || !token) return false
@@ -398,6 +405,35 @@ export default function BlogBoostPage({ user, token, onLogin }) {
           </h1>
           <p className="text-gray-400">We find the Daily Active Users</p>
         </div>
+
+        {/* Connection Status Banner */}
+        {!user ? (
+          <div className="mb-8 bg-gradient-to-r from-blue-500/20 to-purple-500/20 border border-blue-500/30 rounded-2xl p-6 text-center">
+            <h3 className="text-xl font-bold text-white mb-2">👋 First, let's get you set up</h3>
+            <p className="text-gray-300 mb-4">Login to connect your X account and start posting</p>
+            <button
+              onClick={onLogin}
+              className="bg-gradient-to-r from-blue-500 to-purple-500 hover:from-blue-400 hover:to-purple-400 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all hover:scale-105"
+            >
+              🔐 Login to Get Started
+            </button>
+          </div>
+        ) : twitterStatus === 'not_connected' ? (
+          <div className="mb-8 bg-gradient-to-r from-orange-500/20 to-yellow-500/20 border border-orange-500/30 rounded-2xl p-6 text-center">
+            <h3 className="text-xl font-bold text-white mb-2">🔗 Connect your X account</h3>
+            <p className="text-gray-300 mb-4">You'll need this to post your Blog Boost</p>
+            <button
+              onClick={connectTwitter}
+              className="bg-gradient-to-r from-orange-500 to-yellow-500 hover:from-orange-400 hover:to-yellow-400 text-white px-8 py-3 rounded-xl font-bold text-lg transition-all hover:scale-105"
+            >
+              Connect X Account →
+            </button>
+          </div>
+        ) : twitterStatus === 'connected' ? (
+          <div className="mb-8 bg-gradient-to-r from-green-500/20 to-emerald-500/20 border border-green-500/30 rounded-2xl p-4 text-center">
+            <p className="text-green-400 font-semibold">✅ X account connected — You're ready to boost!</p>
+          </div>
+        ) : null}
 
         {/* Two Column Layout */}
         <div className="grid lg:grid-cols-2 gap-8">
