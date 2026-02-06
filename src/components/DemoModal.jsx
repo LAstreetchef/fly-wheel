@@ -106,7 +106,9 @@ export default function DemoModal({ isOpen, onClose, onPurchase }) {
         throw new Error(data.error)
       }
       
-      setGeneratedContent(data.content)
+      // Handle nested content structure from API
+      const contentText = typeof data.content === 'string' ? data.content : data.content?.content || data.content
+      setGeneratedContent(contentText)
       setStep(3)
     } catch (err) {
       setError('Generation failed: ' + err.message)
@@ -118,7 +120,8 @@ export default function DemoModal({ isOpen, onClose, onPurchase }) {
   // Get preview with links substituted
   const getPreview = () => {
     if (!generatedContent || !selectedBlog) return ''
-    return generatedContent
+    const text = typeof generatedContent === 'string' ? generatedContent : String(generatedContent)
+    return text
       .replace('[BLOG_LINK]', selectedBlog.url)
       .replace('[PRODUCT_LINK]', productData.productUrl || '[your-product-url]')
   }
