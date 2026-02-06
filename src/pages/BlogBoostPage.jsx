@@ -203,6 +203,10 @@ export default function BlogBoostPage({ user, token, onLogin }) {
       )
       const result = await res.json()
       
+      if (!res.ok) {
+        throw new Error(result.error || `Server error: ${res.status}`)
+      }
+      
       if (result.results?.length > 0) {
         setBlogs(result.results)
         setStep('selectBlog')
