@@ -92,6 +92,7 @@ export function getUserPosts(userId, limit = 20) {
 
 // Generate the public URL for a blog post
 export function getBlogUrl(slug) {
-  const baseUrl = process.env.FRONTEND_URL || 'https://lastreetchef.github.io/fly-wheel';
-  return `${baseUrl}/blog/${slug}`;
+  // Blog posts are served from the API server, not the frontend
+  const apiUrl = process.env.VITE_API_URL || process.env.API_URL || 'https://blearier-ashlee-unextravasated.ngrok-free.dev';
+  return `${apiUrl}/blog/${slug}`;
 }

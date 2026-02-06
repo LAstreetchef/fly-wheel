@@ -250,6 +250,8 @@ app.get('/blog/:slug', (req, res) => {
     incrementViews(slug);
     
     const frontendUrl = process.env.FRONTEND_URL || 'https://lastreetchef.github.io/fly-wheel';
+    const apiUrl = process.env.API_URL || process.env.VITE_API_URL || 'https://blearier-ashlee-unextravasated.ngrok-free.dev';
+    const blogUrl = `${apiUrl}/blog/${slug}`;
     
     // Generate HTML page
     const html = `<!DOCTYPE html>
@@ -262,7 +264,7 @@ app.get('/blog/:slug', (req, res) => {
   <meta property="og:title" content="${post.title}">
   <meta property="og:description" content="${post.excerpt?.replace(/"/g, '&quot;')}">
   <meta property="og:type" content="article">
-  <meta property="og:url" content="${frontendUrl}/blog/${slug}">
+  <meta property="og:url" content="${blogUrl}">
   <meta property="og:image" content="${post.cover_image || frontendUrl + '/og-image.png'}">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="${post.title}">
