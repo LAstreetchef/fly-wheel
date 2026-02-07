@@ -299,7 +299,7 @@ async function sendFollowUpEmail(order, metrics) {
   
   try {
     await resend.emails.send({
-      from: 'BlogBoost <boost@secretmessage4u.com>',
+      from: 'BlogBoost <message4u@secretmessage4u.com>',
       to: order.email,
       subject: `🚀 Your Boost Results: ${metrics.impressions.toLocaleString()} impressions!`,
       html: `
