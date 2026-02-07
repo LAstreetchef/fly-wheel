@@ -198,7 +198,7 @@ app.post('/api/generate', async (req, res) => {
   }
 });
 
-app.post('/api/checkout', async (req, res) => {
+app.post('/api/boost/checkout', async (req, res) => {
   try {
     const { productData, blog, content } = req.body;
     
@@ -247,7 +247,7 @@ app.post('/api/checkout', async (req, res) => {
   }
 });
 
-app.get('/api/status/:sessionId', (req, res) => {
+app.get('/api/boost/status/:sessionId', (req, res) => {
   const order = orders.get(req.params.sessionId);
   if (!order) return res.status(404).json({ status: 'not_found' });
   res.json(order);
