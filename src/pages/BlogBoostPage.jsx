@@ -244,7 +244,7 @@ export default function BlogBoostPage() {
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Product Name *</label>
-                    <input type="text" required value={productData.name} onChange={(e) => setProductData({ ...productData, name: e.target.value })} placeholder="e.g., SwordPay" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                    <input id="product-name-input" type="text" required value={productData.name} onChange={(e) => setProductData({ ...productData, name: e.target.value })} placeholder="e.g., SwordPay" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
                   </div>
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Product URL</label>
@@ -262,10 +262,6 @@ export default function BlogBoostPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">X Accounts to Tag <span className="text-gray-500">(optional)</span></label>
                   <input type="text" value={productData.xHandles} onChange={(e) => setProductData({ ...productData, xHandles: e.target.value })} placeholder="e.g., @elonmusk, @blogsquad" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Your Email * <span className="text-gray-500">(we'll send you performance stats)</span></label>
-                  <input type="email" required value={productData.email} onChange={(e) => setProductData({ ...productData, email: e.target.value })} placeholder="you@example.com" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
                 </div>
                 <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-4 rounded-xl font-bold text-lg disabled:opacity-50 hover:scale-[1.02] transition-transform">
                   {loading ? 'Searching...' : 'Find Relevant Blogs →'}
@@ -388,21 +384,38 @@ export default function BlogBoostPage() {
           )}
         </div>
 
-        {/* How It Works - 4 step grid */}
+        {/* How It Works - 4 step grid + email CTA */}
         {step === 'input' && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-            {[
-              { num: '1', title: 'Search', desc: 'We find blogs your audience reads' },
-              { num: '2', title: 'Choose', desc: 'Pick the best blog match' },
-              { num: '3', title: 'Pay', desc: 'Just $1.75, no subscription' },
-              { num: '4', title: 'Boost!', desc: 'We post to X, you get visibility' },
-            ].map((item, i) => (
-              <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-center">
-                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center font-black text-lg">{item.num}</div>
-                <h3 className="font-bold text-white">{item.title}</h3>
-                <p className="text-gray-400 text-sm">{item.desc}</p>
-              </div>
-            ))}
+          <div className="mb-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              {[
+                { num: '1', title: 'Search', desc: 'We find blogs your audience reads' },
+                { num: '2', title: 'Choose', desc: 'Pick the best blog match' },
+                { num: '3', title: 'Pay', desc: 'Just $1.75, no subscription' },
+                { num: '4', title: 'Boost!', desc: 'We post to X, you get visibility' },
+              ].map((item, i) => (
+                <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-center">
+                  <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center font-black text-lg">{item.num}</div>
+                  <h3 className="font-bold text-white">{item.title}</h3>
+                  <p className="text-gray-400 text-sm">{item.desc}</p>
+                </div>
+              ))}
+            </div>
+            <div className="flex flex-col sm:flex-row gap-3 max-w-xl mx-auto">
+              <input 
+                type="email" 
+                value={productData.email} 
+                onChange={(e) => setProductData({ ...productData, email: e.target.value })} 
+                placeholder="you@example.com" 
+                className="flex-1 bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" 
+              />
+              <button 
+                onClick={() => document.getElementById('product-name-input')?.focus()}
+                className="bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-8 py-3 rounded-xl font-bold hover:scale-[1.02] transition-transform whitespace-nowrap"
+              >
+                Start Boosting →
+              </button>
+            </div>
           </div>
         )}
 
