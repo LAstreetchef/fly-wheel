@@ -2,1197 +2,174 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import Stripe from 'stripe';
-import { generateContent } from './server/generate.js';
-import { createUser, loginUser, generateToken, authMiddleware, getUserById } from './server/auth.js';
-import { createTrackedLink, getLink, recordClick, getUserLinks, getLinkStats } from './server/links.js';
-import { isTwitterConfigured, getAuthUrl, handleCallback, getConnection, disconnectTwitter, getFrontendUrl, postTweetAsSystem } from './server/twitter.js';
-import { createPost, getPost, getPostBySession, getUserPosts, publishToTwitter, getPostAnalytics, getDashboardStats } from './server/posts.js';
-import { searchBlogs, isSearchConfigured } from './server/blog-search.js';
-import { connectStore, getStoreConnection, disconnectStore, verifyConnection, fetchProducts, fetchProduct, getCachedProducts, refreshToken } from './server/shopify.js';
-import { fetchProductFromUrl } from './server/product-scraper.js';
-import { createBlogPost, getBlogPostBySlug, getBlogPostById, incrementViews, getRecentPosts, getBlogUrl } from './server/blog.js';
-import db from './server/db.js';
+import Anthropic from '@anthropic-ai/sdk';
+import { TwitterApi } from 'twitter-api-v2';
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const anthropic = new Anthropic();
 
-// In-memory content store for webhook -> frontend sync
-const contentStore = new Map();
+// In-memory order store
+const orders = new Map();
 
-// In-memory boost orders store (sessionId -> order data)
-const boostOrders = new Map();
-
-// Products/prices configuration
-const PRODUCTS = {
-  social: { name: 'Social Post', price: 500, description: 'Single post for Instagram, Twitter, or TikTok' },
-  boost: { name: 'Blog Boost', price: 750, description: 'X post promoting a relevant blog + your product (2-for-1 exposure)' },
-  carousel: { name: 'Carousel', price: 1000, description: '5-slide Instagram carousel with hooks and CTA' },
-  video: { name: 'Video Script', price: 1500, description: 'TikTok/Reel script with hooks and talking points' },
-  blog: { name: 'Blog Post', price: 2000, description: '500-word SEO blog snippet' },
-  email: { name: 'Email Blast', price: 2500, description: 'Subject line + body copy ready to send' },
-};
-
-const CREDIT_PACKS = {
-  credits25: { amount: 25, bonus: 0, price: 2500 },
-  credits50: { amount: 50, bonus: 10, price: 5000 },
-  credits100: { amount: 100, bonus: 25, price: 10000 },
-};
+// Config
+const BOOST_PRICE = 175; // $1.75 in cents
+const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
+const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 
 // Middleware
 app.use(cors());
-
-// Stripe webhook needs raw body
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
+// Serve static files in production
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('dist'));
+}
+
 // ============================================
-// Health & Status
+// Blog Search
+// ============================================
+
+async function searchBlogs(keywords) {
+  if (!BRAVE_API_KEY) {
+    console.warn('⚠️  BRAVE_API_KEY not set, using mock');
+    return [{
+      title: 'Sample Blog About ' + keywords,
+      url: 'https://example.com/blog/sample',
+      snippet: 'This is a sample blog post matching your keywords...',
+      source: 'example.com',
+    }];
+  }
+
+  const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(keywords + ' blog')}&count=10`;
+  const res = await fetch(url, {
+    headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY }
+  });
+  
+  if (!res.ok) throw new Error(`Search failed: ${res.status}`);
+  const data = await res.json();
+  
+  const results = (data.web?.results || [])
+    .filter(r => /blog|post|article|\/20/.test(r.url.toLowerCase()))
+    .slice(0, 6)
+    .map(r => ({
+      title: r.title,
+      url: r.url,
+      snippet: r.description,
+      source: new URL(r.url).hostname.replace('www.', ''),
+    }));
+
+  return results.length ? results : (data.web?.results || []).slice(0, 6).map(r => ({
+    title: r.title, url: r.url, snippet: r.description,
+    source: new URL(r.url).hostname.replace('www.', ''),
+  }));
+}
+
+// ============================================
+// Content Generation
+// ============================================
+
+async function generateBoostContent(productData, blog) {
+  const prompt = `You are a social media expert creating a promotional X (Twitter) post.
+
+PRODUCT:
+- Name: ${productData.name}
+- Description: ${productData.description || 'N/A'}
+- URL: ${productData.productUrl || 'N/A'}
+
+BLOG TO PROMOTE ALONGSIDE:
+- Title: ${blog.title}
+- URL: ${blog.url}
+- Snippet: ${blog.snippet || 'N/A'}
+
+Create a natural, engaging X post (max 280 chars) that:
+1. References the blog content as valuable/interesting
+2. Naturally mentions the product as relevant/useful
+3. Includes [BLOG_LINK] placeholder for the blog URL
+4. Includes [PRODUCT_LINK] placeholder for the product URL (if provided)
+5. Uses 1-2 relevant hashtags
+6. Feels authentic, not spammy
+
+Return ONLY the tweet text, nothing else.`;
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return `Great insights on ${blog.title.substring(0, 40)}...
+
+Check out ${productData.name} if you're into this!
+
+[BLOG_LINK]
+[PRODUCT_LINK]`;
+  }
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 300,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return message.content[0].text.trim();
+}
+
+// ============================================
+// Twitter Posting (BlogBoost System Account)
+// ============================================
+
+async function postTweet(text) {
+  const accessToken = process.env.TWITTER_ACCESS_TOKEN;
+  
+  if (!accessToken) {
+    console.warn('⚠️  TWITTER_ACCESS_TOKEN not set, mock posting');
+    return {
+      tweetId: 'mock_' + Date.now(),
+      tweetUrl: 'https://x.com/BlogBoost/status/mock_' + Date.now(),
+    };
+  }
+
+  const client = new TwitterApi(accessToken);
+  const { data } = await client.v2.tweet(text);
+  
+  return {
+    tweetId: data.id,
+    tweetUrl: `https://x.com/i/status/${data.id}`,
+  };
+}
+
+// ============================================
+// API Routes
 // ============================================
 
 app.get('/api/health', (req, res) => {
-  res.json({ 
-    status: 'ok', 
-    timestamp: new Date().toISOString(),
-    twitter: isTwitterConfigured(),
-    blogSearch: isSearchConfigured(),
-  });
+  res.json({ status: 'ok', service: 'blogboost' });
 });
 
-// ============================================
-// Demo Routes (Public, Rate Limited)
-// ============================================
-
-// Simple in-memory rate limiter for demo endpoints
-const demoRateLimits = new Map();
-const DEMO_RATE_LIMIT = 10; // requests per hour
-const DEMO_RATE_WINDOW = 60 * 60 * 1000; // 1 hour
-
-function checkDemoRateLimit(ip) {
-  const now = Date.now();
-  const record = demoRateLimits.get(ip);
-  
-  if (!record || now - record.windowStart > DEMO_RATE_WINDOW) {
-    demoRateLimits.set(ip, { windowStart: now, count: 1 });
-    return true;
-  }
-  
-  if (record.count >= DEMO_RATE_LIMIT) {
-    return false;
-  }
-  
-  record.count++;
-  return true;
-}
-
-// Demo blog search (no auth required)
-app.get('/api/demo/blogs/search', async (req, res) => {
+app.get('/api/blogs/search', async (req, res) => {
   try {
-    const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
-    
-    if (!checkDemoRateLimit(ip)) {
-      return res.status(429).json({ error: 'Demo rate limit exceeded. Sign up for unlimited access!' });
-    }
-    
-    const { keywords, count } = req.query;
-    
-    if (!keywords) {
-      return res.status(400).json({ error: 'Keywords required' });
-    }
-    
-    const results = await searchBlogs(keywords, parseInt(count) || 5);
-    res.json({ results, demo: true });
+    const { keywords } = req.query;
+    if (!keywords) return res.status(400).json({ error: 'Keywords required' });
+    const results = await searchBlogs(keywords);
+    res.json({ results });
   } catch (error) {
-    console.error('Demo blog search error:', error);
-    res.status(500).json({ error: 'Search failed' });
-  }
-});
-
-// Demo content generation (no auth required)
-app.post('/api/demo/generate', async (req, res) => {
-  try {
-    const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
-    
-    if (!checkDemoRateLimit(ip)) {
-      return res.status(429).json({ error: 'Demo rate limit exceeded. Sign up for unlimited access!' });
-    }
-    
-    const { productType, productData } = req.body;
-    
-    if (!productType || !productData) {
-      return res.status(400).json({ error: 'productType and productData required' });
-    }
-    
-    // Only allow boost type in demo
-    if (productType !== 'boost') {
-      return res.status(400).json({ error: 'Demo only supports Blog Boost. Sign up to access all content types!' });
-    }
-    
-    const content = await generateContent(productType, productData);
-    res.json({ content, demo: true });
-  } catch (error) {
-    console.error('Demo generate error:', error);
-    res.status(500).json({ error: 'Generation failed: ' + error.message });
-  }
-});
-
-// ============================================
-// Blog Post Routes (Public)
-// ============================================
-
-// Create a blog post + promo tweet (demo - no auth, rate limited)
-app.post('/api/demo/blog/create', async (req, res) => {
-  try {
-    const ip = req.headers['x-forwarded-for'] || req.ip || 'unknown';
-    
-    if (!checkDemoRateLimit(ip)) {
-      return res.status(429).json({ error: 'Demo rate limit exceeded. Sign up for unlimited access!' });
-    }
-    
-    const { productData } = req.body;
-    
-    if (!productData?.name || !productData?.description) {
-      return res.status(400).json({ error: 'Product name and description required' });
-    }
-    
-    // Generate full blog post
-    const blogContent = await generateContent('blog-full', {
-      ...productData,
-      format: 'full-blog'
-    });
-    
-    const blogText = typeof blogContent === 'string' ? blogContent : blogContent?.content || '';
-    
-    // Extract title from first line or generate one
-    const lines = blogText.split('\n').filter(l => l.trim());
-    let title = lines[0]?.replace(/^#\s*/, '').trim() || `Why ${productData.name} Changes Everything`;
-    let content = lines.slice(1).join('\n').trim() || blogText;
-    
-    // Create the blog post
-    const blogPost = createBlogPost({
-      title,
-      content,
-      excerpt: productData.description,
-      productName: productData.name,
-      productUrl: productData.productUrl,
-      authorName: productData.authorName || 'FlyWheel',
-      userId: null
-    });
-    
-    const blogUrl = getBlogUrl(blogPost.slug);
-    
-    // Generate promo tweet for the blog
-    const promoContent = await generateContent('boost', {
-      ...productData,
-      blogTitle: title,
-      blogUrl: blogUrl,
-      blogSnippet: blogPost.excerpt
-    });
-    
-    const promoText = typeof promoContent === 'string' ? promoContent : promoContent?.content || '';
-    
-    res.json({
-      blog: {
-        id: blogPost.id,
-        slug: blogPost.slug,
-        title: blogPost.title,
-        url: blogUrl,
-        excerpt: blogPost.excerpt
-      },
-      promo: promoText.replace('[BLOG_LINK]', blogUrl).replace('[PRODUCT_LINK]', productData.productUrl || ''),
-      demo: true
-    });
-  } catch (error) {
-    console.error('Demo blog create error:', error);
-    res.status(500).json({ error: 'Blog creation failed: ' + error.message });
-  }
-});
-
-// Create a blog post (authenticated)
-app.post('/api/blog/create', authMiddleware, async (req, res) => {
-  try {
-    const { productData } = req.body;
-    
-    if (!productData?.name || !productData?.description) {
-      return res.status(400).json({ error: 'Product name and description required' });
-    }
-    
-    // Generate full blog post
-    const blogContent = await generateContent('blog-full', {
-      ...productData,
-      format: 'full-blog'
-    });
-    
-    const blogText = typeof blogContent === 'string' ? blogContent : blogContent?.content || '';
-    
-    // Extract title from first line or generate one
-    const lines = blogText.split('\n').filter(l => l.trim());
-    let title = lines[0]?.replace(/^#\s*/, '').trim() || `Why ${productData.name} Changes Everything`;
-    let content = lines.slice(1).join('\n').trim() || blogText;
-    
-    // Create the blog post
-    const blogPost = createBlogPost({
-      title,
-      content,
-      excerpt: productData.description,
-      productName: productData.name,
-      productUrl: productData.productUrl,
-      authorName: 'FlyWheel',
-      userId: req.user.id
-    });
-    
-    const blogUrl = getBlogUrl(blogPost.slug);
-    
-    // Generate promo tweet for the blog
-    const promoContent = await generateContent('boost', {
-      ...productData,
-      blogTitle: title,
-      blogUrl: blogUrl,
-      blogSnippet: blogPost.excerpt
-    });
-    
-    const promoText = typeof promoContent === 'string' ? promoContent : promoContent?.content || '';
-    
-    // Create a post record for the promo
-    const post = createPost(
-      req.user.id,
-      null,
-      'boost',
-      { ...productData, blogId: blogPost.id, blogUrl },
-      promoText.replace('[BLOG_LINK]', blogUrl).replace('[PRODUCT_LINK]', productData.productUrl || '')
-    );
-    
-    res.json({
-      blog: {
-        id: blogPost.id,
-        slug: blogPost.slug,
-        title: blogPost.title,
-        url: blogUrl,
-        excerpt: blogPost.excerpt
-      },
-      promo: promoText.replace('[BLOG_LINK]', blogUrl).replace('[PRODUCT_LINK]', productData.productUrl || ''),
-      postId: post.id
-    });
-  } catch (error) {
-    console.error('Blog create error:', error);
-    res.status(500).json({ error: 'Blog creation failed: ' + error.message });
-  }
-});
-
-// Get a blog post by slug (public)
-app.get('/api/blog/:slug', (req, res) => {
-  try {
-    const { slug } = req.params;
-    const post = getBlogPostBySlug(slug);
-    
-    if (!post) {
-      return res.status(404).json({ error: 'Blog post not found' });
-    }
-    
-    // Increment views
-    incrementViews(slug);
-    
-    res.json(post);
-  } catch (error) {
-    console.error('Get blog error:', error);
-    res.status(500).json({ error: 'Failed to fetch blog post' });
-  }
-});
-
-// Get recent blog posts (public)
-app.get('/api/blog', (req, res) => {
-  try {
-    const limit = parseInt(req.query.limit) || 10;
-    const posts = getRecentPosts(limit);
-    res.json({ posts });
-  } catch (error) {
-    console.error('Get recent blogs error:', error);
-    res.status(500).json({ error: 'Failed to fetch blog posts' });
-  }
-});
-
-// Serve blog post HTML page (for social sharing / SEO)
-app.get('/blog/:slug', (req, res) => {
-  try {
-    const { slug } = req.params;
-    const post = getBlogPostBySlug(slug);
-    
-    if (!post) {
-      return res.status(404).send('Blog post not found');
-    }
-    
-    // Increment views
-    incrementViews(slug);
-    
-    const frontendUrl = process.env.FRONTEND_URL || 'https://lastreetchef.github.io/fly-wheel';
-    const apiUrl = process.env.API_URL || process.env.VITE_API_URL || 'https://blearier-ashlee-unextravasated.ngrok-free.dev';
-    const blogUrl = `${apiUrl}/blog/${slug}`;
-    
-    // Generate HTML page
-    const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${post.title} | FlyWheel</title>
-  <meta name="description" content="${post.excerpt?.replace(/"/g, '&quot;')}">
-  <meta property="og:title" content="${post.title}">
-  <meta property="og:description" content="${post.excerpt?.replace(/"/g, '&quot;')}">
-  <meta property="og:type" content="article">
-  <meta property="og:url" content="${blogUrl}">
-  <meta property="og:image" content="${post.cover_image || frontendUrl + '/og-image.png'}">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="${post.title}">
-  <meta name="twitter:description" content="${post.excerpt?.replace(/"/g, '&quot;')}">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { 
-      font-family: 'Inter', sans-serif; 
-      background: linear-gradient(135deg, #0a0a0f 0%, #1a1a2e 100%);
-      color: #e5e7eb;
-      min-height: 100vh;
-      line-height: 1.7;
-    }
-    .container { max-width: 720px; margin: 0 auto; padding: 40px 20px; }
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 20px 0;
-      border-bottom: 1px solid rgba(255,255,255,0.1);
-      margin-bottom: 40px;
-    }
-    .logo {
-      font-size: 24px;
-      font-weight: 800;
-      background: linear-gradient(135deg, #06b6d4, #a855f7);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      text-decoration: none;
-    }
-    .cta-btn {
-      background: linear-gradient(135deg, #06b6d4, #a855f7);
-      color: #fff;
-      padding: 10px 20px;
-      border-radius: 20px;
-      text-decoration: none;
-      font-weight: 600;
-      font-size: 14px;
-    }
-    h1 {
-      font-size: clamp(28px, 5vw, 42px);
-      font-weight: 700;
-      margin-bottom: 16px;
-      line-height: 1.2;
-    }
-    .meta {
-      color: #9ca3af;
-      font-size: 14px;
-      margin-bottom: 32px;
-      display: flex;
-      gap: 16px;
-      flex-wrap: wrap;
-    }
-    .content {
-      font-size: 17px;
-      color: #d1d5db;
-    }
-    .content p { margin-bottom: 20px; }
-    .content h2 { font-size: 24px; color: #fff; margin: 32px 0 16px; }
-    .content h3 { font-size: 20px; color: #fff; margin: 24px 0 12px; }
-    .content ul, .content ol { margin: 16px 0 16px 24px; }
-    .content li { margin-bottom: 8px; }
-    .content a { color: #06b6d4; }
-    .content blockquote {
-      border-left: 3px solid #a855f7;
-      padding-left: 20px;
-      margin: 24px 0;
-      font-style: italic;
-      color: #9ca3af;
-    }
-    .product-cta {
-      background: rgba(6,182,212,0.1);
-      border: 1px solid rgba(6,182,212,0.3);
-      border-radius: 16px;
-      padding: 24px;
-      margin: 40px 0;
-      text-align: center;
-    }
-    .product-cta h3 { color: #fff; margin-bottom: 12px; }
-    .product-cta p { color: #9ca3af; margin-bottom: 16px; }
-    .product-cta a {
-      display: inline-block;
-      background: linear-gradient(135deg, #06b6d4, #a855f7);
-      color: #fff;
-      padding: 12px 28px;
-      border-radius: 25px;
-      text-decoration: none;
-      font-weight: 600;
-    }
-    footer {
-      margin-top: 60px;
-      padding-top: 20px;
-      border-top: 1px solid rgba(255,255,255,0.1);
-      text-align: center;
-      color: #6b7280;
-      font-size: 13px;
-    }
-    footer a { color: #06b6d4; text-decoration: none; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <header>
-      <a href="${frontendUrl}" class="logo">🎰 FlyWheel</a>
-      <a href="${frontendUrl}" class="cta-btn">Create Your Content →</a>
-    </header>
-    
-    <article>
-      <h1>${post.title}</h1>
-      <div class="meta">
-        <span>By ${post.author_name || 'FlyWheel'}</span>
-        <span>•</span>
-        <span>${new Date(post.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-        <span>•</span>
-        <span>${post.views || 0} views</span>
-      </div>
-      
-      <div class="content">
-        ${post.content.split('\n').map(p => p.trim() ? (p.startsWith('#') ? `<h2>${p.replace(/^#+\s*/, '')}</h2>` : `<p>${p}</p>`) : '').join('\n')}
-      </div>
-      
-      ${post.product_name && post.product_url ? `
-      <div class="product-cta">
-        <h3>Check out ${post.product_name}</h3>
-        <p>${post.excerpt}</p>
-        <a href="${post.product_url}" target="_blank" rel="noopener">Learn More →</a>
-      </div>
-      ` : ''}
-    </article>
-    
-    <footer>
-      <p>Published with <a href="${frontendUrl}">FlyWheel</a> — AI-powered product promotion</p>
-    </footer>
-  </div>
-  
-  <!-- ElevenLabs Conversational AI Widget -->
-  <script src="https://elevenlabs.io/convai-widget/index.js" async></script>
-  <elevenlabs-convai agent-id="agent_0501kgsz28fveqbvb5td8k3zpeqb"></elevenlabs-convai>
-</body>
-</html>`;
-    
-    res.setHeader('Content-Type', 'text/html');
-    res.send(html);
-  } catch (error) {
-    console.error('Serve blog error:', error);
-    res.status(500).send('Error loading blog post');
-  }
-});
-
-// ============================================
-// Blog Search Routes
-// ============================================
-
-app.get('/api/blogs/search', authMiddleware, async (req, res) => {
-  try {
-    const { keywords, count } = req.query;
-    
-    if (!keywords) {
-      return res.status(400).json({ error: 'Keywords required' });
-    }
-    
-    const results = await searchBlogs(keywords, parseInt(count) || 5);
-    res.json({ results, configured: isSearchConfigured() });
-  } catch (error) {
-    console.error('Blog search error:', error);
-    res.status(500).json({ error: 'Search failed' });
-  }
-});
-
-// ============================================
-// Auth Routes
-// ============================================
-
-app.post('/api/auth/register', async (req, res) => {
-  try {
-    const { email, password, name } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
-    }
-    
-    const user = createUser(email, password, name);
-    const token = generateToken(user);
-    
-    res.json({ user, token });
-  } catch (error) {
-    res.status(400).json({ error: error.message });
-  }
-});
-
-app.post('/api/auth/login', async (req, res) => {
-  try {
-    const { email, password } = req.body;
-    
-    if (!email || !password) {
-      return res.status(400).json({ error: 'Email and password required' });
-    }
-    
-    const user = loginUser(email, password);
-    const token = generateToken(user);
-    
-    res.json({ user, token });
-  } catch (error) {
-    res.status(401).json({ error: error.message });
-  }
-});
-
-app.get('/api/auth/me', authMiddleware, (req, res) => {
-  const user = getUserById(req.user.id);
-  if (!user) {
-    return res.status(404).json({ error: 'User not found' });
-  }
-  res.json(user);
-});
-
-// ============================================
-// Twitter OAuth Routes
-// ============================================
-
-app.get('/api/twitter/status', authMiddleware, (req, res) => {
-  const connection = getConnection(req.user.id);
-  res.json({
-    configured: isTwitterConfigured(),
-    connected: !!connection,
-    username: connection?.twitter_username || null,
-  });
-});
-
-app.get('/api/twitter/auth', authMiddleware, (req, res) => {
-  try {
-    const returnTo = req.query.returnTo || null;
-    const url = getAuthUrl(req.user.id, returnTo);
-    res.json({ url });
-  } catch (error) {
+    console.error('Search error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-app.get('/api/twitter/callback', async (req, res) => {
-  try {
-    const { code, state } = req.query;
-    const result = await handleCallback(code, state);
-    
-    // Redirect to returnTo page or default to dashboard
-    const frontendUrl = getFrontendUrl();
-    const returnPath = result.returnTo || '/dashboard';
-    res.redirect(`${frontendUrl}${returnPath}?twitter=connected&username=${result.twitterUsername}`);
-  } catch (error) {
-    console.error('Twitter callback error:', error.message, error.stack);
-    const fs = await import('fs');
-    fs.appendFileSync('twitter-errors.log', `${new Date().toISOString()} - ${error.message}\n${error.stack}\n\n`);
-    const frontendUrl = getFrontendUrl();
-    res.redirect(`${frontendUrl}/dashboard?twitter=error`);
-  }
-});
-
-app.post('/api/twitter/disconnect', authMiddleware, (req, res) => {
-  disconnectTwitter(req.user.id);
-  res.json({ success: true });
-});
-
-// ============================================
-// Product URL Import (No API key needed!)
-// ============================================
-
-// Fetch product data from any supported URL
-app.post('/api/product/import', authMiddleware, async (req, res) => {
-  try {
-    const { url } = req.body;
-    
-    if (!url) {
-      return res.status(400).json({ error: 'Product URL required' });
-    }
-    
-    const result = await fetchProductFromUrl(url);
-    res.json(result);
-  } catch (error) {
-    console.error('Product import error:', error);
-    res.status(400).json({ error: error.message });
-  }
-});
-
-// ============================================
-// Shopify Integration Routes (Advanced/Optional)
-// ============================================
-
-// Connect Shopify store
-app.post('/api/shopify/connect', authMiddleware, async (req, res) => {
-  try {
-    const { storeDomain, accessToken, clientId, clientSecret } = req.body;
-    
-    if (!storeDomain || !accessToken) {
-      return res.status(400).json({ error: 'Store domain and access token required' });
-    }
-    
-    const result = connectStore(req.user.id, storeDomain, accessToken, clientId, clientSecret);
-    
-    // Verify connection works
-    const verification = await verifyConnection(req.user.id);
-    if (!verification.connected) {
-      // Rollback connection if verification fails
-      disconnectStore(req.user.id);
-      return res.status(400).json({ error: `Connection failed: ${verification.error}` });
-    }
-    
-    res.json({ 
-      success: true, 
-      storeDomain: result.storeDomain,
-      shop: verification.shop,
-    });
-  } catch (error) {
-    console.error('Shopify connect error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get Shopify connection status
-app.get('/api/shopify/status', authMiddleware, async (req, res) => {
-  try {
-    const connection = getStoreConnection(req.user.id);
-    
-    if (!connection) {
-      return res.json({ connected: false });
-    }
-    
-    // Optionally verify the connection is still valid
-    const verification = await verifyConnection(req.user.id);
-    
-    res.json({
-      connected: verification.connected,
-      storeDomain: connection.store_domain,
-      shop: verification.shop || null,
-      connectedAt: connection.connected_at,
-    });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Fetch products from connected store
-app.get('/api/shopify/products', authMiddleware, async (req, res) => {
-  try {
-    const { refresh } = req.query;
-    
-    // If not forcing refresh, try cached products first
-    if (!refresh) {
-      const cached = getCachedProducts(req.user.id);
-      if (cached.length > 0) {
-        return res.json({ products: cached, cached: true });
-      }
-    }
-    
-    // Fetch fresh from Shopify
-    const products = await fetchProducts(req.user.id);
-    res.json({ products, cached: false });
-  } catch (error) {
-    console.error('Shopify products error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get single product details
-app.get('/api/shopify/products/:productId', authMiddleware, async (req, res) => {
-  try {
-    const product = await fetchProduct(req.user.id, req.params.productId);
-    res.json({ product });
-  } catch (error) {
-    console.error('Shopify product error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Disconnect Shopify store
-app.post('/api/shopify/disconnect', authMiddleware, (req, res) => {
-  const result = disconnectStore(req.user.id);
-  res.json({ success: result });
-});
-
-// Refresh Shopify token (for client credentials flow)
-app.post('/api/shopify/refresh-token', authMiddleware, async (req, res) => {
-  try {
-    const result = await refreshToken(req.user.id);
-    res.json(result);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ============================================
-// Link Tracking
-// ============================================
-
-// Redirect handler (public)
-app.get('/l/:code', (req, res) => {
-  const link = getLink(req.params.code);
-  
-  if (!link) {
-    return res.status(404).send('Link not found');
-  }
-  
-  // Record the click
-  recordClick(
-    link.id,
-    req.ip,
-    req.headers['user-agent'],
-    req.headers['referer']
-  );
-  
-  // Redirect
-  res.redirect(link.destination_url);
-});
-
-app.get('/api/links', authMiddleware, (req, res) => {
-  const links = getUserLinks(req.user.id);
-  res.json(links);
-});
-
-app.get('/api/links/:code/stats', authMiddleware, (req, res) => {
-  const stats = getLinkStats(req.params.code);
-  if (!stats) {
-    return res.status(404).json({ error: 'Link not found' });
-  }
-  res.json(stats);
-});
-
-app.post('/api/links', authMiddleware, (req, res) => {
-  const { url } = req.body;
-  if (!url) {
-    return res.status(400).json({ error: 'URL required' });
-  }
-  
-  const link = createTrackedLink(url, req.user.id);
-  res.json(link);
-});
-
-// ============================================
-// Dashboard & Posts
-// ============================================
-
-app.get('/api/dashboard', authMiddleware, (req, res) => {
-  const stats = getDashboardStats(req.user.id);
-  res.json(stats);
-});
-
-app.get('/api/posts', authMiddleware, (req, res) => {
-  const posts = getUserPosts(req.user.id);
-  res.json(posts);
-});
-
-app.get('/api/posts/:id', authMiddleware, async (req, res) => {
-  try {
-    const analytics = await getPostAnalytics(parseInt(req.params.id));
-    res.json(analytics);
-  } catch (error) {
-    res.status(404).json({ error: error.message });
-  }
-});
-
-app.post('/api/posts/:id/publish', authMiddleware, async (req, res) => {
-  try {
-    const { platform, productUrl, blogUrl, useBoostCredit } = req.body;
-    const postId = parseInt(req.params.id);
-    
-    // TODO: Re-enable boost credit check after testing
-    // if (useBoostCredit) {
-    //   const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
-    //   if (!user || user.boost_credits < 1) {
-    //     return res.status(400).json({ error: 'Insufficient boost credits. Please purchase more.' });
-    //   }
-    //   db.prepare('UPDATE users SET boost_credits = boost_credits - 1 WHERE id = ?').run(req.user.id);
-    // }
-    
-    if (platform === 'twitter') {
-      const result = await publishToTwitter(postId, productUrl, blogUrl);
-      res.json(result);
-    } else {
-      res.status(400).json({ error: 'Unsupported platform' });
-    }
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Create a post directly (for boost flow)
-app.post('/api/content/create', authMiddleware, (req, res) => {
-  try {
-    const { productType, content, productData } = req.body;
-    
-    if (!productType || !content) {
-      return res.status(400).json({ error: 'productType and content required' });
-    }
-    
-    const post = createPost(req.user.id, null, productType, productData || {}, content);
-    res.json(post);
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Quick publish: create post and immediately publish to Twitter
-app.post('/api/posts/quick-publish', authMiddleware, async (req, res) => {
-  try {
-    const { content, productType, productData, blogUrl, productUrl } = req.body;
-    
-    if (!content) {
-      return res.status(400).json({ error: 'Content required' });
-    }
-    
-    // Check Twitter connection
-    const twitterConnection = getConnection(req.user.id);
-    if (!twitterConnection) {
-      return res.status(400).json({ error: 'Twitter not connected. Please connect your X account first.' });
-    }
-    
-    // Create the post record
-    const post = createPost(
-      req.user.id, 
-      null, 
-      productType || 'boost', 
-      productData || {}, 
-      content
-    );
-    
-    // Publish to Twitter
-    const result = await publishToTwitter(post.id, productUrl, blogUrl);
-    
-    res.json({
-      postId: post.id,
-      tweetId: result.tweetId,
-      tweetUrl: result.tweetUrl,
-      trackedLink: result.trackedLink
-    });
-  } catch (error) {
-    console.error('Quick publish error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// ============================================
-// Boost Credits System
-// ============================================
-
-const BOOST_PACKS = {
-  single: { id: 'single', name: '1 Boost', boosts: 1, price: 750 },
-  starter: { id: 'starter', name: '10 Boosts', boosts: 10, price: 6000 },
-  growth: { id: 'growth', name: '50 Boosts', boosts: 50, price: 25000 },
-  scale: { id: 'scale', name: '100 Boosts', boosts: 100, price: 45000 },
-};
-
-// Ensure boost_credits column exists
-try {
-  db.exec(`ALTER TABLE users ADD COLUMN boost_credits INTEGER DEFAULT 0`);
-} catch (e) {
-  // Column already exists
-}
-
-// Get boost balance
-app.get('/api/boosts/balance', authMiddleware, (req, res) => {
-  try {
-    const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
-    res.json({ boosts: user?.boost_credits || 0 });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Create payment intent for boost pack
-app.post('/api/boosts/create-intent', async (req, res) => {
-  try {
-    const { packId, userId } = req.body;
-    
-    const pack = BOOST_PACKS[packId];
-    if (!pack) {
-      return res.status(400).json({ error: 'Invalid pack' });
-    }
-    
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: pack.price,
-      currency: 'usd',
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-        type: 'boost_pack',
-        packId,
-        boosts: pack.boosts,
-        userId: userId || '',
-      },
-    });
-    
-    res.json({ clientSecret: paymentIntent.client_secret });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Add boosts after successful payment
-app.post('/api/boosts/add', authMiddleware, async (req, res) => {
-  try {
-    const { paymentIntentId, packId, boosts } = req.body;
-    
-    // Verify payment
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    if (paymentIntent.status !== 'succeeded') {
-      return res.status(400).json({ error: 'Payment not completed' });
-    }
-    
-    // Check if already processed
-    const existing = db.prepare('SELECT * FROM boost_transactions WHERE payment_intent_id = ?').get(paymentIntentId);
-    if (existing) {
-      const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
-      return res.json({ success: true, newBalance: user?.boost_credits || 0, alreadyProcessed: true });
-    }
-    
-    // Add boosts to user
-    db.prepare('UPDATE users SET boost_credits = boost_credits + ? WHERE id = ?').run(boosts, req.user.id);
-    
-    // Record transaction
-    db.prepare('INSERT INTO boost_transactions (user_id, payment_intent_id, pack_id, boosts, created_at) VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)').run(req.user.id, paymentIntentId, packId, boosts);
-    
-    const user = db.prepare('SELECT boost_credits FROM users WHERE id = ?').get(req.user.id);
-    res.json({ success: true, newBalance: user?.boost_credits || 0 });
-  } catch (error) {
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Create boost_transactions table if needed
-try {
-  db.exec(`
-    CREATE TABLE IF NOT EXISTS boost_transactions (
-      id INTEGER PRIMARY KEY AUTOINCREMENT,
-      user_id INTEGER NOT NULL,
-      payment_intent_id TEXT UNIQUE,
-      pack_id TEXT,
-      boosts INTEGER,
-      created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-    )
-  `);
-} catch (e) {
-  // Table already exists
-}
-
-// ============================================
-// Stripe Checkout
-// ============================================
-
-app.post('/api/checkout/spin', async (req, res) => {
-  try {
-    const { productType, productData, userId } = req.body;
-    
-    if (!PRODUCTS[productType]) {
-      return res.status(400).json({ error: 'Invalid product type' });
-    }
-
-    const product = PRODUCTS[productType];
-    
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `FlyWheel: ${product.name}`,
-            description: product.description,
-          },
-          unit_amount: product.price,
-        },
-        quantity: 1,
-      }],
-      mode: 'payment',
-      success_url: `${req.headers.origin || 'http://localhost:5173'}/fly-wheel/?success=true&type=${productType}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin || 'http://localhost:5173'}/fly-wheel/?canceled=true`,
-      metadata: {
-        type: 'spin',
-        productType,
-        productData: JSON.stringify(productData || {}),
-        userId: userId || '',
-      },
-    });
-
-    res.json({ url: session.url, sessionId: session.id });
-  } catch (error) {
-    console.error('Checkout error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.post('/api/checkout/credits', async (req, res) => {
-  try {
-    const { packType } = req.body;
-    
-    if (!CREDIT_PACKS[packType]) {
-      return res.status(400).json({ error: 'Invalid credit pack' });
-    }
-
-    const pack = CREDIT_PACKS[packType];
-    
-    const session = await stripe.checkout.sessions.create({
-      payment_method_types: ['card'],
-      line_items: [{
-        price_data: {
-          currency: 'usd',
-          product_data: {
-            name: `FlyWheel Credits: $${pack.amount}`,
-            description: pack.bonus > 0 
-              ? `$${pack.amount} + $${pack.bonus} bonus (${Math.floor((pack.amount + pack.bonus) / 5)} spins)`
-              : `$${pack.amount} (${Math.floor(pack.amount / 5)} spins)`,
-          },
-          unit_amount: pack.price,
-        },
-        quantity: 1,
-      }],
-      mode: 'payment',
-      success_url: `${req.headers.origin || 'http://localhost:5173'}/fly-wheel/?success=true&credits=${pack.amount + pack.bonus}&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${req.headers.origin || 'http://localhost:5173'}/fly-wheel/?canceled=true`,
-      metadata: {
-        type: 'credits',
-        packType,
-        amount: pack.amount,
-        bonus: pack.bonus,
-      },
-    });
-
-    res.json({ url: session.url, sessionId: session.id });
-  } catch (error) {
-    console.error('Checkout error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Embedded checkout - create PaymentIntent
-app.post('/api/checkout/create-intent', async (req, res) => {
-  try {
-    const { productType, productData, userId } = req.body;
-    
-    if (!PRODUCTS[productType]) {
-      return res.status(400).json({ error: 'Invalid product type' });
-    }
-
-    const product = PRODUCTS[productType];
-    
-    const paymentIntent = await stripe.paymentIntents.create({
-      amount: product.price,
-      currency: 'usd',
-      automatic_payment_methods: { enabled: true },
-      metadata: {
-        type: 'spin',
-        productType,
-        productData: JSON.stringify(productData || {}),
-        userId: userId || '',
-      },
-    });
-
-    res.json({ 
-      clientSecret: paymentIntent.client_secret,
-      amount: product.price,
-      productName: product.name
-    });
-  } catch (error) {
-    console.error('PaymentIntent error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Confirm embedded payment and generate content
-app.post('/api/checkout/confirm', authMiddleware, async (req, res) => {
-  try {
-    const { paymentIntentId, productType, productData } = req.body;
-    
-    // Verify the payment succeeded
-    const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
-    
-    if (paymentIntent.status !== 'succeeded') {
-      return res.status(400).json({ error: 'Payment not completed' });
-    }
-    
-    // Generate the content
-    console.log(`🎨 Generating ${productType} content after payment...`);
-    const result = await generateContent(productType, productData);
-    
-    // Create the post in the database
-    const post = createPost(
-      req.user.id,
-      paymentIntentId,
-      productType,
-      productData,
-      result.content
-    );
-    
-    res.json({
-      success: true,
-      postId: post.id,
-      content: result.content
-    });
-  } catch (error) {
-    console.error('Confirm payment error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-// Get session details + generated content
-app.get('/api/session/:sessionId', async (req, res) => {
-  try {
-    const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
-    const content = contentStore.get(session.id);
-    
-    res.json({
-      id: session.id,
-      status: session.payment_status,
-      metadata: session.metadata,
-      customer_email: session.customer_details?.email,
-      content: content || null,
-    });
-  } catch (error) {
-    console.error('Session retrieval error:', error);
-    res.status(500).json({ error: error.message });
-  }
-});
-
-app.get('/api/content/:sessionId', (req, res) => {
-  const content = contentStore.get(req.params.sessionId);
-  if (!content) {
-    return res.status(404).json({ error: 'Content not found or not yet generated' });
-  }
-  res.json(content);
-});
-
-// Manual content generation (for testing)
 app.post('/api/generate', async (req, res) => {
   try {
-    const { productType, productData } = req.body;
-    
-    if (!PRODUCTS[productType]) {
-      return res.status(400).json({ error: 'Invalid product type' });
+    const { productData, blog } = req.body;
+    if (!productData?.name || !blog?.url) {
+      return res.status(400).json({ error: 'Product data and blog required' });
     }
-
-    console.log(`🎨 Generating ${productType} content...`);
-    const result = await generateContent(productType, productData);
-    console.log(`✅ Content generated (mock: ${result.mock})`);
-    
-    res.json(result);
+    const content = await generateBoostContent(productData, blog);
+    res.json({ content });
   } catch (error) {
-    console.error('Generation error:', error);
+    console.error('Generate error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-// ============================================
-// Guest Boost Checkout (no login required)
-// ============================================
-
-const BOOST_PRICE = 175; // $1.75 in cents
-
-app.post('/api/boost/checkout', async (req, res) => {
+app.post('/api/checkout', async (req, res) => {
   try {
     const { productData, blog, content } = req.body;
     
@@ -1200,7 +177,6 @@ app.post('/api/boost/checkout', async (req, res) => {
       return res.status(400).json({ error: 'Missing required data' });
     }
     
-    // Create Stripe Checkout Session
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
       line_items: [{
@@ -1208,25 +184,23 @@ app.post('/api/boost/checkout', async (req, res) => {
           currency: 'usd',
           product_data: {
             name: 'Blog Boost',
-            description: `Promote "${productData.name}" alongside "${blog.title?.substring(0, 50)}..."`,
+            description: `Promote "${productData.name}" on X`,
           },
           unit_amount: BOOST_PRICE,
         },
         quantity: 1,
       }],
       mode: 'payment',
-      success_url: `${getFrontendUrl()}/boost?success=true&session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${getFrontendUrl()}/boost`,
+      success_url: `${FRONTEND_URL}?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: FRONTEND_URL,
       metadata: {
-        type: 'guest_boost',
         productData: JSON.stringify(productData),
         blog: JSON.stringify(blog),
-        content: content,
+        content,
       },
     });
     
-    // Store order for later retrieval
-    boostOrders.set(session.id, {
+    orders.set(session.id, {
       status: 'pending',
       productData,
       blog,
@@ -1236,19 +210,14 @@ app.post('/api/boost/checkout', async (req, res) => {
     
     res.json({ url: session.url, sessionId: session.id });
   } catch (error) {
-    console.error('Boost checkout error:', error);
+    console.error('Checkout error:', error);
     res.status(500).json({ error: error.message });
   }
 });
 
-app.get('/api/boost/status/:sessionId', (req, res) => {
-  const { sessionId } = req.params;
-  const order = boostOrders.get(sessionId);
-  
-  if (!order) {
-    return res.status(404).json({ status: 'not_found' });
-  }
-  
+app.get('/api/status/:sessionId', (req, res) => {
+  const order = orders.get(req.params.sessionId);
+  if (!order) return res.status(404).json({ status: 'not_found' });
   res.json(order);
 });
 
@@ -1261,109 +230,66 @@ app.post('/webhook', async (req, res) => {
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
   let event;
-
   try {
     if (webhookSecret) {
       event = stripe.webhooks.constructEvent(req.body, sig, webhookSecret);
     } else {
       event = JSON.parse(req.body);
-      console.warn('⚠️  Webhook signature not verified (no STRIPE_WEBHOOK_SECRET)');
+      console.warn('⚠️  Webhook signature not verified');
     }
   } catch (err) {
-    console.error('Webhook signature verification failed:', err.message);
+    console.error('Webhook error:', err.message);
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  switch (event.type) {
-    case 'checkout.session.completed':
-      const session = event.data.object;
-      console.log('✅ Payment successful:', session.id);
-      
-      if (session.metadata.type === 'spin') {
-        const productType = session.metadata.productType;
-        const productData = session.metadata.productData;
-        const userId = session.metadata.userId ? parseInt(session.metadata.userId) : null;
+  if (event.type === 'checkout.session.completed') {
+    const session = event.data.object;
+    console.log('✅ Payment received:', session.id);
+    
+    const order = orders.get(session.id);
+    if (order) {
+      try {
+        const blog = JSON.parse(session.metadata.blog);
+        const productData = JSON.parse(session.metadata.productData);
+        let content = session.metadata.content;
         
-        console.log(`   🎰 Spin: ${productType}`);
-        console.log(`   🎨 Generating content...`);
+        content = content
+          .replace('[BLOG_LINK]', blog.url)
+          .replace('[PRODUCT_LINK]', productData.productUrl || '');
         
-        try {
-          const result = await generateContent(productType, productData);
-          
-          // Store in memory for frontend polling
-          contentStore.set(session.id, {
-            sessionId: session.id,
-            productType,
-            content: result.content,
-            mock: result.mock,
-            generatedAt: new Date().toISOString(),
-          });
-          
-          // If user is logged in, save to database
-          if (userId) {
-            const post = createPost(userId, session.id, productType, JSON.parse(productData || '{}'), result.content);
-            console.log(`   💾 Saved to database: post #${post.id}`);
-          }
-          
-          console.log(`   ✅ Content generated!`);
-        } catch (error) {
-          console.error(`   ❌ Generation failed:`, error.message);
-        }
-      } else if (session.metadata.type === 'credits') {
-        console.log(`   💳 Credits: $${session.metadata.amount} + $${session.metadata.bonus} bonus`);
-      } else if (session.metadata.type === 'guest_boost') {
-        console.log(`   🚀 Guest Boost: posting to X...`);
+        const result = await postTweet(content);
         
-        const order = boostOrders.get(session.id);
-        if (order) {
-          try {
-            // Post to BlogBoost's X account
-            const content = session.metadata.content;
-            const blogData = JSON.parse(session.metadata.blog || '{}');
-            const productDataParsed = JSON.parse(session.metadata.productData || '{}');
-            
-            // Replace placeholders in content
-            let finalContent = content
-              .replace('[BLOG_LINK]', blogData.url || '')
-              .replace('[PRODUCT_LINK]', productDataParsed.productUrl || '');
-            
-            // Post using the system/BlogBoost Twitter account
-            const tweetResult = await postTweetAsSystem(finalContent);
-            
-            // Update order status
-            order.status = 'published';
-            order.tweetUrl = tweetResult.tweetUrl;
-            order.tweetId = tweetResult.tweetId;
-            order.publishedAt = new Date().toISOString();
-            boostOrders.set(session.id, order);
-            
-            console.log(`   ✅ Boost posted! ${tweetResult.tweetUrl}`);
-          } catch (error) {
-            console.error(`   ❌ Boost publish failed:`, error.message);
-            order.status = 'failed';
-            order.error = error.message;
-            boostOrders.set(session.id, order);
-          }
-        }
+        order.status = 'published';
+        order.tweetUrl = result.tweetUrl;
+        order.tweetId = result.tweetId;
+        order.publishedAt = new Date().toISOString();
+        orders.set(session.id, order);
+        
+        console.log('🚀 Posted:', result.tweetUrl);
+      } catch (error) {
+        console.error('❌ Post failed:', error.message);
+        order.status = 'failed';
+        order.error = error.message;
+        orders.set(session.id, order);
       }
-      break;
-      
-    case 'payment_intent.payment_failed':
-      console.log('❌ Payment failed:', event.data.object.id);
-      break;
+    }
   }
 
   res.json({ received: true });
 });
 
+// SPA fallback
+if (process.env.NODE_ENV === 'production') {
+  app.get('*', (req, res) => {
+    res.sendFile('index.html', { root: 'dist' });
+  });
+}
+
 // ============================================
-// Start Server
+// Start
 // ============================================
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`🚀 FlyWheel API running on http://localhost:${PORT}`);
-  console.log(`   Stripe: ${process.env.STRIPE_SECRET_KEY?.startsWith('sk_test') ? 'TEST' : 'LIVE'}`);
-  console.log(`   Claude: ${process.env.ANTHROPIC_API_KEY ? 'configured ✓' : 'not configured'}`);
-  console.log(`   Twitter: ${isTwitterConfigured() ? 'configured ✓' : 'not configured'}`);
+  console.log(`🚀 BlogBoost running on http://localhost:${PORT}`);
 });
