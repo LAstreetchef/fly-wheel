@@ -71,12 +71,28 @@ async function searchBlogs(keywords) {
 // ============================================
 
 async function generateBoostContent(productData, blog) {
+  // Parse X handles - normalize to @handle format
+  const xHandles = (productData.xHandles || '')
+    .split(/[,\s]+/)
+    .map(h => h.trim())
+    .filter(h => h)
+    .map(h => h.startsWith('@') ? h : `@${h}`)
+    .slice(0, 3); // Max 3 tags
+  
+  const tagsSection = xHandles.length > 0 
+    ? `\nACCOUNTS TO TAG: ${xHandles.join(', ')}` 
+    : '';
+  
+  const tagsInstruction = xHandles.length > 0
+    ? `7. Naturally incorporate these tags: ${xHandles.join(', ')}`
+    : '';
+
   const prompt = `You are a social media expert creating a promotional X (Twitter) post.
 
 PRODUCT:
 - Name: ${productData.name}
 - Description: ${productData.description || 'N/A'}
-- URL: ${productData.productUrl || 'N/A'}
+- URL: ${productData.productUrl || 'N/A'}${tagsSection}
 
 BLOG TO PROMOTE ALONGSIDE:
 - Title: ${blog.title}
@@ -90,16 +106,18 @@ Create a natural, engaging X post (max 280 chars) that:
 4. Includes [PRODUCT_LINK] placeholder for the product URL (if provided)
 5. Uses 1-2 relevant hashtags
 6. Feels authentic, not spammy
+${tagsInstruction}
 
 Return ONLY the tweet text, nothing else.`;
 
   if (!process.env.ANTHROPIC_API_KEY) {
+    const tagsStr = xHandles.length > 0 ? `\n\n${xHandles.join(' ')}` : '';
     return `Great insights on ${blog.title.substring(0, 40)}...
 
 Check out ${productData.name} if you're into this!
 
 [BLOG_LINK]
-[PRODUCT_LINK]`;
+[PRODUCT_LINK]${tagsStr}`;
   }
 
   const message = await anthropic.messages.create({

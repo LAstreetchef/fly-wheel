@@ -18,7 +18,7 @@ export default function BlogBoostPage() {
   const [error, setError] = useState(null)
   
   // Product data
-  const [productData, setProductData] = useState({ name: '', description: '', productUrl: '', keywords: '' })
+  const [productData, setProductData] = useState({ name: '', description: '', productUrl: '', keywords: '', xHandles: '' })
   const [blogs, setBlogs] = useState([])
   const [selectedBlog, setSelectedBlog] = useState(null)
   const [generatedContent, setGeneratedContent] = useState(null)
@@ -178,7 +178,7 @@ export default function BlogBoostPage() {
 
   const handleStartOver = () => {
     setStep('input')
-    setProductData({ name: '', description: '', productUrl: '', keywords: '' })
+    setProductData({ name: '', description: '', productUrl: '', keywords: '', xHandles: '' })
     setBlogs([])
     setSelectedBlog(null)
     setGeneratedContent(null)
@@ -258,6 +258,10 @@ export default function BlogBoostPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Search Keywords * <span className="text-gray-500">(we'll find blogs about this)</span></label>
                   <input type="text" required value={productData.keywords} onChange={(e) => setProductData({ ...productData, keywords: e.target.value })} placeholder="e.g., creator economy, payments, fintech" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">X Accounts to Tag <span className="text-gray-500">(optional)</span></label>
+                  <input type="text" value={productData.xHandles} onChange={(e) => setProductData({ ...productData, xHandles: e.target.value })} placeholder="e.g., @elonmusk, @blogsquad" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
                 </div>
                 <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-4 rounded-xl font-bold text-lg disabled:opacity-50 hover:scale-[1.02] transition-transform">
                   {loading ? 'Searching...' : 'Find Relevant Blogs →'}
