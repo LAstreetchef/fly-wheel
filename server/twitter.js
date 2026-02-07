@@ -110,32 +110,71 @@ export function disconnectTwitter(userId) {
   db.prepare('DELETE FROM twitter_connections WHERE user_id = ?').run(userId);
 }
 
+// Refresh access token using refresh token
+async function refreshAccessToken(userId) {
+  const connection = db.prepare(
+    'SELECT refresh_token FROM twitter_connections WHERE user_id = ?'
+  ).get(userId);
+  
+  if (!connection?.refresh_token) {
+    throw new Error('No refresh token available. Please reconnect.');
+  }
+  
+  const client = new TwitterApi({
+    clientId: TWITTER_CLIENT_ID,
+    clientSecret: TWITTER_CLIENT_SECRET,
+  });
+  
+  try {
+    const { accessToken, refreshToken } = await client.refreshOAuth2Token(connection.refresh_token);
+    
+    // Update stored tokens
+    db.prepare(`
+      UPDATE twitter_connections 
+      SET access_token = ?, refresh_token = ?
+      WHERE user_id = ?
+    `).run(accessToken, refreshToken, userId);
+    
+    console.log(`[Twitter] Refreshed token for user ${userId}`);
+    return accessToken;
+  } catch (error) {
+    console.error('[Twitter] Token refresh failed:', error.message);
+    throw new Error('Twitter token expired. Please reconnect.');
+  }
+}
+
 export async function postTweet(userId, text, mediaIds = []) {
   const connection = db.prepare(
-    'SELECT access_token FROM twitter_connections WHERE user_id = ?'
+    'SELECT access_token, refresh_token FROM twitter_connections WHERE user_id = ?'
   ).get(userId);
   
   if (!connection) {
     throw new Error('Twitter not connected');
   }
   
-  const client = new TwitterApi(connection.access_token);
+  let accessToken = connection.access_token;
   
-  try {
-    const tweetOptions = mediaIds.length > 0 
-      ? { text, media: { media_ids: mediaIds } }
-      : text;
-    const { data } = await client.v2.tweet(tweetOptions);
-    return {
-      id: data.id,
-      url: `https://twitter.com/i/status/${data.id}`,
-    };
-  } catch (error) {
-    // Handle token refresh if needed
-    if (error.code === 401) {
-      throw new Error('Twitter token expired. Please reconnect.');
+  // Try posting with current token, refresh if needed
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const client = new TwitterApi(accessToken);
+      const tweetOptions = mediaIds.length > 0 
+        ? { text, media: { media_ids: mediaIds } }
+        : text;
+      const { data } = await client.v2.tweet(tweetOptions);
+      return {
+        id: data.id,
+        url: `https://twitter.com/i/status/${data.id}`,
+      };
+    } catch (error) {
+      // If 401/403 and first attempt, try refreshing token
+      if ((error.code === 401 || error.code === 403) && attempt === 0) {
+        console.log(`[Twitter] Token expired for user ${userId}, attempting refresh...`);
+        accessToken = await refreshAccessToken(userId);
+        continue;
+      }
+      throw error;
     }
-    throw error;
   }
 }
 

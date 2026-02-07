@@ -8,6 +8,9 @@ const STRIPE_PK = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51QZwk
 
 const stripePromise = loadStripe(STRIPE_PK)
 
+// Stella - ElevenLabs Agent ID
+const ELEVENLABS_AGENT_ID = 'agent_0501kgsz28fveqbvb5td8k3zpeqb'
+
 // Pricing tiers
 const BOOST_PACKS = [
   { id: 'single', name: '1 Boost', boosts: 1, price: 750, priceDisplay: '$7.50', popular: false },
@@ -139,6 +142,72 @@ export default function BlogBoostPage({ user, token, onLogin }) {
       fetchBoostCredits()
     }
   }, [user, token])
+
+  // Load ElevenLabs widget script
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed'
+    script.async = true
+    script.type = 'text/javascript'
+    document.body.appendChild(script)
+    
+    return () => {
+      const existingScript = document.querySelector('script[src*="elevenlabs"]')
+      if (existingScript) existingScript.remove()
+    }
+  }, [])
+
+  // Setup client tools for the ElevenLabs widget
+  useEffect(() => {
+    const setupWidget = () => {
+      const widget = document.querySelector('elevenlabs-convai')
+      if (widget) {
+        widget.addEventListener('elevenlabs-convai:call', (event) => {
+          event.detail.config.clientTools = {
+            startBoost: ({ productName, productDescription, productUrl, keywords }) => {
+              const data = {
+                name: productName || '',
+                description: productDescription || '',
+                productUrl: productUrl || '',
+                keywords: keywords || ''
+              }
+              setProductData(data)
+              if (productName && keywords) handleSearchBlogs(data)
+              return { success: true, message: 'Product data received' }
+            },
+            selectBlog: ({ blogIndex }) => {
+              if (blogs[blogIndex]) {
+                handleSelectBlog(blogs[blogIndex])
+                return { success: true, message: `Selected: ${blogs[blogIndex].title}` }
+              }
+              return { success: false, message: 'Invalid blog index' }
+            },
+            publishToX: () => {
+              handlePublish()
+              return { success: true, message: 'Publishing...' }
+            },
+            getStatus: () => ({
+              step,
+              hasBlogs: blogs.length > 0,
+              blogCount: blogs.length,
+              hasContent: !!generatedContent,
+              isLoggedIn: !!user,
+              twitterConnected: twitterStatus === 'connected'
+            })
+          }
+        })
+      }
+    }
+    
+    const interval = setInterval(() => {
+      if (document.querySelector('elevenlabs-convai')) {
+        setupWidget()
+        clearInterval(interval)
+      }
+    }, 500)
+    
+    return () => clearInterval(interval)
+  }, [blogs, selectedBlog, generatedContent, user, step, twitterStatus])
 
   const fetchBoostCredits = async () => {
     if (!user || !token) return
@@ -379,7 +448,7 @@ export default function BlogBoostPage({ user, token, onLogin }) {
       <header className="relative z-50 px-6 py-4 border-b border-gray-800/50">
         <nav className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <span className="text-2xl">🚀</span>
+            <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-10 h-10 object-contain" />
             <span className="text-2xl font-bold">
               <span className="text-white">Blog</span>
               <span className="text-orange-400">Boost</span>
@@ -561,24 +630,33 @@ export default function BlogBoostPage({ user, token, onLogin }) {
             )}
           </div>
 
-          {/* How It Works */}
+          {/* How It Works + Ask Stella */}
           <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6">
-            <h2 className="text-xl font-bold mb-6">How It Works</h2>
+            <div className="flex items-center gap-3 mb-6">
+              <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-12 h-12 object-contain drop-shadow-lg" />
+              <h2 className="text-xl font-bold">How It Works</h2>
+            </div>
             <div className="space-y-6">
               {[
                 { num: '1', title: 'Enter your product', desc: 'Name, description, and keywords' },
                 { num: '2', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
                 { num: '3', title: 'AI crafts your boost', desc: 'Natural promo that links blog + product' },
                 { num: '4', title: 'Post to X', desc: 'One click, tracked links, instant exposure' },
-              ].map((step, i) => (
+              ].map((s, i) => (
                 <div key={i} className="flex items-start gap-4">
-                  <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black">{step.num}</span>
+                  <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black">{s.num}</span>
                   <div>
-                    <h3 className="font-bold text-white">{step.title}</h3>
-                    <p className="text-gray-400 text-sm">{step.desc}</p>
+                    <h3 className="font-bold text-white">{s.title}</h3>
+                    <p className="text-gray-400 text-sm">{s.desc}</p>
                   </div>
                 </div>
               ))}
+            </div>
+            
+            {/* Ask Stella */}
+            <div className="mt-8 pt-6 border-t border-gray-700/50">
+              <p className="text-gray-300 text-base mb-4">Questions? <span className="font-bold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">Ask Stella!</span></p>
+              <div dangerouslySetInnerHTML={{ __html: `<elevenlabs-convai agent-id="${ELEVENLABS_AGENT_ID}"></elevenlabs-convai>` }} />
             </div>
           </div>
         </div>
