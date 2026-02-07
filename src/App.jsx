@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fly-wheel.onrender.com'
+const ELEVENLABS_AGENT_ID = 'agent_0501kgsz28fveqbvb5td8k3zpeqb'
 
 export default function App() {
   const [step, setStep] = useState('input')
@@ -12,6 +13,15 @@ export default function App() {
   const [selectedBlog, setSelectedBlog] = useState(null)
   const [content, setContent] = useState(null)
   const [result, setResult] = useState(null)
+
+  // Load ElevenLabs widget
+  useEffect(() => {
+    const script = document.createElement('script')
+    script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed'
+    script.async = true
+    document.body.appendChild(script)
+    return () => script.remove()
+  }, [])
 
   // Check for payment success
   useEffect(() => {
@@ -147,7 +157,7 @@ export default function App() {
 
       {/* Header */}
       <header className="relative z-10 px-6 py-4 border-b border-gray-800/50">
-        <div className="max-w-3xl mx-auto flex items-center justify-between">
+        <div className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
             <span className="text-2xl">🚀</span>
             <span className="text-xl font-bold">
@@ -161,7 +171,7 @@ export default function App() {
         </div>
       </header>
 
-      <main className="relative z-10 max-w-3xl mx-auto px-4 py-8">
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
         {error && (
           <div className="bg-red-500/20 border border-red-500/50 text-red-400 rounded-xl px-4 py-3 mb-6">
             {error}
@@ -176,6 +186,23 @@ export default function App() {
               <span className="text-orange-400">In Front of Readers</span>
             </h1>
             <p className="text-gray-400">We find relevant blogs, craft a promo post, and publish it to X. Just $1.75.</p>
+          </div>
+        )}
+
+        {/* Quick Steps - input step only */}
+        {step === 'input' && (
+          <div className="grid md:grid-cols-4 gap-3 mb-8">
+            {[
+              { num: '1', icon: '📝', text: 'Enter product info' },
+              { num: '2', icon: '🔍', text: 'Pick a blog' },
+              { num: '3', icon: '✨', text: 'Preview post' },
+              { num: '4', icon: '🚀', text: 'Pay & post!' },
+            ].map((s, i) => (
+              <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-xl p-3 text-center">
+                <div className="text-2xl mb-1">{s.icon}</div>
+                <div className="text-xs text-gray-400">{s.text}</div>
+              </div>
+            ))}
           </div>
         )}
 
@@ -269,8 +296,8 @@ export default function App() {
               <h2 className="text-lg font-bold mb-4">Preview your boost:</h2>
               <div className="bg-gray-800 rounded-xl p-4 mb-4">
                 <div className="flex items-center gap-2 mb-3">
-                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-black font-bold text-xs">BB</div>
-                  <span className="font-bold text-sm">@BlogBoost</span>
+                  <div className="w-8 h-8 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-black font-bold text-xs">FW</div>
+                  <span className="font-bold text-sm">@flywheelsquad</span>
                 </div>
                 <div className="text-white whitespace-pre-wrap text-sm">{preview}</div>
               </div>
@@ -319,26 +346,22 @@ export default function App() {
           )}
         </div>
 
-        {/* How it works - input only */}
+        {/* Stella - Ask for help */}
         {step === 'input' && (
-          <div className="grid md:grid-cols-3 gap-4 mt-8">
-            {[
-              { icon: '🔍', title: 'Find', desc: 'We search for blogs your audience reads' },
-              { icon: '✨', title: 'Craft', desc: 'AI creates a natural promo post' },
-              { icon: '🚀', title: 'Post', desc: 'Goes live on X instantly' },
-            ].map((item, i) => (
-              <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-center">
-                <div className="text-2xl mb-2">{item.icon}</div>
-                <h3 className="font-bold">{item.title}</h3>
-                <p className="text-gray-400 text-sm">{item.desc}</p>
-              </div>
-            ))}
+          <div className="mt-8 text-center">
+            <p className="text-gray-400 text-sm mb-2">Questions? <span className="text-orange-400 font-bold">Ask Stella!</span></p>
           </div>
         )}
       </main>
 
+      {/* Stella Widget - floating */}
+      <div 
+        className="fixed bottom-4 right-4 z-50"
+        dangerouslySetInnerHTML={{ __html: `<elevenlabs-convai agent-id="${ELEVENLABS_AGENT_ID}"></elevenlabs-convai>` }} 
+      />
+
       <footer className="relative z-10 border-t border-gray-800 px-6 py-4 mt-8">
-        <div className="max-w-3xl mx-auto text-center text-gray-500 text-sm">
+        <div className="max-w-4xl mx-auto text-center text-gray-500 text-sm">
           © 2026 BlogBoost
         </div>
       </footer>
