@@ -159,7 +159,7 @@ export default function App() {
       <header className="relative z-10 px-6 py-4 border-b border-gray-800/50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <span className="text-2xl">🚀</span>
+            <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold">
               <span className="text-white">Blog</span>
               <span className="text-orange-400">Boost</span>
