@@ -341,6 +341,20 @@ async function sendFollowUpEmail(order, metrics) {
 }
 
 // Endpoint to trigger follow-up emails (call via cron or manually)
+// Debug: List all orders (remove in production)
+app.get('/api/admin/orders', (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (adminKey && authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const allOrders = [];
+  for (const [sessionId, order] of orders) {
+    allOrders.push({ sessionId: sessionId.substring(0, 20) + '...', ...order });
+  }
+  res.json(allOrders);
+});
+
 app.post('/api/admin/send-followups', async (req, res) => {
   const authHeader = req.headers.authorization;
   const adminKey = process.env.ADMIN_API_KEY;
