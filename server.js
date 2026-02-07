@@ -569,6 +569,80 @@ async function getTweetMetrics(tweetId) {
   }
 }
 
+async function sendConfirmationEmail(order) {
+  if (!resend || !order.email) {
+    console.warn('⚠️  Cannot send confirmation email: missing Resend API key or email');
+    return false;
+  }
+  
+  const productName = order.productData?.name || 'your product';
+  const tweetUrl = order.tweetUrl || '#';
+  
+  try {
+    await resend.emails.send({
+      from: 'BlogBoost <message4u@secretmessage4u.com>',
+      to: order.email,
+      subject: `🎉 Your Boost for "${productName}" is LIVE!`,
+      html: `
+        <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; background: #0a0a0a; color: #fff; padding: 40px; border-radius: 16px;">
+          
+          <div style="text-align: center; margin-bottom: 30px;">
+            <h1 style="color: #f97316; margin: 0; font-size: 32px;">🚀 You're Live!</h1>
+            <p style="color: #888; margin-top: 8px;">Your boost for <strong style="color: #fff;">${productName}</strong> is now on X</p>
+          </div>
+          
+          <div style="background: linear-gradient(135deg, #f97316 0%, #eab308 100%); padding: 3px; border-radius: 12px; margin: 24px 0;">
+            <div style="background: #1a1a1a; border-radius: 10px; padding: 20px; text-align: center;">
+              <a href="${tweetUrl}" style="color: #f97316; font-weight: bold; font-size: 18px; text-decoration: none;">
+                👉 View Your Boost on X →
+              </a>
+            </div>
+          </div>
+          
+          <div style="background: #111; border-radius: 12px; padding: 24px; margin: 24px 0;">
+            <h2 style="color: #f97316; font-size: 18px; margin: 0 0 16px 0;">📊 What Happens Next?</h2>
+            <ul style="color: #ccc; line-height: 1.8; padding-left: 20px; margin: 0;">
+              <li><strong>Right now:</strong> Your boost is being served to X users interested in your niche</li>
+              <li><strong>Next 24-48 hours:</strong> Impressions, engagements, and clicks accumulate</li>
+              <li><strong>Then:</strong> We'll email you a full performance report with real stats</li>
+            </ul>
+          </div>
+          
+          <div style="background: #111; border-radius: 12px; padding: 24px; margin: 24px 0;">
+            <h2 style="color: #f97316; font-size: 18px; margin: 0 0 16px 0;">💡 Pro Tips to Maximize Your Boost</h2>
+            <ul style="color: #ccc; line-height: 1.8; padding-left: 20px; margin: 0;">
+              <li><strong>Engage with replies</strong> — responding to comments boosts visibility</li>
+              <li><strong>Retweet it</strong> from your own account for extra reach</li>
+              <li><strong>Stack boosts</strong> — multiple boosts across different blogs = more exposure</li>
+              <li><strong>Share the link</strong> — drop your boost URL in your communities</li>
+            </ul>
+          </div>
+          
+          <div style="text-align: center; margin: 32px 0; padding: 24px; border: 2px dashed #333; border-radius: 12px;">
+            <p style="color: #888; margin: 0 0 12px 0;">Ready for more visibility?</p>
+            <a href="https://lastreetchef.github.io/fly-wheel/" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #eab308 100%); color: #000; font-weight: bold; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 16px;">
+              Create Another Boost →
+            </a>
+          </div>
+          
+          <div style="border-top: 1px solid #333; padding-top: 24px; margin-top: 32px;">
+            <p style="color: #666; font-size: 13px; margin: 0; text-align: center;">
+              Questions? Just reply to this email.<br>
+              <span style="color: #888;">— The BlogBoost Team</span>
+            </p>
+          </div>
+          
+        </div>
+      `,
+    });
+    console.log(`✅ Confirmation email sent to ${order.email}`);
+    return true;
+  } catch (err) {
+    console.error('Failed to send confirmation email:', err.message);
+    return false;
+  }
+}
+
 async function sendFollowUpEmail(order, metrics) {
   if (!resend || !order.email) {
     console.warn('⚠️  Cannot send email: missing Resend API key or email');
@@ -716,9 +790,9 @@ app.post('/webhook', async (req, res) => {
         order.email = session.metadata.email || order.email;
         await orders.set(session.id, order);
         
-        // Schedule follow-up email check (in production, use a proper job queue)
+        // Send immediate confirmation email
         if (order.email) {
-          console.log(`📧 Follow-up email scheduled for ${order.email} (tweet: ${result.tweetId})`);
+          await sendConfirmationEmail(order);
         }
         
         console.log('🚀 Posted:', result.tweetUrl);
