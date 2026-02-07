@@ -5,6 +5,7 @@ import Stripe from 'stripe';
 import Anthropic from '@anthropic-ai/sdk';
 import { TwitterApi } from 'twitter-api-v2';
 import { Resend } from 'resend';
+import pg from 'pg';
 import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
@@ -18,131 +19,260 @@ const anthropic = new Anthropic();
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
 // ============================================
-// SQLite Order Store
+// Database Order Store (PostgreSQL or SQLite)
 // ============================================
 
-const dbPath = process.env.DB_PATH || join(__dirname, 'orders.db');
-const db = new Database(dbPath);
+const usePostgres = !!process.env.DATABASE_URL;
+let orderStore;
 
-// Initialize schema
-db.exec(`
-  CREATE TABLE IF NOT EXISTS orders (
-    session_id TEXT PRIMARY KEY,
-    status TEXT NOT NULL DEFAULT 'pending',
-    product_data TEXT,
-    blog TEXT,
-    content TEXT,
-    email TEXT,
-    tweet_url TEXT,
-    tweet_id TEXT,
-    published_at TEXT,
-    created_at TEXT NOT NULL,
-    follow_up_sent INTEGER DEFAULT 0,
-    metrics TEXT,
-    error TEXT
-  )
-`);
+if (usePostgres) {
+  // PostgreSQL for production (Render)
+  const pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  });
+  
+  // Initialize schema
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS orders (
+      session_id TEXT PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'pending',
+      product_data JSONB,
+      blog JSONB,
+      content TEXT,
+      email TEXT,
+      tweet_url TEXT,
+      tweet_id TEXT,
+      published_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      follow_up_sent BOOLEAN DEFAULT FALSE,
+      metrics JSONB,
+      error TEXT
+    )
+  `);
+  
+  orderStore = {
+    async get(sessionId) {
+      const { rows } = await pool.query('SELECT * FROM orders WHERE session_id = $1', [sessionId]);
+      if (!rows[0]) return null;
+      const row = rows[0];
+      return {
+        status: row.status,
+        productData: row.product_data,
+        blog: row.blog,
+        content: row.content,
+        email: row.email,
+        tweetUrl: row.tweet_url,
+        tweetId: row.tweet_id,
+        publishedAt: row.published_at,
+        createdAt: row.created_at,
+        followUpSent: row.follow_up_sent,
+        metrics: row.metrics,
+        error: row.error,
+      };
+    },
+    
+    async set(sessionId, order) {
+      await pool.query(`
+        INSERT INTO orders (session_id, status, product_data, blog, content, email, tweet_url, tweet_id, published_at, created_at, follow_up_sent, metrics, error)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        ON CONFLICT(session_id) DO UPDATE SET
+          status = EXCLUDED.status,
+          product_data = EXCLUDED.product_data,
+          blog = EXCLUDED.blog,
+          content = EXCLUDED.content,
+          email = EXCLUDED.email,
+          tweet_url = EXCLUDED.tweet_url,
+          tweet_id = EXCLUDED.tweet_id,
+          published_at = EXCLUDED.published_at,
+          follow_up_sent = EXCLUDED.follow_up_sent,
+          metrics = EXCLUDED.metrics,
+          error = EXCLUDED.error
+      `, [
+        sessionId,
+        order.status || 'pending',
+        order.productData ? JSON.stringify(order.productData) : null,
+        order.blog ? JSON.stringify(order.blog) : null,
+        order.content || null,
+        order.email || null,
+        order.tweetUrl || null,
+        order.tweetId || null,
+        order.publishedAt || null,
+        order.createdAt || new Date().toISOString(),
+        order.followUpSent || false,
+        order.metrics ? JSON.stringify(order.metrics) : null,
+        order.error || null
+      ]);
+    },
+    
+    async all() {
+      const { rows } = await pool.query('SELECT * FROM orders ORDER BY created_at DESC');
+      return rows.map(row => ({
+        sessionId: row.session_id,
+        status: row.status,
+        productData: row.product_data,
+        blog: row.blog,
+        content: row.content,
+        email: row.email,
+        tweetUrl: row.tweet_url,
+        tweetId: row.tweet_id,
+        publishedAt: row.published_at,
+        createdAt: row.created_at,
+        followUpSent: row.follow_up_sent,
+        metrics: row.metrics,
+        error: row.error,
+      }));
+    },
+    
+    async pendingFollowUps() {
+      const { rows } = await pool.query(`
+        SELECT session_id, status, email, tweet_id, published_at FROM orders 
+        WHERE status = 'published' 
+          AND follow_up_sent = FALSE 
+          AND email IS NOT NULL 
+          AND tweet_id IS NOT NULL
+      `);
+      return rows.map(row => ({
+        sessionId: row.session_id,
+        status: row.status,
+        email: row.email,
+        tweetId: row.tweet_id,
+        publishedAt: row.published_at,
+      }));
+    },
+    
+    async count() {
+      const { rows } = await pool.query('SELECT COUNT(*) as count FROM orders');
+      return parseInt(rows[0].count, 10);
+    }
+  };
+  
+  console.log(`📦 Orders database: PostgreSQL (${await orderStore.count()} orders)`);
+  
+} else {
+  // SQLite for local development
+  const dbPath = process.env.DB_PATH || join(__dirname, 'orders.db');
+  const db = new Database(dbPath);
+  
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS orders (
+      session_id TEXT PRIMARY KEY,
+      status TEXT NOT NULL DEFAULT 'pending',
+      product_data TEXT,
+      blog TEXT,
+      content TEXT,
+      email TEXT,
+      tweet_url TEXT,
+      tweet_id TEXT,
+      published_at TEXT,
+      created_at TEXT NOT NULL,
+      follow_up_sent INTEGER DEFAULT 0,
+      metrics TEXT,
+      error TEXT
+    )
+  `);
+  
+  orderStore = {
+    async get(sessionId) {
+      const row = db.prepare('SELECT * FROM orders WHERE session_id = ?').get(sessionId);
+      if (!row) return null;
+      return {
+        status: row.status,
+        productData: row.product_data ? JSON.parse(row.product_data) : null,
+        blog: row.blog ? JSON.parse(row.blog) : null,
+        content: row.content,
+        email: row.email,
+        tweetUrl: row.tweet_url,
+        tweetId: row.tweet_id,
+        publishedAt: row.published_at,
+        createdAt: row.created_at,
+        followUpSent: !!row.follow_up_sent,
+        metrics: row.metrics ? JSON.parse(row.metrics) : null,
+        error: row.error,
+      };
+    },
+    
+    async set(sessionId, order) {
+      db.prepare(`
+        INSERT INTO orders (session_id, status, product_data, blog, content, email, tweet_url, tweet_id, published_at, created_at, follow_up_sent, metrics, error)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(session_id) DO UPDATE SET
+          status = excluded.status,
+          product_data = excluded.product_data,
+          blog = excluded.blog,
+          content = excluded.content,
+          email = excluded.email,
+          tweet_url = excluded.tweet_url,
+          tweet_id = excluded.tweet_id,
+          published_at = excluded.published_at,
+          follow_up_sent = excluded.follow_up_sent,
+          metrics = excluded.metrics,
+          error = excluded.error
+      `).run(
+        sessionId,
+        order.status || 'pending',
+        order.productData ? JSON.stringify(order.productData) : null,
+        order.blog ? JSON.stringify(order.blog) : null,
+        order.content || null,
+        order.email || null,
+        order.tweetUrl || null,
+        order.tweetId || null,
+        order.publishedAt || null,
+        order.createdAt || new Date().toISOString(),
+        order.followUpSent ? 1 : 0,
+        order.metrics ? JSON.stringify(order.metrics) : null,
+        order.error || null
+      );
+    },
+    
+    async all() {
+      const rows = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+      return rows.map(row => ({
+        sessionId: row.session_id,
+        status: row.status,
+        productData: row.product_data ? JSON.parse(row.product_data) : null,
+        blog: row.blog ? JSON.parse(row.blog) : null,
+        content: row.content,
+        email: row.email,
+        tweetUrl: row.tweet_url,
+        tweetId: row.tweet_id,
+        publishedAt: row.published_at,
+        createdAt: row.created_at,
+        followUpSent: !!row.follow_up_sent,
+        metrics: row.metrics ? JSON.parse(row.metrics) : null,
+        error: row.error,
+      }));
+    },
+    
+    async pendingFollowUps() {
+      return db.prepare(`
+        SELECT session_id, status, email, tweet_id, published_at FROM orders 
+        WHERE status = 'published' 
+          AND follow_up_sent = 0 
+          AND email IS NOT NULL 
+          AND tweet_id IS NOT NULL
+      `).all().map(row => ({
+        sessionId: row.session_id,
+        status: row.status,
+        email: row.email,
+        tweetId: row.tweet_id,
+        publishedAt: row.published_at,
+      }));
+    },
+    
+    async count() {
+      return db.prepare('SELECT COUNT(*) as count FROM orders').get().count;
+    }
+  };
+  
+  console.log(`📦 Orders database: SQLite @ ${dbPath} (${await orderStore.count()} orders)`);
+}
 
-// Order helper functions
-const orderStore = {
-  get(sessionId) {
-    const row = db.prepare('SELECT * FROM orders WHERE session_id = ?').get(sessionId);
-    if (!row) return null;
-    return {
-      status: row.status,
-      productData: row.product_data ? JSON.parse(row.product_data) : null,
-      blog: row.blog ? JSON.parse(row.blog) : null,
-      content: row.content,
-      email: row.email,
-      tweetUrl: row.tweet_url,
-      tweetId: row.tweet_id,
-      publishedAt: row.published_at,
-      createdAt: row.created_at,
-      followUpSent: !!row.follow_up_sent,
-      metrics: row.metrics ? JSON.parse(row.metrics) : null,
-      error: row.error,
-    };
-  },
-  
-  set(sessionId, order) {
-    const stmt = db.prepare(`
-      INSERT INTO orders (session_id, status, product_data, blog, content, email, tweet_url, tweet_id, published_at, created_at, follow_up_sent, metrics, error)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-      ON CONFLICT(session_id) DO UPDATE SET
-        status = excluded.status,
-        product_data = excluded.product_data,
-        blog = excluded.blog,
-        content = excluded.content,
-        email = excluded.email,
-        tweet_url = excluded.tweet_url,
-        tweet_id = excluded.tweet_id,
-        published_at = excluded.published_at,
-        follow_up_sent = excluded.follow_up_sent,
-        metrics = excluded.metrics,
-        error = excluded.error
-    `);
-    stmt.run(
-      sessionId,
-      order.status || 'pending',
-      order.productData ? JSON.stringify(order.productData) : null,
-      order.blog ? JSON.stringify(order.blog) : null,
-      order.content || null,
-      order.email || null,
-      order.tweetUrl || null,
-      order.tweetId || null,
-      order.publishedAt || null,
-      order.createdAt || new Date().toISOString(),
-      order.followUpSent ? 1 : 0,
-      order.metrics ? JSON.stringify(order.metrics) : null,
-      order.error || null
-    );
-  },
-  
-  all() {
-    const rows = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
-    return rows.map(row => ({
-      sessionId: row.session_id,
-      status: row.status,
-      productData: row.product_data ? JSON.parse(row.product_data) : null,
-      blog: row.blog ? JSON.parse(row.blog) : null,
-      content: row.content,
-      email: row.email,
-      tweetUrl: row.tweet_url,
-      tweetId: row.tweet_id,
-      publishedAt: row.published_at,
-      createdAt: row.created_at,
-      followUpSent: !!row.follow_up_sent,
-      metrics: row.metrics ? JSON.parse(row.metrics) : null,
-      error: row.error,
-    }));
-  },
-  
-  pendingFollowUps() {
-    return db.prepare(`
-      SELECT * FROM orders 
-      WHERE status = 'published' 
-        AND follow_up_sent = 0 
-        AND email IS NOT NULL 
-        AND tweet_id IS NOT NULL
-    `).all().map(row => ({
-      sessionId: row.session_id,
-      status: row.status,
-      email: row.email,
-      tweetId: row.tweet_id,
-      publishedAt: row.published_at,
-    }));
-  }
-};
-
-// Backwards compatibility wrapper
+// Backwards compatibility wrapper (now async)
 const orders = {
   get: (id) => orderStore.get(id),
   set: (id, order) => orderStore.set(id, order),
-  entries: () => orderStore.all().map(o => [o.sessionId, o]),
-  get size() { return db.prepare('SELECT COUNT(*) as count FROM orders').get().count; }
 };
-
-console.log(`📦 Orders database: ${dbPath} (${orders.size} orders)`);
 
 // Config
 const BOOST_PRICE = 175; // $1.75 in cents
@@ -361,7 +491,7 @@ app.post(['/api/checkout', '/api/boost/checkout'], async (req, res) => {
       },
     });
     
-    orders.set(session.id, {
+    await orders.set(session.id, {
       status: 'pending',
       productData,
       blog,
@@ -378,8 +508,8 @@ app.post(['/api/checkout', '/api/boost/checkout'], async (req, res) => {
   }
 });
 
-app.get(['/api/status/:sessionId', '/api/boost/status/:sessionId'], (req, res) => {
-  const order = orders.get(req.params.sessionId);
+app.get(['/api/status/:sessionId', '/api/boost/status/:sessionId'], async (req, res) => {
+  const order = await orders.get(req.params.sessionId);
   if (!order) return res.status(404).json({ status: 'not_found' });
   res.json(order);
 });
@@ -473,13 +603,13 @@ async function sendFollowUpEmail(order, metrics) {
 
 // Endpoint to trigger follow-up emails (call via cron or manually)
 // Debug: List all orders (remove in production)
-app.get('/api/admin/orders', (req, res) => {
+app.get('/api/admin/orders', async (req, res) => {
   const authHeader = req.headers.authorization;
   const adminKey = process.env.ADMIN_API_KEY;
   if (adminKey && authHeader !== `Bearer ${adminKey}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  const allOrders = orderStore.all().map(order => ({
+  const allOrders = (await orderStore.all()).map(order => ({
     sessionId: order.sessionId?.substring(0, 20) + '...',
     ...order
   }));
@@ -498,12 +628,12 @@ app.post('/api/admin/send-followups', async (req, res) => {
   const FOLLOWUP_DELAY = 1 * 60 * 1000; // 1 minute (testing) - change back to 24 * 60 * 60 * 1000 for production
   let sent = 0;
   
-  const pending = orderStore.pendingFollowUps();
+  const pending = await orderStore.pendingFollowUps();
   for (const row of pending) {
     const publishedAt = new Date(row.publishedAt).getTime();
     if (now - publishedAt < FOLLOWUP_DELAY) continue;
     
-    const order = orderStore.get(row.sessionId);
+    const order = await orderStore.get(row.sessionId);
     if (!order) continue;
     
     const metrics = await getTweetMetrics(order.tweetId);
@@ -512,7 +642,7 @@ app.post('/api/admin/send-followups', async (req, res) => {
       if (emailSent) {
         order.followUpSent = true;
         order.metrics = metrics;
-        orderStore.set(row.sessionId, order);
+        await orderStore.set(row.sessionId, order);
         sent++;
       }
     }
@@ -546,7 +676,7 @@ app.post('/webhook', async (req, res) => {
     const session = event.data.object;
     console.log('✅ Payment received:', session.id);
     
-    const order = orders.get(session.id);
+    const order = await orders.get(session.id);
     if (order) {
       try {
         const blog = JSON.parse(session.metadata.blog);
@@ -564,7 +694,7 @@ app.post('/webhook', async (req, res) => {
         order.tweetId = result.tweetId;
         order.publishedAt = new Date().toISOString();
         order.email = session.metadata.email || order.email;
-        orders.set(session.id, order);
+        await orders.set(session.id, order);
         
         // Schedule follow-up email check (in production, use a proper job queue)
         if (order.email) {
@@ -576,7 +706,7 @@ app.post('/webhook', async (req, res) => {
         console.error('❌ Post failed:', error.message);
         order.status = 'failed';
         order.error = error.message;
-        orders.set(session.id, order);
+        await orders.set(session.id, order);
       }
     }
   }
