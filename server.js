@@ -867,13 +867,12 @@ const KEYWORD_ROTATION = [
   ['content marketing ROI', 'SEO content promotion', 'blog traffic growth'],
 ];
 
-// Track self-promo stats
+// Track self-promo stats (no cap - experimenting with volume)
 let selfPromoStats = {
   totalBoosts: 0,
   totalSpend: 0,
   lastBoostDate: null,
   dailyBoosts: 0,
-  dailyBudget: 10.50, // $10.50 = 6 boosts max per day
   keywordIndex: 0,
 };
 
@@ -893,21 +892,14 @@ app.post('/api/admin/self-boost', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
 
-  // Check daily budget
+  // Track daily stats (no cap - experimenting with volume)
   const today = new Date().toDateString();
   if (selfPromoStats.lastBoostDate !== today) {
     selfPromoStats.dailyBoosts = 0;
     selfPromoStats.lastBoostDate = today;
   }
   
-  const costPerBoost = 1.75;
-  if ((selfPromoStats.dailyBoosts + 1) * costPerBoost > selfPromoStats.dailyBudget) {
-    return res.status(429).json({ 
-      error: 'Daily budget exceeded', 
-      dailyBoosts: selfPromoStats.dailyBoosts,
-      dailyBudget: selfPromoStats.dailyBudget 
-    });
-  }
+  const costPerBoost = 1.75; // virtual cost for ROI tracking
 
   try {
     // Get keywords (from request or use rotation)
