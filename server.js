@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
+import rateLimit from 'express-rate-limit';
 import Stripe from 'stripe';
 import Anthropic from '@anthropic-ai/sdk';
 import { TwitterApi } from 'twitter-api-v2';
@@ -9,6 +10,26 @@ import pg from 'pg';
 import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+
+// ============================================
+// Simple In-Memory Cache
+// ============================================
+const cache = new Map();
+const CACHE_TTL = 60 * 60 * 1000; // 1 hour
+
+function getCached(key) {
+  const item = cache.get(key);
+  if (!item) return null;
+  if (Date.now() > item.expires) {
+    cache.delete(key);
+    return null;
+  }
+  return item.value;
+}
+
+function setCache(key, value, ttl = CACHE_TTL) {
+  cache.set(key, { value, expires: Date.now() + ttl });
+}
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -284,6 +305,30 @@ app.use(cors());
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
+// Rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // 100 requests per window
+  message: { error: 'Too many requests, please try again later.' },
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
+const generateLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 10, // 10 generations per minute (prevents Claude abuse)
+  message: { error: 'Too many generation requests, please slow down.' },
+});
+
+const checkoutLimiter = rateLimit({
+  windowMs: 60 * 1000, // 1 minute
+  max: 5, // 5 checkout attempts per minute
+  message: { error: 'Too many checkout attempts, please slow down.' },
+});
+
+// Apply rate limiting to API routes
+app.use('/api/', apiLimiter);
+
 // Serve static files in production
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static('dist'));
@@ -304,6 +349,14 @@ async function searchBlogs(keywords) {
     }];
   }
 
+  // Check cache first
+  const cacheKey = `blogs:${keywords.toLowerCase().trim()}`;
+  const cached = getCached(cacheKey);
+  if (cached) {
+    console.log(`📦 Blog search cache hit: "${keywords}"`);
+    return cached;
+  }
+
   const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent(keywords + ' blog')}&count=10`;
   const res = await fetch(url, {
     headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY }
@@ -322,10 +375,16 @@ async function searchBlogs(keywords) {
       source: new URL(r.url).hostname.replace('www.', ''),
     }));
 
-  return results.length ? results : (data.web?.results || []).slice(0, 6).map(r => ({
+  const finalResults = results.length ? results : (data.web?.results || []).slice(0, 6).map(r => ({
     title: r.title, url: r.url, snippet: r.description,
     source: new URL(r.url).hostname.replace('www.', ''),
   }));
+
+  // Cache for 1 hour
+  setCache(cacheKey, finalResults);
+  console.log(`📦 Blog search cached: "${keywords}" (${finalResults.length} results)`);
+  
+  return finalResults;
 }
 
 // ============================================
@@ -444,7 +503,7 @@ app.get('/api/blogs/search', async (req, res) => {
   }
 });
 
-app.post('/api/generate', async (req, res) => {
+app.post('/api/generate', generateLimiter, async (req, res) => {
   try {
     const { productData, blog } = req.body;
     if (!productData?.name || !blog?.url) {
@@ -459,7 +518,7 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // Support both old and new endpoint paths
-app.post(['/api/checkout', '/api/boost/checkout'], async (req, res) => {
+app.post(['/api/checkout', '/api/boost/checkout'], checkoutLimiter, async (req, res) => {
   try {
     const { productData, blog, content } = req.body;
     
@@ -632,7 +691,7 @@ async function sendConfirmationEmail(order) {
           
           <div style="text-align: center; margin: 32px 0; padding: 24px; border: 2px dashed #333; border-radius: 12px;">
             <p style="color: #888; margin: 0 0 12px 0;">Ready for more visibility?</p>
-            <a href="https://lastreetchef.github.io/fly-wheel/" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #eab308 100%); color: #000; font-weight: bold; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 16px;">
+            <a href="${FRONTEND_URL}" style="display: inline-block; background: linear-gradient(135deg, #f97316 0%, #eab308 100%); color: #000; font-weight: bold; padding: 14px 28px; border-radius: 8px; text-decoration: none; font-size: 16px;">
               Create Another Boost →
             </a>
           </div>
@@ -690,7 +749,7 @@ async function sendFollowUpEmail(order, metrics) {
           
           <p><a href="${order.tweetUrl}" style="color: #f97316;">View your boost on X →</a></p>
           
-          <p style="color: #888; margin-top: 30px;">Ready for another boost? <a href="https://lastreetchef.github.io/fly-wheel/" style="color: #f97316;">Create one now</a></p>
+          <p style="color: #888; margin-top: 30px;">Ready for another boost? <a href="${FRONTEND_URL}" style="color: #f97316;">Create one now</a></p>
           
           <p style="color: #666; font-size: 12px; margin-top: 40px;">— BlogBoost by FlyWheel</p>
         </div>
