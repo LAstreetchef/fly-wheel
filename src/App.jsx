@@ -225,8 +225,8 @@ function LandingPage({ user, token, onSelectProduct }) {
             <SpinCard 
               image="/fly-wheel/squad/max.png"
               title="Blog Boost"
-              price="7.50"
-              description="X post promoting a relevant blog + your product. 2-for-1 exposure!"
+              price="1.75"
+              description="X post promoting a relevant blog + your product. No login required!"
               color="orange"
               productType="boost"
               popular
@@ -539,7 +539,7 @@ function App() {
         user ? <Dashboard user={user} token={token} onLogout={handleLogout} /> : <Auth onLogin={handleLogin} />
       } />
       <Route path="/boost" element={
-        <BlogBoostWrapper user={user} token={token} onLogin={handleLogin} />
+        <BlogBoostPage />
       } />
     </Routes>
   )

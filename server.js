@@ -5,7 +5,7 @@ import Stripe from 'stripe';
 import { generateContent } from './server/generate.js';
 import { createUser, loginUser, generateToken, authMiddleware, getUserById } from './server/auth.js';
 import { createTrackedLink, getLink, recordClick, getUserLinks, getLinkStats } from './server/links.js';
-import { isTwitterConfigured, getAuthUrl, handleCallback, getConnection, disconnectTwitter, getFrontendUrl } from './server/twitter.js';
+import { isTwitterConfigured, getAuthUrl, handleCallback, getConnection, disconnectTwitter, getFrontendUrl, postTweetAsSystem } from './server/twitter.js';
 import { createPost, getPost, getPostBySession, getUserPosts, publishToTwitter, getPostAnalytics, getDashboardStats } from './server/posts.js';
 import { searchBlogs, isSearchConfigured } from './server/blog-search.js';
 import { connectStore, getStoreConnection, disconnectStore, verifyConnection, fetchProducts, fetchProduct, getCachedProducts, refreshToken } from './server/shopify.js';
@@ -18,6 +18,9 @@ const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 
 // In-memory content store for webhook -> frontend sync
 const contentStore = new Map();
+
+// In-memory boost orders store (sessionId -> order data)
+const boostOrders = new Map();
 
 // Products/prices configuration
 const PRODUCTS = {
@@ -1184,6 +1187,72 @@ app.post('/api/generate', async (req, res) => {
 });
 
 // ============================================
+// Guest Boost Checkout (no login required)
+// ============================================
+
+const BOOST_PRICE = 175; // $1.75 in cents
+
+app.post('/api/boost/checkout', async (req, res) => {
+  try {
+    const { productData, blog, content } = req.body;
+    
+    if (!productData?.name || !blog?.url || !content) {
+      return res.status(400).json({ error: 'Missing required data' });
+    }
+    
+    // Create Stripe Checkout Session
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Blog Boost',
+            description: `Promote "${productData.name}" alongside "${blog.title?.substring(0, 50)}..."`,
+          },
+          unit_amount: BOOST_PRICE,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${getFrontendUrl()}/boost?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${getFrontendUrl()}/boost`,
+      metadata: {
+        type: 'guest_boost',
+        productData: JSON.stringify(productData),
+        blog: JSON.stringify(blog),
+        content: content,
+      },
+    });
+    
+    // Store order for later retrieval
+    boostOrders.set(session.id, {
+      status: 'pending',
+      productData,
+      blog,
+      content,
+      createdAt: new Date().toISOString(),
+    });
+    
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('Boost checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+app.get('/api/boost/status/:sessionId', (req, res) => {
+  const { sessionId } = req.params;
+  const order = boostOrders.get(sessionId);
+  
+  if (!order) {
+    return res.status(404).json({ status: 'not_found' });
+  }
+  
+  res.json(order);
+});
+
+// ============================================
 // Stripe Webhook
 // ============================================
 
@@ -1242,6 +1311,40 @@ app.post('/webhook', async (req, res) => {
         }
       } else if (session.metadata.type === 'credits') {
         console.log(`   💳 Credits: $${session.metadata.amount} + $${session.metadata.bonus} bonus`);
+      } else if (session.metadata.type === 'guest_boost') {
+        console.log(`   🚀 Guest Boost: posting to X...`);
+        
+        const order = boostOrders.get(session.id);
+        if (order) {
+          try {
+            // Post to BlogBoost's X account
+            const content = session.metadata.content;
+            const blogData = JSON.parse(session.metadata.blog || '{}');
+            const productDataParsed = JSON.parse(session.metadata.productData || '{}');
+            
+            // Replace placeholders in content
+            let finalContent = content
+              .replace('[BLOG_LINK]', blogData.url || '')
+              .replace('[PRODUCT_LINK]', productDataParsed.productUrl || '');
+            
+            // Post using the system/BlogBoost Twitter account
+            const tweetResult = await postTweetAsSystem(finalContent);
+            
+            // Update order status
+            order.status = 'published';
+            order.tweetUrl = tweetResult.tweetUrl;
+            order.tweetId = tweetResult.tweetId;
+            order.publishedAt = new Date().toISOString();
+            boostOrders.set(session.id, order);
+            
+            console.log(`   ✅ Boost posted! ${tweetResult.tweetUrl}`);
+          } catch (error) {
+            console.error(`   ❌ Boost publish failed:`, error.message);
+            order.status = 'failed';
+            order.error = error.message;
+            boostOrders.set(session.id, order);
+          }
+        }
       }
       break;
       

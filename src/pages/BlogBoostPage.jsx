@@ -1,147 +1,30 @@
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { loadStripe } from '@stripe/stripe-js'
-import { Elements, PaymentElement, useStripe, useElements } from '@stripe/react-stripe-js'
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001'
-const STRIPE_PK = import.meta.env.VITE_STRIPE_PUBLISHABLE_KEY || 'pk_test_51QZwkYB2mCJvcgI4TaUGPlP5RwRqA5qM3hqk7zPGYT9HJvWJZhLRMRMg4dRd7lqDMJ7y5F4vGzBGjzECFMM7n9q500jNEzUwmf'
-
-const stripePromise = loadStripe(STRIPE_PK)
 
 // Stella - ElevenLabs Agent ID
 const ELEVENLABS_AGENT_ID = 'agent_0501kgsz28fveqbvb5td8k3zpeqb'
 
-// Pricing tiers
-const BOOST_PACKS = [
-  { id: 'single', name: '1 Boost', boosts: 1, price: 750, priceDisplay: '$7.50', popular: false },
-  { id: 'starter', name: '10 Boosts', boosts: 10, price: 6000, priceDisplay: '$60', savings: 'Save 20%', popular: true },
-  { id: 'growth', name: '50 Boosts', boosts: 50, price: 25000, priceDisplay: '$250', savings: 'Save 33%', popular: false },
-  { id: 'scale', name: '100 Boosts', boosts: 100, price: 45000, priceDisplay: '$450', savings: 'Save 40%', popular: false },
-]
+// Price
+const BOOST_PRICE = '$1.75'
 
-// Payment Form Component
-function PaymentForm({ pack, onSuccess, onCancel, token }) {
-  const stripe = useStripe()
-  const elements = useElements()
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState(null)
-
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    if (!stripe || !elements) return
-    
-    setLoading(true)
-    setError(null)
-    
-    try {
-      const { error: submitError, paymentIntent } = await stripe.confirmPayment({
-        elements,
-        redirect: 'if_required'
-      })
-      
-      if (submitError) throw new Error(submitError.message)
-      
-      if (paymentIntent.status === 'succeeded') {
-        // Add boosts to user account
-        const res = await fetch(`${API_URL}/api/boosts/add`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${token}`,
-            'ngrok-skip-browser-warning': 'true'
-          },
-          body: JSON.stringify({
-            paymentIntentId: paymentIntent.id,
-            packId: pack.id,
-            boosts: pack.boosts
-          })
-        })
-        
-        const data = await res.json()
-        if (!res.ok) throw new Error(data.error || 'Failed to add boosts')
-        
-        onSuccess(data)
-      }
-    } catch (err) {
-      setError(err.message)
-    } finally {
-      setLoading(false)
-    }
-  }
-
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="text-center mb-4">
-        <h3 className="text-xl font-bold text-white">{pack.name}</h3>
-        <p className="text-3xl font-black text-orange-400 mt-2">{pack.priceDisplay}</p>
-        {pack.savings && <p className="text-green-400 text-sm">{pack.savings}</p>}
-      </div>
-      
-      <div className="bg-gray-800 rounded-xl p-4">
-        <PaymentElement options={{ layout: 'tabs' }} />
-      </div>
-      
-      {error && (
-        <div className="bg-red-500/20 border border-red-500/50 text-red-400 rounded-lg px-4 py-3 text-sm">
-          {error}
-        </div>
-      )}
-      
-      <div className="flex gap-3">
-        <button type="button" onClick={onCancel} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold">
-          Cancel
-        </button>
-        <button type="submit" disabled={!stripe || loading} className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 rounded-xl font-bold disabled:opacity-50">
-          {loading ? 'Processing...' : `Pay ${pack.priceDisplay}`}
-        </button>
-      </div>
-    </form>
-  )
-}
-
-export default function BlogBoostPage({ user, token, onLogin }) {
+export default function BlogBoostPage() {
   const [searchParams] = useSearchParams()
-  const widgetRef = useRef(null)
   
-  // State
-  const [step, setStep] = useState('input')
+  // Flow state
+  const [step, setStep] = useState('input') // input, searching, selectBlog, generating, preview, paying, published
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
-  const [success, setSuccess] = useState(null)
-  
-  // User boosts
-  const [boostCredits, setBoostCredits] = useState(0)
-  
-  // Checkout
-  const [selectedPack, setSelectedPack] = useState(null)
-  const [clientSecret, setClientSecret] = useState(null)
   
   // Product data
   const [productData, setProductData] = useState({ name: '', description: '', productUrl: '', keywords: '' })
   const [blogs, setBlogs] = useState([])
   const [selectedBlog, setSelectedBlog] = useState(null)
   const [generatedContent, setGeneratedContent] = useState(null)
-  const [postId, setPostId] = useState(null)
+  
+  // Result
   const [publishResult, setPublishResult] = useState(null)
-  const [twitterStatus, setTwitterStatus] = useState(null)
-
-  // Check for twitter=connected on mount
-  useEffect(() => {
-    if (searchParams.get('twitter') === 'connected') {
-      setSuccess(`✅ X account @${searchParams.get('username') || ''} connected!`)
-      checkTwitterConnection()
-      // Clean URL
-      window.history.replaceState({}, '', window.location.pathname)
-    }
-  }, [searchParams])
-
-  // Load user data
-  useEffect(() => {
-    if (user && token) {
-      checkTwitterConnection()
-      fetchBoostCredits()
-    }
-  }, [user, token])
 
   // Load ElevenLabs widget script
   useEffect(() => {
@@ -150,108 +33,50 @@ export default function BlogBoostPage({ user, token, onLogin }) {
     script.async = true
     script.type = 'text/javascript'
     document.body.appendChild(script)
-    
     return () => {
       const existingScript = document.querySelector('script[src*="elevenlabs"]')
       if (existingScript) existingScript.remove()
     }
   }, [])
 
-  // Setup client tools for the ElevenLabs widget
+  // Check for payment success on mount
   useEffect(() => {
-    const setupWidget = () => {
-      const widget = document.querySelector('elevenlabs-convai')
-      if (widget) {
-        widget.addEventListener('elevenlabs-convai:call', (event) => {
-          event.detail.config.clientTools = {
-            startBoost: ({ productName, productDescription, productUrl, keywords }) => {
-              const data = {
-                name: productName || '',
-                description: productDescription || '',
-                productUrl: productUrl || '',
-                keywords: keywords || ''
-              }
-              setProductData(data)
-              if (productName && keywords) handleSearchBlogs(data)
-              return { success: true, message: 'Product data received' }
-            },
-            selectBlog: ({ blogIndex }) => {
-              if (blogs[blogIndex]) {
-                handleSelectBlog(blogs[blogIndex])
-                return { success: true, message: `Selected: ${blogs[blogIndex].title}` }
-              }
-              return { success: false, message: 'Invalid blog index' }
-            },
-            publishToX: () => {
-              handlePublish()
-              return { success: true, message: 'Publishing...' }
-            },
-            getStatus: () => ({
-              step,
-              hasBlogs: blogs.length > 0,
-              blogCount: blogs.length,
-              hasContent: !!generatedContent,
-              isLoggedIn: !!user,
-              twitterConnected: twitterStatus === 'connected'
-            })
-          }
+    const sessionId = searchParams.get('session_id')
+    const success = searchParams.get('success')
+    
+    if (success === 'true' && sessionId) {
+      setStep('paying')
+      checkPaymentAndPublish(sessionId)
+    }
+  }, [searchParams])
+
+  // After Stripe payment, check status and publish
+  const checkPaymentAndPublish = async (sessionId) => {
+    try {
+      // Poll for result (webhook may have already processed it)
+      let attempts = 0
+      const poll = setInterval(async () => {
+        attempts++
+        const res = await fetch(`${API_URL}/api/boost/status/${sessionId}`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
         })
-      }
-    }
-    
-    const interval = setInterval(() => {
-      if (document.querySelector('elevenlabs-convai')) {
-        setupWidget()
-        clearInterval(interval)
-      }
-    }, 500)
-    
-    return () => clearInterval(interval)
-  }, [blogs, selectedBlog, generatedContent, user, step, twitterStatus])
-
-  const fetchBoostCredits = async () => {
-    if (!user || !token) return
-    try {
-      const res = await fetch(`${API_URL}/api/boosts/balance`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
-      })
-      const data = await res.json()
-      setBoostCredits(data.boosts || 0)
-    } catch (e) {
-      console.error('Failed to fetch boost credits:', e)
-    }
-  }
-
-  const checkTwitterConnection = async () => {
-    if (!user || !token) return false
-    try {
-      const res = await fetch(`${API_URL}/api/twitter/status`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
-      })
-      const data = await res.json()
-      setTwitterStatus(data.connected ? 'connected' : 'not_connected')
-      return data.connected
-    } catch {
-      setTwitterStatus('not_connected')
-      return false
-    }
-  }
-
-  const connectTwitter = async () => {
-    if (!user || !token) {
-      onLogin?.()
-      return
-    }
-    try {
-      const res = await fetch(`${API_URL}/api/twitter/auth?returnTo=/boost`, {
-        headers: { 'Authorization': `Bearer ${token}`, 'ngrok-skip-browser-warning': 'true' }
-      })
-      const data = await res.json()
-      if (data.url) {
-        window.location.href = data.url
-      }
+        const data = await res.json()
+        
+        if (data.status === 'published') {
+          clearInterval(poll)
+          setPublishResult(data)
+          setStep('published')
+          window.history.replaceState({}, '', window.location.pathname)
+        } else if (data.status === 'failed' || attempts > 60) {
+          clearInterval(poll)
+          setError(data.error || 'Something went wrong. Contact support.')
+          setStep('input')
+          window.history.replaceState({}, '', window.location.pathname)
+        }
+      }, 2000)
     } catch (err) {
-      setError('Failed to start Twitter auth: ' + err.message)
+      setError('Failed to check payment status: ' + err.message)
+      setStep('input')
     }
   }
 
@@ -267,7 +92,7 @@ export default function BlogBoostPage({ user, token, onLogin }) {
     try {
       const res = await fetch(
         `${API_URL}/api/blogs/search?keywords=${encodeURIComponent(data.keywords)}`,
-        { headers: { 'ngrok-skip-browser-warning': 'true', ...(token && { 'Authorization': `Bearer ${token}` }) } }
+        { headers: { 'ngrok-skip-browser-warning': 'true' } }
       )
       const result = await res.json()
       if (!res.ok) throw new Error(result.error || `Server error: ${res.status}`)
@@ -295,11 +120,7 @@ export default function BlogBoostPage({ user, token, onLogin }) {
     try {
       const genRes = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'ngrok-skip-browser-warning': 'true',
-          ...(token && { Authorization: `Bearer ${token}` })
-        },
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
         body: JSON.stringify({
           productType: 'boost',
           productData: { ...productData, blogTitle: blog.title, blogUrl: blog.url, blogSnippet: blog.snippet }
@@ -310,19 +131,6 @@ export default function BlogBoostPage({ user, token, onLogin }) {
       if (genData.error) throw new Error(genData.error)
       
       setGeneratedContent(genData.content)
-      
-      if (user && token) {
-        const createRes = await fetch(`${API_URL}/api/content/create`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ productType: 'boost', content: genData.content, productData: { ...productData, blogUrl: blog.url, blogTitle: blog.title } })
-        })
-        if (createRes.ok) {
-          const createData = await createRes.json()
-          setPostId(createData.id)
-        }
-        await checkTwitterConnection()
-      }
       setStep('preview')
     } catch (err) {
       setError('Generation failed: ' + err.message)
@@ -332,55 +140,31 @@ export default function BlogBoostPage({ user, token, onLogin }) {
     }
   }
 
-  const handlePublish = async () => {
-    if (!user || !token) {
-      onLogin?.()
-      return
-    }
-    
-    // TODO: Re-enable boost credit check after testing
-    // if (boostCredits < 1) {
-    //   setError('You need boost credits to publish. Purchase a pack below!')
-    //   return
-    // }
-    
+  const handlePayAndPost = async () => {
     setLoading(true)
     setError(null)
     
     try {
-      let finalPostId = postId
-      if (!finalPostId) {
-        const createRes = await fetch(`${API_URL}/api/content/create`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true', Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ productType: 'boost', content: generatedContent, productData: { ...productData, blogUrl: selectedBlog.url } })
-        })
-        if (!createRes.ok) throw new Error('Could not save post')
-        finalPostId = (await createRes.json()).id
-        setPostId(finalPostId)
-      }
-      
-      const pubRes = await fetch(`${API_URL}/api/posts/${finalPostId}/publish`, {
+      // Create Stripe Checkout session with all the data
+      const res = await fetch(`${API_URL}/api/boost/checkout`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true', Authorization: `Bearer ${token}` },
-        body: JSON.stringify({ platform: 'twitter', productUrl: productData.productUrl, blogUrl: selectedBlog.url, useBoostCredit: true })
+        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
+        body: JSON.stringify({
+          productData,
+          blog: selectedBlog,
+          content: generatedContent
+        })
       })
       
-      const pubData = await pubRes.json()
-      if (!pubRes.ok) {
-        if (pubData.error?.includes('not connected')) {
-          setTwitterStatus('not_connected')
-          throw new Error('Please connect your X account first')
-        }
-        throw new Error(pubData.error || 'Publish failed')
-      }
+      const data = await res.json()
+      if (data.error) throw new Error(data.error)
       
-      setPublishResult(pubData)
-      setBoostCredits(prev => prev - 1)
-      setStep('published')
+      // Redirect to Stripe Checkout
+      if (data.url) {
+        window.location.href = data.url
+      }
     } catch (err) {
-      setError(err.message)
-    } finally {
+      setError('Checkout failed: ' + err.message)
       setLoading(false)
     }
   }
@@ -398,42 +182,8 @@ export default function BlogBoostPage({ user, token, onLogin }) {
     setBlogs([])
     setSelectedBlog(null)
     setGeneratedContent(null)
-    setPostId(null)
     setPublishResult(null)
     setError(null)
-    setSuccess(null)
-  }
-
-  // Buy boost pack
-  const buyPack = async (pack) => {
-    if (!user || !token) {
-      onLogin?.()
-      return
-    }
-    
-    setSelectedPack(pack)
-    setError(null)
-    
-    try {
-      const res = await fetch(`${API_URL}/api/boosts/create-intent`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'ngrok-skip-browser-warning': 'true' },
-        body: JSON.stringify({ packId: pack.id, userId: user.id })
-      })
-      const data = await res.json()
-      if (data.error) throw new Error(data.error)
-      setClientSecret(data.clientSecret)
-    } catch (err) {
-      setError(err.message)
-      setSelectedPack(null)
-    }
-  }
-
-  const handlePurchaseSuccess = (data) => {
-    setBoostCredits(data.newBalance || boostCredits + selectedPack.boosts)
-    setSuccess(`✅ ${selectedPack.boosts} boost${selectedPack.boosts > 1 ? 's' : ''} added to your account!`)
-    setSelectedPack(null)
-    setClientSecret(null)
   }
 
   return (
@@ -446,7 +196,7 @@ export default function BlogBoostPage({ user, token, onLogin }) {
 
       {/* Header */}
       <header className="relative z-50 px-6 py-4 border-b border-gray-800/50">
-        <nav className="max-w-6xl mx-auto flex items-center justify-between">
+        <nav className="max-w-4xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-3">
             <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-10 h-10 object-contain" />
             <span className="text-2xl font-bold">
@@ -454,264 +204,191 @@ export default function BlogBoostPage({ user, token, onLogin }) {
               <span className="text-orange-400">Boost</span>
             </span>
           </div>
-          
-          <div className="flex items-center gap-4">
-            {user ? (
-              <>
-                <div className="bg-orange-500/20 border border-orange-500/30 rounded-full px-4 py-1">
-                  <span className="text-orange-400 font-bold">{boostCredits}</span>
-                  <span className="text-gray-400 text-sm ml-1">boosts</span>
-                </div>
-                <span className="text-gray-400 text-sm">{user.email}</span>
-              </>
-            ) : (
-              <button onClick={onLogin} className="bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-5 py-2 rounded-full text-sm font-bold">
-                Login
-              </button>
-            )}
+          <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-4 py-1 rounded-full text-sm font-black">
+            {BOOST_PRICE}/post
           </div>
         </nav>
       </header>
 
-      {/* Purchase Modal */}
-      {selectedPack && clientSecret && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/80 backdrop-blur-sm" onClick={() => { setSelectedPack(null); setClientSecret(null) }} />
-          <div className="relative bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-md w-full">
-            <button onClick={() => { setSelectedPack(null); setClientSecret(null) }} className="absolute top-4 right-4 text-gray-400 hover:text-white text-2xl">×</button>
-            <Elements stripe={stripePromise} options={{ clientSecret, appearance: { theme: 'night', variables: { colorPrimary: '#f97316', colorBackground: '#1f2937', colorText: '#ffffff', borderRadius: '12px' } } }}>
-              <PaymentForm pack={selectedPack} token={token} onSuccess={handlePurchaseSuccess} onCancel={() => { setSelectedPack(null); setClientSecret(null) }} />
-            </Elements>
-          </div>
-        </div>
-      )}
-
-      <main className="relative z-10 max-w-6xl mx-auto px-4 py-8">
-        {/* Success/Error Messages */}
-        {success && (
-          <div className="bg-green-500/20 border border-green-500/50 text-green-400 rounded-xl px-6 py-4 mb-6 text-center">
-            {success}
-          </div>
-        )}
+      <main className="relative z-10 max-w-4xl mx-auto px-4 py-8">
+        {/* Error */}
         {error && (
           <div className="bg-red-500/20 border border-red-500/50 text-red-400 rounded-xl px-6 py-4 mb-6">
             {error}
           </div>
         )}
 
-        {/* Hero */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-black mb-4">
-            <span className="text-white">Promote Your Product</span>
-            <br />
-            <span className="text-orange-400">Alongside Relevant Content</span>
-          </h1>
-          <p className="text-gray-400 text-lg">We find blogs your audience already reads, then post your product alongside them.</p>
-        </div>
+        {/* Hero - only show on input step */}
+        {step === 'input' && (
+          <div className="text-center mb-10">
+            <h1 className="text-4xl md:text-5xl font-black mb-4">
+              <span className="text-white">Get Your Product</span>
+              <br />
+              <span className="text-orange-400">In Front of Readers</span>
+            </h1>
+            <p className="text-gray-400 text-lg">We find relevant blogs, craft a promo post, and publish it to X. Just {BOOST_PRICE}.</p>
+          </div>
+        )}
 
-        <div className="grid lg:grid-cols-2 gap-8 mb-16">
-          {/* Create Boost Form */}
-          <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="text-2xl">✍️</span> Create a Boost
-            </h2>
-
-            {/* Twitter Status */}
-            {user && (
-              <div className="mb-4">
-                {twitterStatus === 'connected' ? (
-                  <div className="flex items-center gap-2 text-green-400 text-sm">
-                    <span>✅</span> X Connected
-                  </div>
-                ) : (
-                  <button onClick={connectTwitter} className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-bold">
-                    🔗 Connect X Account
-                  </button>
-                )}
-              </div>
-            )}
-
-            {(step === 'input' || step === 'searching') && (
+        {/* Main Card */}
+        <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6 md:p-8 mb-8">
+          
+          {/* Step: Input */}
+          {(step === 'input' || step === 'searching') && (
+            <>
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <span className="w-8 h-8 rounded-full bg-orange-500 text-black flex items-center justify-center text-sm font-black">1</span>
+                Tell us about your product
+              </h2>
               <form onSubmit={(e) => { e.preventDefault(); handleSearchBlogs() }} className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Product Name *</label>
-                  <input type="text" required value={productData.name} onChange={(e) => setProductData({ ...productData, name: e.target.value })} placeholder="e.g., SwordPay" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                <div className="grid md:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Product Name *</label>
+                    <input type="text" required value={productData.name} onChange={(e) => setProductData({ ...productData, name: e.target.value })} placeholder="e.g., SwordPay" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-gray-400 mb-1">Product URL</label>
+                    <input type="url" value={productData.productUrl} onChange={(e) => setProductData({ ...productData, productUrl: e.target.value })} placeholder="https://your-product.com" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                  </div>
                 </div>
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">Description</label>
-                  <textarea value={productData.description} onChange={(e) => setProductData({ ...productData, description: e.target.value })} placeholder="Brief description..." rows={2} className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                  <textarea value={productData.description} onChange={(e) => setProductData({ ...productData, description: e.target.value })} placeholder="What does your product do? Who is it for?" rows={2} className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Product URL</label>
-                  <input type="url" value={productData.productUrl} onChange={(e) => setProductData({ ...productData, productUrl: e.target.value })} placeholder="https://your-product.com" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                  <label className="block text-sm text-gray-400 mb-1">Search Keywords * <span className="text-gray-500">(we'll find blogs about this)</span></label>
+                  <input type="text" required value={productData.keywords} onChange={(e) => setProductData({ ...productData, keywords: e.target.value })} placeholder="e.g., creator economy, payments, fintech" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
                 </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Search Keywords *</label>
-                  <input type="text" required value={productData.keywords} onChange={(e) => setProductData({ ...productData, keywords: e.target.value })} placeholder="e.g., creator payments fintech" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
-                </div>
-                <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-4 rounded-xl font-bold text-lg disabled:opacity-50">
+                <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-4 rounded-xl font-bold text-lg disabled:opacity-50 hover:scale-[1.02] transition-transform">
                   {loading ? 'Searching...' : 'Find Relevant Blogs →'}
                 </button>
               </form>
-            )}
+            </>
+          )}
 
-            {step === 'selectBlog' && (
-              <div className="space-y-3">
-                <p className="text-sm text-gray-400 mb-4">Select a blog to boost alongside:</p>
-                <div className="max-h-80 overflow-y-auto space-y-2">
-                  {blogs.map((blog, i) => (
-                    <button key={i} onClick={() => handleSelectBlog(blog)} disabled={loading} className="w-full text-left p-4 rounded-xl border-2 transition-all hover:border-orange-400 hover:bg-orange-500/10 border-gray-700 bg-gray-800/50">
-                      <div className="font-semibold text-white mb-1 line-clamp-1">{blog.title}</div>
-                      <div className="text-sm text-gray-400 line-clamp-2">{blog.snippet}</div>
-                      <div className="text-xs text-orange-400 mt-2">{blog.source}</div>
-                    </button>
-                  ))}
-                </div>
-                <button onClick={() => setStep('input')} className="text-gray-400 hover:text-white text-sm">← Different keywords</button>
-              </div>
-            )}
-
-            {step === 'generating' && (
-              <div className="flex flex-col items-center justify-center py-12">
-                <svg className="animate-spin h-10 w-10 text-orange-400 mb-4" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                <p className="text-gray-400">Crafting your boost...</p>
-              </div>
-            )}
-
-            {step === 'preview' && (
-              <div className="space-y-4">
-                <div className="bg-gray-800 rounded-xl p-4">
-                  <div className="text-xs text-gray-500 mb-2">PREVIEW</div>
-                  <div className="text-white whitespace-pre-wrap text-sm">{getPreview()}</div>
-                </div>
-                <div className="text-sm text-gray-400">
-                  📝 Blog: <a href={selectedBlog?.url} target="_blank" rel="noopener noreferrer" className="text-cyan-400 hover:underline">{selectedBlog?.title?.substring(0, 40)}...</a>
-                </div>
-                
-                {user && twitterStatus === 'not_connected' && (
-                  <div className="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
-                    <p className="text-blue-400 text-sm mb-2">Connect X to post</p>
-                    <button onClick={connectTwitter} className="bg-blue-500 hover:bg-blue-600 text-white py-2 px-4 rounded-lg font-semibold text-sm">🔗 Connect X</button>
-                  </div>
-                )}
-                
-                {/* TODO: Re-enable after testing
-                {boostCredits < 1 && user && (
-                  <div className="bg-orange-500/10 border border-orange-500/30 rounded-xl p-4">
-                    <p className="text-orange-400 text-sm">You need boost credits to publish. Get some below! 👇</p>
-                  </div>
-                )}
-                */}
-                
-                <div className="flex gap-3">
-                  <button onClick={() => setStep('selectBlog')} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold">← Back</button>
-                  <button onClick={() => navigator.clipboard.writeText(getPreview())} className="bg-gray-800 hover:bg-gray-700 text-gray-300 py-3 px-4 rounded-xl border border-gray-700">📋</button>
-                  <button onClick={user ? handlePublish : onLogin} disabled={loading || (user && twitterStatus === 'not_connected')} className="flex-1 bg-gradient-to-r from-orange-500 to-yellow-500 text-white py-3 rounded-xl font-bold disabled:opacity-50">
-                    {loading ? '...' : user ? '🚀 Post to X (1 boost)' : '🔐 Login'}
+          {/* Step: Select Blog */}
+          {step === 'selectBlog' && (
+            <>
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <span className="w-8 h-8 rounded-full bg-orange-500 text-black flex items-center justify-center text-sm font-black">2</span>
+                Pick a blog to boost alongside
+              </h2>
+              <div className="space-y-3 max-h-96 overflow-y-auto">
+                {blogs.map((blog, i) => (
+                  <button key={i} onClick={() => handleSelectBlog(blog)} disabled={loading} className="w-full text-left p-4 rounded-xl border-2 transition-all hover:border-orange-400 hover:bg-orange-500/10 border-gray-700 bg-gray-800/50 disabled:opacity-50">
+                    <div className="font-semibold text-white mb-1 line-clamp-1">{blog.title}</div>
+                    <div className="text-sm text-gray-400 line-clamp-2">{blog.snippet}</div>
+                    <div className="text-xs text-orange-400 mt-2">{blog.source}</div>
                   </button>
-                </div>
+                ))}
               </div>
-            )}
+              <button onClick={() => setStep('input')} className="text-gray-400 hover:text-white text-sm mt-4">← Different keywords</button>
+            </>
+          )}
 
-            {step === 'published' && (
-              <div className="text-center py-8">
-                <div className="text-6xl mb-4">🎉</div>
-                <h3 className="text-2xl font-bold text-white mb-2">Boost Posted!</h3>
-                <p className="text-gray-400 mb-6">Your content is live on X</p>
-                <a href={publishResult?.tweetUrl?.replace('twitter.com', 'x.com')} target="_blank" rel="noopener noreferrer" className="inline-block bg-gradient-to-r from-orange-500 to-yellow-500 text-white px-6 py-3 rounded-xl font-bold mb-4">
-                  View on X →
-                </a>
-                <br />
-                <button onClick={handleStartOver} className="text-gray-400 hover:text-white mt-4">Create Another Boost</button>
-              </div>
-            )}
-          </div>
-
-          {/* How It Works + Ask Stella */}
-          <div className="bg-gray-900/80 backdrop-blur-sm border border-gray-700 rounded-2xl p-6">
-            <div className="flex items-center gap-3 mb-6">
-              <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-12 h-12 object-contain drop-shadow-lg" />
-              <h2 className="text-xl font-bold">How It Works</h2>
+          {/* Step: Generating */}
+          {step === 'generating' && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <svg className="animate-spin h-12 w-12 text-orange-400 mb-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <p className="text-gray-400 text-lg">Crafting your boost...</p>
             </div>
-            <div className="space-y-6">
-              {[
-                { num: '1', title: 'Enter your product', desc: 'Name, description, and keywords' },
-                { num: '2', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
-                { num: '3', title: 'AI crafts your boost', desc: 'Natural promo that links blog + product' },
-                { num: '4', title: 'Post to X', desc: 'One click, tracked links, instant exposure' },
-              ].map((s, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black">{s.num}</span>
+          )}
+
+          {/* Step: Preview */}
+          {step === 'preview' && (
+            <>
+              <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
+                <span className="w-8 h-8 rounded-full bg-orange-500 text-black flex items-center justify-center text-sm font-black">3</span>
+                Preview & Pay
+              </h2>
+              <div className="bg-gray-800 rounded-xl p-5 mb-4">
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 flex items-center justify-center text-black font-bold text-sm">BB</div>
                   <div>
-                    <h3 className="font-bold text-white">{s.title}</h3>
-                    <p className="text-gray-400 text-sm">{s.desc}</p>
+                    <div className="font-bold text-white text-sm">@BlogBoost</div>
+                    <div className="text-gray-500 text-xs">will post this</div>
                   </div>
                 </div>
-              ))}
-            </div>
-            
-            {/* Ask Stella */}
-            <div className="mt-8 pt-6 border-t border-gray-700/50">
-              <p className="text-gray-300 text-base mb-4">Questions? <span className="font-bold bg-gradient-to-r from-orange-400 to-yellow-400 bg-clip-text text-transparent">Ask Stella!</span></p>
-              <div dangerouslySetInnerHTML={{ __html: `<elevenlabs-convai agent-id="${ELEVENLABS_AGENT_ID}"></elevenlabs-convai>` }} />
-            </div>
-          </div>
-        </div>
-
-        {/* Pricing Section */}
-        <div id="pricing" className="mb-16">
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-black text-white mb-2">Get Boost Credits</h2>
-            <p className="text-gray-400">Buy once, use anytime. No subscriptions.</p>
-          </div>
-          
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {BOOST_PACKS.map((pack) => (
-              <div key={pack.id} className={`relative bg-gray-900 border rounded-2xl p-6 ${pack.popular ? 'border-orange-500 ring-2 ring-orange-500/20' : 'border-gray-700'}`}>
-                {pack.popular && (
-                  <div className="absolute -top-3 left-1/2 -translate-x-1/2 bg-orange-500 text-black text-xs font-bold px-3 py-1 rounded-full">
-                    MOST POPULAR
-                  </div>
-                )}
-                <div className="text-center">
-                  <h3 className="text-xl font-bold text-white mb-1">{pack.name}</h3>
-                  <div className="text-3xl font-black text-orange-400 mb-1">{pack.priceDisplay}</div>
-                  {pack.savings && <div className="text-green-400 text-sm mb-4">{pack.savings}</div>}
-                  {!pack.savings && <div className="text-gray-500 text-sm mb-4">&nbsp;</div>}
-                  <button onClick={() => buyPack(pack)} className={`w-full py-3 rounded-xl font-bold transition-all ${pack.popular ? 'bg-gradient-to-r from-orange-500 to-yellow-500 text-white hover:scale-105' : 'bg-gray-800 hover:bg-gray-700 text-white'}`}>
-                    Buy Now
-                  </button>
-                </div>
+                <div className="text-white whitespace-pre-wrap text-sm leading-relaxed">{getPreview()}</div>
               </div>
-            ))}
-          </div>
+              <div className="text-sm text-gray-400 mb-6">
+                📝 Promoting alongside: <a href={selectedBlog?.url} target="_blank" rel="noopener noreferrer" className="text-orange-400 hover:underline">{selectedBlog?.title?.substring(0, 50)}...</a>
+              </div>
+              
+              <div className="flex gap-3">
+                <button onClick={() => setStep('selectBlog')} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-4 rounded-xl font-bold">
+                  ← Back
+                </button>
+                <button onClick={handlePayAndPost} disabled={loading} className="flex-[2] bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-4 rounded-xl font-bold text-lg disabled:opacity-50 hover:scale-[1.02] transition-transform">
+                  {loading ? 'Loading...' : `Pay ${BOOST_PRICE} & Post →`}
+                </button>
+              </div>
+            </>
+          )}
+
+          {/* Step: Paying/Processing */}
+          {step === 'paying' && (
+            <div className="flex flex-col items-center justify-center py-16">
+              <svg className="animate-spin h-12 w-12 text-orange-400 mb-4" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+              </svg>
+              <p className="text-gray-400 text-lg">Payment received! Posting your boost...</p>
+              <p className="text-gray-500 text-sm mt-2">This usually takes about 10 seconds</p>
+            </div>
+          )}
+
+          {/* Step: Published */}
+          {step === 'published' && (
+            <div className="text-center py-8">
+              <div className="text-6xl mb-4">🎉</div>
+              <h3 className="text-3xl font-black text-white mb-2">You're Live!</h3>
+              <p className="text-gray-400 mb-8">Your boost has been posted to X</p>
+              
+              {publishResult?.tweetUrl && (
+                <a href={publishResult.tweetUrl.replace('twitter.com', 'x.com')} target="_blank" rel="noopener noreferrer" className="inline-block bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-8 py-4 rounded-xl font-bold text-lg mb-6 hover:scale-105 transition-transform">
+                  View Your Boost on X →
+                </a>
+              )}
+              
+              <br />
+              <button onClick={handleStartOver} className="text-orange-400 hover:text-orange-300 font-medium mt-4">
+                Create Another Boost
+              </button>
+            </div>
+          )}
         </div>
 
-        {/* FAQ */}
-        <div className="max-w-2xl mx-auto">
-          <h2 className="text-2xl font-bold text-center mb-8">FAQ</h2>
-          <div className="space-y-4">
+        {/* How It Works - compact version on side for larger screens */}
+        {step === 'input' && (
+          <div className="grid md:grid-cols-3 gap-4 mb-8">
             {[
-              { q: 'What is a "boost"?', a: 'A boost is a single X post that promotes your product alongside a relevant blog post. We find content your audience already reads, then craft a natural promo linking both.' },
-              { q: 'Do boost credits expire?', a: 'No! Buy once, use whenever. Your credits stay in your account until you use them.' },
-              { q: 'Can I use this for any product?', a: 'Yes - SaaS, physical products, services, apps. If you can describe it and give us keywords, we can boost it.' },
+              { icon: '🔍', title: 'Find', desc: 'We search for blogs your audience reads' },
+              { icon: '✨', title: 'Craft', desc: 'AI creates a natural promo post' },
+              { icon: '🚀', title: 'Post', desc: 'Goes live on X instantly' },
             ].map((item, i) => (
-              <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-xl p-6">
-                <h3 className="font-bold text-white mb-2">{item.q}</h3>
-                <p className="text-gray-400 text-sm">{item.a}</p>
+              <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-center">
+                <div className="text-3xl mb-2">{item.icon}</div>
+                <h3 className="font-bold text-white">{item.title}</h3>
+                <p className="text-gray-400 text-sm">{item.desc}</p>
               </div>
             ))}
           </div>
+        )}
+
+        {/* Ask Stella - floating */}
+        <div className="fixed bottom-4 right-4 z-50">
+          <div dangerouslySetInnerHTML={{ __html: `<elevenlabs-convai agent-id="${ELEVENLABS_AGENT_ID}"></elevenlabs-convai>` }} />
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="relative z-10 border-t border-gray-800 px-6 py-8 mt-16">
-        <div className="max-w-6xl mx-auto text-center text-gray-500 text-sm">
-          <p>© 2026 BlogBoost. Part of the FlyWheel suite.</p>
+      <footer className="relative z-10 border-t border-gray-800 px-6 py-6 mt-8">
+        <div className="max-w-4xl mx-auto text-center text-gray-500 text-sm">
+          <p>© 2026 BlogBoost by FlyWheel</p>
         </div>
       </footer>
     </div>

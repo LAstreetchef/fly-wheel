@@ -198,6 +198,48 @@ export async function uploadMedia(userId, imagePath) {
   }
 }
 
+// Post as BlogBoost system account (for guest checkouts)
+export async function postTweetAsSystem(text) {
+  const accessToken = process.env.BLOGBOOST_TWITTER_ACCESS_TOKEN;
+  const refreshToken = process.env.BLOGBOOST_TWITTER_REFRESH_TOKEN;
+  
+  if (!accessToken) {
+    throw new Error('BlogBoost Twitter account not configured');
+  }
+  
+  let currentToken = accessToken;
+  
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const client = new TwitterApi(currentToken);
+      const { data } = await client.v2.tweet(text);
+      return {
+        tweetId: data.id,
+        tweetUrl: `https://twitter.com/BlogBoost/status/${data.id}`,
+      };
+    } catch (error) {
+      // If token expired and we have refresh token, try refreshing
+      if ((error.code === 401 || error.code === 403) && attempt === 0 && refreshToken) {
+        console.log('[Twitter] BlogBoost token expired, attempting refresh...');
+        try {
+          const client = new TwitterApi({
+            clientId: TWITTER_CLIENT_ID,
+            clientSecret: TWITTER_CLIENT_SECRET,
+          });
+          const { accessToken: newToken } = await client.refreshOAuth2Token(refreshToken);
+          currentToken = newToken;
+          // Note: In production, you'd want to persist the new tokens
+          console.log('[Twitter] BlogBoost token refreshed');
+          continue;
+        } catch (refreshError) {
+          console.error('[Twitter] BlogBoost token refresh failed:', refreshError.message);
+        }
+      }
+      throw error;
+    }
+  }
+}
+
 export async function getTweetMetrics(userId, tweetId) {
   const connection = db.prepare(
     'SELECT access_token FROM twitter_connections WHERE user_id = ?'
