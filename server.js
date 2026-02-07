@@ -350,7 +350,7 @@ app.post('/api/admin/send-followups', async (req, res) => {
   }
   
   const now = Date.now();
-  const FOLLOWUP_DELAY = 24 * 60 * 60 * 1000; // 24 hours
+  const FOLLOWUP_DELAY = 1 * 60 * 1000; // 1 minute (testing) - change back to 24 * 60 * 60 * 1000 for production
   let sent = 0;
   
   for (const [sessionId, order] of orders) {
