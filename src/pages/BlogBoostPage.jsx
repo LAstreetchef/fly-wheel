@@ -388,16 +388,17 @@ export default function BlogBoostPage() {
           )}
         </div>
 
-        {/* How It Works - compact version on side for larger screens */}
+        {/* How It Works - 4 step grid */}
         {step === 'input' && (
-          <div className="grid md:grid-cols-3 gap-4 mb-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
             {[
-              { icon: '🔍', title: 'Find', desc: 'We search for blogs your audience reads' },
-              { icon: '✨', title: 'Craft', desc: 'AI creates a natural promo post' },
-              { icon: '🚀', title: 'Post', desc: 'Goes live on X instantly' },
+              { num: '1', title: 'Search', desc: 'We find blogs your audience reads' },
+              { num: '2', title: 'Choose', desc: 'Pick the best blog match' },
+              { num: '3', title: 'Pay', desc: 'Just $1.75, no subscription' },
+              { num: '4', title: 'Boost!', desc: 'We post to X, you get visibility' },
             ].map((item, i) => (
               <div key={i} className="bg-gray-900/50 border border-gray-800 rounded-xl p-4 text-center">
-                <div className="text-3xl mb-2">{item.icon}</div>
+                <div className="w-10 h-10 mx-auto mb-2 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center font-black text-lg">{item.num}</div>
                 <h3 className="font-bold text-white">{item.title}</h3>
                 <p className="text-gray-400 text-sm">{item.desc}</p>
               </div>
