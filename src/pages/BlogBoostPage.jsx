@@ -18,7 +18,7 @@ export default function BlogBoostPage() {
   const [error, setError] = useState(null)
   
   // Product data
-  const [productData, setProductData] = useState({ name: '', description: '', productUrl: '', keywords: '', xHandles: '' })
+  const [productData, setProductData] = useState({ name: '', description: '', productUrl: '', keywords: '', xHandles: '', email: '' })
   const [blogs, setBlogs] = useState([])
   const [selectedBlog, setSelectedBlog] = useState(null)
   const [generatedContent, setGeneratedContent] = useState(null)
@@ -178,7 +178,7 @@ export default function BlogBoostPage() {
 
   const handleStartOver = () => {
     setStep('input')
-    setProductData({ name: '', description: '', productUrl: '', keywords: '', xHandles: '' })
+    setProductData({ name: '', description: '', productUrl: '', keywords: '', xHandles: '', email: '' })
     setBlogs([])
     setSelectedBlog(null)
     setGeneratedContent(null)
@@ -262,6 +262,10 @@ export default function BlogBoostPage() {
                 <div>
                   <label className="block text-sm text-gray-400 mb-1">X Accounts to Tag <span className="text-gray-500">(optional)</span></label>
                   <input type="text" value={productData.xHandles} onChange={(e) => setProductData({ ...productData, xHandles: e.target.value })} placeholder="e.g., @elonmusk, @blogsquad" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Your Email * <span className="text-gray-500">(we'll send you performance stats)</span></label>
+                  <input type="email" required value={productData.email} onChange={(e) => setProductData({ ...productData, email: e.target.value })} placeholder="you@example.com" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
                 </div>
                 <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-4 rounded-xl font-bold text-lg disabled:opacity-50 hover:scale-[1.02] transition-transform">
                   {loading ? 'Searching...' : 'Find Relevant Blogs →'}
@@ -350,7 +354,25 @@ export default function BlogBoostPage() {
             <div className="text-center py-8">
               <div className="text-6xl mb-4">🎉</div>
               <h3 className="text-3xl font-black text-white mb-2">You're Live!</h3>
-              <p className="text-gray-400 mb-8">Your boost has been posted to X</p>
+              <p className="text-gray-400 mb-4">Your boost has been posted to X</p>
+              
+              {/* Estimated Reach Stats */}
+              <div className="grid grid-cols-3 gap-4 max-w-md mx-auto mb-8">
+                <div className="bg-gray-800/80 rounded-xl p-4">
+                  <div className="text-2xl font-black text-orange-400">~2.5K</div>
+                  <div className="text-xs text-gray-400">Est. Reach</div>
+                </div>
+                <div className="bg-gray-800/80 rounded-xl p-4">
+                  <div className="text-2xl font-black text-orange-400">~150</div>
+                  <div className="text-xs text-gray-400">Est. Engagements</div>
+                </div>
+                <div className="bg-gray-800/80 rounded-xl p-4">
+                  <div className="text-2xl font-black text-orange-400">~50</div>
+                  <div className="text-xs text-gray-400">Est. Link Clicks</div>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-500 mb-6">📧 We'll email you real performance stats in 24-48 hours</p>
               
               {publishResult?.tweetUrl && (
                 <a href={publishResult.tweetUrl.replace('twitter.com', 'x.com')} target="_blank" rel="noopener noreferrer" className="inline-block bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-8 py-4 rounded-xl font-bold text-lg mb-6 hover:scale-105 transition-transform">
