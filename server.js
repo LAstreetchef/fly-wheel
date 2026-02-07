@@ -289,8 +289,12 @@ app.post('/webhook', async (req, res) => {
 
 // SPA fallback
 if (process.env.NODE_ENV === 'production') {
-  app.get('*', (req, res) => {
-    res.sendFile('index.html', { root: 'dist' });
+  app.use((req, res, next) => {
+    if (req.method === 'GET' && !req.path.startsWith('/api') && !req.path.startsWith('/webhook')) {
+      res.sendFile('index.html', { root: 'dist' });
+    } else {
+      next();
+    }
   });
 }
 
