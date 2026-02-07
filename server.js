@@ -814,6 +814,178 @@ app.post('/api/admin/send-followups', async (req, res) => {
 });
 
 // ============================================
+// Self-Promotion Flywheel
+// ============================================
+
+const DAUFINDER_PRODUCT = {
+  name: 'DAUfinder',
+  description: 'Find daily active users for your product. We match you with relevant blogs, craft a promo post, and publish to X. Just $1.75.',
+  productUrl: 'https://lastreetchef.github.io/fly-wheel/',
+  email: 'kammiceli@gmail.com',
+};
+
+const KEYWORD_ROTATION = [
+  // Week 1: Startup/Indie
+  ['startup marketing', 'product launch strategy', 'indie hackers growth'],
+  ['bootstrapped startup', 'micro SaaS marketing', 'solo founder tips'],
+  // Week 2: Creator/SaaS
+  ['creator economy tools', 'newsletter growth hacks', 'content creator monetization'],
+  ['SaaS growth strategies', 'B2B marketing tactics', 'product-led growth'],
+  // Week 3: Tech/AI
+  ['AI tools for marketers', 'automation for startups', 'no-code marketing'],
+  ['fintech app promotion', 'developer tools marketing', 'API product launch'],
+  // Week 4: Social/Content
+  ['X Twitter growth', 'social media marketing tips', 'viral content strategy'],
+  ['content marketing ROI', 'SEO content promotion', 'blog traffic growth'],
+];
+
+// Track self-promo stats
+let selfPromoStats = {
+  totalBoosts: 0,
+  totalSpend: 0,
+  lastBoostDate: null,
+  dailyBoosts: 0,
+  dailyBudget: 10.50, // $10.50 = 6 boosts max per day
+  keywordIndex: 0,
+};
+
+// Get today's keyword set (rotates daily)
+function getTodaysKeywords() {
+  const dayOfYear = Math.floor((Date.now() - new Date(new Date().getFullYear(), 0, 0)) / 86400000);
+  const index = dayOfYear % KEYWORD_ROTATION.length;
+  return KEYWORD_ROTATION[index];
+}
+
+// Self-boost endpoint - triggers a DAUfinder promo (no payment)
+app.post('/api/admin/self-boost', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Check daily budget
+  const today = new Date().toDateString();
+  if (selfPromoStats.lastBoostDate !== today) {
+    selfPromoStats.dailyBoosts = 0;
+    selfPromoStats.lastBoostDate = today;
+  }
+  
+  const costPerBoost = 1.75;
+  if ((selfPromoStats.dailyBoosts + 1) * costPerBoost > selfPromoStats.dailyBudget) {
+    return res.status(429).json({ 
+      error: 'Daily budget exceeded', 
+      dailyBoosts: selfPromoStats.dailyBoosts,
+      dailyBudget: selfPromoStats.dailyBudget 
+    });
+  }
+
+  try {
+    // Get keywords (from request or use rotation)
+    const keywords = req.body.keywords || getTodaysKeywords()[Math.floor(Math.random() * 3)];
+    console.log(`🔄 Self-boost starting with keywords: "${keywords}"`);
+    
+    // Search for blogs
+    const blogs = await searchBlogs(keywords);
+    if (!blogs || blogs.length === 0) {
+      return res.status(404).json({ error: 'No blogs found for keywords', keywords });
+    }
+    
+    // Pick a random blog from top results
+    const blog = blogs[Math.floor(Math.random() * Math.min(3, blogs.length))];
+    console.log(`📰 Selected blog: ${blog.title}`);
+    
+    // Generate content
+    const content = await generateBoostContent(DAUFINDER_PRODUCT, blog);
+    console.log(`✨ Generated content: ${content.substring(0, 100)}...`);
+    
+    // Replace placeholders
+    const finalContent = content
+      .replace('[BLOG_LINK]', blog.url)
+      .replace('[PRODUCT_LINK]', DAUFINDER_PRODUCT.productUrl);
+    
+    // Post to Twitter
+    const result = await postTweet(finalContent);
+    console.log(`🚀 Self-boost posted: ${result.tweetUrl}`);
+    
+    // Create order record for tracking
+    const orderId = `self_${Date.now()}`;
+    await orders.set(orderId, {
+      status: 'published',
+      productData: DAUFINDER_PRODUCT,
+      blog,
+      content: finalContent,
+      email: DAUFINDER_PRODUCT.email,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      publishedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      source: 'self-promo', // Track this is internal
+      keywords,
+      followUpSent: false,
+    });
+    
+    // Update stats
+    selfPromoStats.totalBoosts++;
+    selfPromoStats.totalSpend += costPerBoost;
+    selfPromoStats.dailyBoosts++;
+    
+    res.json({
+      success: true,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      keywords,
+      blog: { title: blog.title, url: blog.url },
+      stats: {
+        dailyBoosts: selfPromoStats.dailyBoosts,
+        totalBoosts: selfPromoStats.totalBoosts,
+        totalSpend: selfPromoStats.totalSpend,
+      }
+    });
+    
+  } catch (error) {
+    console.error('❌ Self-boost failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get self-promo stats
+app.get('/api/admin/self-boost/stats', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  // Get all self-promo orders
+  const allOrders = await orderStore.all();
+  const selfPromoOrders = allOrders.filter(o => o.source === 'self-promo');
+  
+  // Calculate metrics
+  const totalOrders = allOrders.length;
+  const customerOrders = allOrders.filter(o => o.source !== 'self-promo');
+  const revenue = customerOrders.length * 1.75;
+  const spend = selfPromoOrders.length * 1.75;
+  const roi = spend > 0 ? ((revenue - spend) / spend * 100).toFixed(1) : 0;
+  
+  res.json({
+    selfPromo: {
+      total: selfPromoOrders.length,
+      spend: spend.toFixed(2),
+      ...selfPromoStats,
+    },
+    customers: {
+      total: customerOrders.length,
+      revenue: revenue.toFixed(2),
+    },
+    roi: `${roi}%`,
+    keywords: getTodaysKeywords(),
+  });
+});
+
+// ============================================
 // Stripe Webhook
 // ============================================
 
