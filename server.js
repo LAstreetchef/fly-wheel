@@ -463,9 +463,25 @@ app.post(['/api/checkout', '/api/boost/checkout'], async (req, res) => {
   try {
     const { productData, blog, content } = req.body;
     
+    console.log('📥 Checkout request received:');
+    console.log('   productData:', JSON.stringify(productData));
+    console.log('   productData.email:', productData?.email || '(missing)');
+    
     if (!productData?.name || !blog?.url || !content) {
       return res.status(400).json({ error: 'Missing required data' });
     }
+    
+    // Truncate metadata to fit Stripe's 500 char limit per value
+    const truncate = (str, max) => str && str.length > max ? str.substring(0, max - 3) + '...' : str;
+    const blogMeta = JSON.stringify({
+      url: blog.url,
+      title: truncate(blog.title, 100),
+    });
+    const productMeta = JSON.stringify({
+      name: productData.name,
+      productUrl: productData.productUrl || '',
+      email: productData.email || '',
+    });
     
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ['card'],
@@ -484,9 +500,9 @@ app.post(['/api/checkout', '/api/boost/checkout'], async (req, res) => {
       success_url: `${FRONTEND_URL}?success=true&session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: FRONTEND_URL,
       metadata: {
-        productData: JSON.stringify(productData),
-        blog: JSON.stringify(blog),
-        content,
+        productData: productMeta,
+        blog: blogMeta,
+        content: truncate(content, 500),
         email: productData.email || '',
       },
     });
