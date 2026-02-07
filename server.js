@@ -501,6 +501,7 @@ app.post(['/api/checkout', '/api/boost/checkout'], async (req, res) => {
       followUpSent: false,
     });
     
+    console.log(`📝 Order created: ${session.id.substring(0, 20)}... | email: ${productData.email || '(none)'}`);
     res.json({ url: session.url, sessionId: session.id });
   } catch (error) {
     console.error('Checkout error:', error);
@@ -675,9 +676,12 @@ app.post('/webhook', async (req, res) => {
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
     console.log('✅ Payment received:', session.id);
+    console.log('   Metadata email:', session.metadata?.email || '(none)');
     
     const order = await orders.get(session.id);
+    console.log('   Order found:', order ? 'yes' : 'NO - order missing!');
     if (order) {
+      console.log('   Order email:', order.email || '(none)');
       try {
         const blog = JSON.parse(session.metadata.blog);
         const productData = JSON.parse(session.metadata.productData);
