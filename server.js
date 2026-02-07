@@ -68,9 +68,15 @@ if (usePostgres) {
       created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
       follow_up_sent BOOLEAN DEFAULT FALSE,
       metrics JSONB,
-      error TEXT
+      error TEXT,
+      source TEXT,
+      keywords TEXT
     )
   `);
+  
+  // Add columns if they don't exist (for existing DBs)
+  await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS source TEXT`).catch(() => {});
+  await pool.query(`ALTER TABLE orders ADD COLUMN IF NOT EXISTS keywords TEXT`).catch(() => {});
   
   orderStore = {
     async get(sessionId) {
@@ -90,13 +96,15 @@ if (usePostgres) {
         followUpSent: row.follow_up_sent,
         metrics: row.metrics,
         error: row.error,
+        source: row.source,
+        keywords: row.keywords,
       };
     },
     
     async set(sessionId, order) {
       await pool.query(`
-        INSERT INTO orders (session_id, status, product_data, blog, content, email, tweet_url, tweet_id, published_at, created_at, follow_up_sent, metrics, error)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)
+        INSERT INTO orders (session_id, status, product_data, blog, content, email, tweet_url, tweet_id, published_at, created_at, follow_up_sent, metrics, error, source, keywords)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
         ON CONFLICT(session_id) DO UPDATE SET
           status = EXCLUDED.status,
           product_data = EXCLUDED.product_data,
@@ -108,7 +116,9 @@ if (usePostgres) {
           published_at = EXCLUDED.published_at,
           follow_up_sent = EXCLUDED.follow_up_sent,
           metrics = EXCLUDED.metrics,
-          error = EXCLUDED.error
+          error = EXCLUDED.error,
+          source = EXCLUDED.source,
+          keywords = EXCLUDED.keywords
       `, [
         sessionId,
         order.status || 'pending',
@@ -122,7 +132,9 @@ if (usePostgres) {
         order.createdAt || new Date().toISOString(),
         order.followUpSent || false,
         order.metrics ? JSON.stringify(order.metrics) : null,
-        order.error || null
+        order.error || null,
+        order.source || null,
+        order.keywords || null
       ]);
     },
     
@@ -142,6 +154,8 @@ if (usePostgres) {
         followUpSent: row.follow_up_sent,
         metrics: row.metrics,
         error: row.error,
+        source: row.source,
+        keywords: row.keywords,
       }));
     },
     
@@ -189,9 +203,15 @@ if (usePostgres) {
       created_at TEXT NOT NULL,
       follow_up_sent INTEGER DEFAULT 0,
       metrics TEXT,
-      error TEXT
+      error TEXT,
+      source TEXT,
+      keywords TEXT
     )
   `);
+  
+  // Add columns if they don't exist (for existing DBs)
+  try { db.exec('ALTER TABLE orders ADD COLUMN source TEXT'); } catch(e) {}
+  try { db.exec('ALTER TABLE orders ADD COLUMN keywords TEXT'); } catch(e) {}
   
   orderStore = {
     async get(sessionId) {
@@ -210,13 +230,15 @@ if (usePostgres) {
         followUpSent: !!row.follow_up_sent,
         metrics: row.metrics ? JSON.parse(row.metrics) : null,
         error: row.error,
+        source: row.source,
+        keywords: row.keywords,
       };
     },
     
     async set(sessionId, order) {
       db.prepare(`
-        INSERT INTO orders (session_id, status, product_data, blog, content, email, tweet_url, tweet_id, published_at, created_at, follow_up_sent, metrics, error)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        INSERT INTO orders (session_id, status, product_data, blog, content, email, tweet_url, tweet_id, published_at, created_at, follow_up_sent, metrics, error, source, keywords)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ON CONFLICT(session_id) DO UPDATE SET
           status = excluded.status,
           product_data = excluded.product_data,
@@ -228,7 +250,9 @@ if (usePostgres) {
           published_at = excluded.published_at,
           follow_up_sent = excluded.follow_up_sent,
           metrics = excluded.metrics,
-          error = excluded.error
+          error = excluded.error,
+          source = excluded.source,
+          keywords = excluded.keywords
       `).run(
         sessionId,
         order.status || 'pending',
@@ -242,7 +266,9 @@ if (usePostgres) {
         order.createdAt || new Date().toISOString(),
         order.followUpSent ? 1 : 0,
         order.metrics ? JSON.stringify(order.metrics) : null,
-        order.error || null
+        order.error || null,
+        order.source || null,
+        order.keywords || null
       );
     },
     
@@ -262,6 +288,8 @@ if (usePostgres) {
         followUpSent: !!row.follow_up_sent,
         metrics: row.metrics ? JSON.parse(row.metrics) : null,
         error: row.error,
+        source: row.source,
+        keywords: row.keywords,
       }));
     },
     
