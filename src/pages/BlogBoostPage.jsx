@@ -240,7 +240,7 @@ export default function BlogBoostPage() {
                 <span className="w-8 h-8 rounded-full bg-orange-500 text-black flex items-center justify-center text-sm font-black">1</span>
                 Tell us about your product
               </h2>
-              <form onSubmit={(e) => { e.preventDefault(); handleSearchBlogs() }} className="space-y-4">
+              <form onSubmit={(e) => { e.preventDefault(); if (!e.target.reportValidity()) return; handleSearchBlogs() }} className="space-y-4">
                 <div className="grid md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm text-gray-400 mb-1">Product Name *</label>
