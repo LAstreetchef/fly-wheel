@@ -32,7 +32,7 @@ jobs:
       - name: Build
         run: npm run build
         env:
-          VITE_API_URL: https://blearier-ashlee-unextravasated.ngrok-free.dev
+          VITE_API_URL: https://fly-wheel.onrender.com
         
       - name: Copy index.html to 404.html
         run: cp dist/index.html dist/404.html
