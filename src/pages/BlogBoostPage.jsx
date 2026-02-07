@@ -263,6 +263,10 @@ export default function BlogBoostPage() {
                   <label className="block text-sm text-gray-400 mb-1">X Accounts to Tag <span className="text-gray-500">(optional)</span></label>
                   <input type="text" value={productData.xHandles} onChange={(e) => setProductData({ ...productData, xHandles: e.target.value })} placeholder="e.g., @elonmusk, @blogsquad" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
                 </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Your Email * <span className="text-gray-500">(for performance stats)</span></label>
+                  <input type="email" required value={productData.email} onChange={(e) => setProductData({ ...productData, email: e.target.value })} placeholder="you@example.com" className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500" />
+                </div>
                 <button type="submit" disabled={loading} className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-4 rounded-xl font-bold text-lg disabled:opacity-50 hover:scale-[1.02] transition-transform">
                   {loading ? 'Searching...' : 'Find Relevant Blogs →'}
                 </button>
