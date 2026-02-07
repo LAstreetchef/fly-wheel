@@ -709,7 +709,7 @@ async function sendFollowUpEmail(order, metrics) {
 app.get('/api/admin/orders', async (req, res) => {
   const authHeader = req.headers.authorization;
   const adminKey = process.env.ADMIN_API_KEY;
-  if (adminKey && authHeader !== `Bearer ${adminKey}`) {
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   const allOrders = (await orderStore.all()).map(order => ({
@@ -723,12 +723,12 @@ app.post('/api/admin/send-followups', async (req, res) => {
   const authHeader = req.headers.authorization;
   const adminKey = process.env.ADMIN_API_KEY;
   
-  if (adminKey && authHeader !== `Bearer ${adminKey}`) {
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   
   const now = Date.now();
-  const FOLLOWUP_DELAY = 1 * 60 * 1000; // 1 minute (testing) - change back to 24 * 60 * 60 * 1000 for production
+  const FOLLOWUP_DELAY = 24 * 60 * 60 * 1000; // 24 hours for production
   let sent = 0;
   
   const pending = await orderStore.pendingFollowUps();
@@ -802,9 +802,9 @@ app.post('/webhook', async (req, res) => {
         order.email = session.metadata.email || order.email;
         await orders.set(session.id, order);
         
-        // Send immediate confirmation email
+        // Send immediate confirmation email (fire-and-forget, don't block webhook)
         if (order.email) {
-          await sendConfirmationEmail(order);
+          sendConfirmationEmail(order).catch(err => console.error('Confirmation email failed:', err.message));
         }
         
         console.log('🚀 Posted:', result.tweetUrl);
