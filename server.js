@@ -488,7 +488,7 @@ async function postTweet(text) {
 // ============================================
 
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', service: 'blogboost' });
+  res.json({ status: 'ok', service: 'daufinder' });
 });
 
 app.get('/api/blogs/search', async (req, res) => {
@@ -548,7 +548,7 @@ app.post(['/api/checkout', '/api/boost/checkout'], checkoutLimiter, async (req, 
         price_data: {
           currency: 'usd',
           product_data: {
-            name: 'Blog Boost',
+            name: 'DAUfinder',
             description: `Promote "${productData.name}" on X`,
           },
           unit_amount: BOOST_PRICE,
@@ -641,7 +641,7 @@ async function sendConfirmationEmail(order) {
   
   try {
     await resend.emails.send({
-      from: 'BlogBoost <message4u@secretmessage4u.com>',
+      from: 'DAUfinder <message4u@secretmessage4u.com>',
       to: order.email,
       subject: `🎉 Your Boost for "${productName}" is LIVE!`,
       html: `
@@ -699,7 +699,7 @@ async function sendConfirmationEmail(order) {
           <div style="border-top: 1px solid #333; padding-top: 24px; margin-top: 32px;">
             <p style="color: #666; font-size: 13px; margin: 0; text-align: center;">
               Questions? Just reply to this email.<br>
-              <span style="color: #888;">— The BlogBoost Team</span>
+              <span style="color: #888;">— The DAUfinder Team</span>
             </p>
           </div>
           
@@ -722,7 +722,7 @@ async function sendFollowUpEmail(order, metrics) {
   
   try {
     await resend.emails.send({
-      from: 'BlogBoost <message4u@secretmessage4u.com>',
+      from: 'DAUfinder <message4u@secretmessage4u.com>',
       to: order.email,
       subject: `🚀 Your Boost Results: ${metrics.impressions.toLocaleString()} impressions!`,
       html: `
@@ -751,7 +751,7 @@ async function sendFollowUpEmail(order, metrics) {
           
           <p style="color: #888; margin-top: 30px;">Ready for another boost? <a href="${FRONTEND_URL}" style="color: #f97316;">Create one now</a></p>
           
-          <p style="color: #666; font-size: 12px; margin-top: 40px;">— BlogBoost by FlyWheel</p>
+          <p style="color: #666; font-size: 12px; margin-top: 40px;">— DAUfinder by FlyWheel</p>
         </div>
       `,
     });
@@ -896,5 +896,5 @@ if (process.env.NODE_ENV === 'production') {
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
-  console.log(`🚀 BlogBoost running on http://localhost:${PORT}`);
+  console.log(`🚀 DAUfinder running on http://localhost:${PORT}`);
 });

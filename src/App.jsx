@@ -161,8 +161,8 @@ export default function App() {
           <div className="flex items-center gap-2">
             <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold">
-              <span className="text-white">Blog</span>
-              <span className="text-orange-400">Boost</span>
+              <span className="text-white">DAU</span>
+              <span className="text-orange-400">finder</span>
             </span>
           </div>
           <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-3 py-1 rounded-full text-sm font-black">
@@ -380,7 +380,7 @@ export default function App() {
 
       <footer className="relative z-10 border-t border-gray-800 px-6 py-6 mt-16">
         <div className="max-w-6xl mx-auto text-center text-gray-500 text-sm">
-          © 2026 BlogBoost
+          © 2026 DAUfinder
         </div>
       </footer>
     </div>
