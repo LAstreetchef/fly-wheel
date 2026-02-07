@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DAUfinder Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { background: #0a0a0a; }
+    .glass { background: rgba(255,255,255,0.05); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.1); }
+    .stat-card { transition: transform 0.2s; }
+    .stat-card:hover { transform: translateY(-2px); }
+  </style>
+</head>
+<body class="text-white min-h-screen p-6">
+  <div class="max-w-7xl mx-auto">
+    <!-- Header -->
+    <div class="flex justify-between items-center mb-8">
+      <div>
+        <h1 class="text-3xl font-bold bg-gradient-to-r from-orange-500 to-yellow-500 bg-clip-text text-transparent">
+          DAUfinder Dashboard
+        </h1>
+        <p class="text-gray-500 mt-1">Self-promotion flywheel analytics</p>
+      </div>
+      <div class="flex gap-3">
+        <button onclick="triggerBoost()" class="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-medium transition">
+          🚀 Manual Boost
+        </button>
+        <button onclick="loadDashboard()" class="px-4 py-2 glass rounded-lg hover:bg-white/10 transition">
+          ↻ Refresh
+        </button>
+      </div>
+    </div>
+
+    <!-- Auth -->
+    <div id="auth-section" class="glass rounded-xl p-6 mb-6">
+      <label class="block text-sm text-gray-400 mb-2">Admin API Key</label>
+      <div class="flex gap-3">
+        <input type="password" id="api-key" placeholder="Enter admin key..." 
+          class="flex-1 bg-black/50 border border-gray-700 rounded-lg px-4 py-2 focus:border-orange-500 outline-none">
+        <button onclick="saveKey()" class="px-6 py-2 bg-orange-600 hover:bg-orange-700 rounded-lg font-medium">
+          Connect
+        </button>
+      </div>
+    </div>
+
+    <!-- Summary Cards -->
+    <div id="summary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+      <div class="stat-card glass rounded-xl p-5">
+        <div class="text-gray-400 text-sm">Total Boosts</div>
+        <div class="text-3xl font-bold text-orange-500" id="total-boosts">-</div>
+      </div>
+      <div class="stat-card glass rounded-xl p-5">
+        <div class="text-gray-400 text-sm">Customers</div>
+        <div class="text-3xl font-bold text-green-500" id="total-customers">-</div>
+      </div>
+      <div class="stat-card glass rounded-xl p-5">
+        <div class="text-gray-400 text-sm">Revenue</div>
+        <div class="text-3xl font-bold text-yellow-500" id="total-revenue">-</div>
+      </div>
+      <div class="stat-card glass rounded-xl p-5">
+        <div class="text-gray-400 text-sm">ROI</div>
+        <div class="text-3xl font-bold text-purple-500" id="roi">-</div>
+      </div>
+    </div>
+
+    <!-- Time Period Stats -->
+    <div class="grid md:grid-cols-3 gap-4 mb-6">
+      <div class="glass rounded-xl p-5">
+        <h3 class="text-lg font-semibold mb-3 text-orange-400">Today</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between"><span class="text-gray-400">Boosts</span><span id="today-boosts">-</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Customers</span><span id="today-customers">-</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Revenue</span><span id="today-revenue">-</span></div>
+        </div>
+      </div>
+      <div class="glass rounded-xl p-5">
+        <h3 class="text-lg font-semibold mb-3 text-orange-400">Last 24h</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between"><span class="text-gray-400">Boosts</span><span id="24h-boosts">-</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Customers</span><span id="24h-customers">-</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Revenue</span><span id="24h-revenue">-</span></div>
+        </div>
+      </div>
+      <div class="glass rounded-xl p-5">
+        <h3 class="text-lg font-semibold mb-3 text-orange-400">Last 7 Days</h3>
+        <div class="space-y-2">
+          <div class="flex justify-between"><span class="text-gray-400">Boosts</span><span id="7d-boosts">-</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Customers</span><span id="7d-customers">-</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">Conversion</span><span id="7d-conversion">-</span></div>
+          <div class="flex justify-between"><span class="text-gray-400">CAC</span><span id="7d-cac">-</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Two Column Layout -->
+    <div class="grid md:grid-cols-2 gap-6 mb-6">
+      <!-- Keyword Performance -->
+      <div class="glass rounded-xl p-5">
+        <h3 class="text-lg font-semibold mb-4 text-orange-400">📊 Keyword Performance</h3>
+        <div id="keyword-stats" class="space-y-2 max-h-64 overflow-y-auto">
+          <div class="text-gray-500">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Blog Source Performance -->
+      <div class="glass rounded-xl p-5">
+        <h3 class="text-lg font-semibold mb-4 text-orange-400">🔗 Top Blog Sources</h3>
+        <div id="blog-stats" class="space-y-2 max-h-64 overflow-y-auto">
+          <div class="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Hour Distribution -->
+    <div class="glass rounded-xl p-5 mb-6">
+      <h3 class="text-lg font-semibold mb-4 text-orange-400">⏰ Boost Distribution by Hour</h3>
+      <div id="hour-chart" class="flex items-end gap-1 h-32">
+        <!-- Will be filled by JS -->
+      </div>
+      <div class="flex justify-between text-xs text-gray-500 mt-2">
+        <span>12am</span><span>6am</span><span>12pm</span><span>6pm</span><span>11pm</span>
+      </div>
+    </div>
+
+    <!-- Recent Activity -->
+    <div class="grid md:grid-cols-2 gap-6">
+      <!-- Recent Boosts -->
+      <div class="glass rounded-xl p-5">
+        <h3 class="text-lg font-semibold mb-4 text-orange-400">🚀 Recent Boosts</h3>
+        <div id="recent-boosts" class="space-y-3 max-h-80 overflow-y-auto">
+          <div class="text-gray-500">Loading...</div>
+        </div>
+      </div>
+
+      <!-- Recent Customers -->
+      <div class="glass rounded-xl p-5">
+        <h3 class="text-lg font-semibold mb-4 text-green-400">💰 Recent Customers</h3>
+        <div id="recent-customers" class="space-y-3 max-h-80 overflow-y-auto">
+          <div class="text-gray-500">Loading...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Config -->
+    <div class="glass rounded-xl p-5 mt-6">
+      <h3 class="text-lg font-semibold mb-4 text-orange-400">⚙️ Today's Keywords</h3>
+      <div id="todays-keywords" class="flex flex-wrap gap-2">
+        <div class="text-gray-500">Loading...</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const API_BASE = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3001' 
+      : 'https://fly-wheel.onrender.com';
+    
+    let apiKey = localStorage.getItem('daufinder_admin_key') || '';
+    
+    function saveKey() {
+      apiKey = document.getElementById('api-key').value;
+      localStorage.setItem('daufinder_admin_key', apiKey);
+      loadDashboard();
+    }
+    
+    async function loadDashboard() {
+      if (!apiKey) {
+        document.getElementById('api-key').focus();
+        return;
+      }
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/dashboard`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        
+        if (!res.ok) {
+          alert('Invalid API key or server error');
+          return;
+        }
+        
+        const data = await res.json();
+        renderDashboard(data);
+        document.getElementById('auth-section').classList.add('hidden');
+      } catch (err) {
+        console.error(err);
+        alert('Failed to load dashboard: ' + err.message);
+      }
+    }
+    
+    function renderDashboard(data) {
+      // Summary
+      document.getElementById('total-boosts').textContent = data.summary.totalBoosts;
+      document.getElementById('total-customers').textContent = data.summary.totalCustomers;
+      document.getElementById('total-revenue').textContent = '$' + data.summary.totalRevenue;
+      document.getElementById('roi').textContent = data.summary.roi;
+      
+      // Today
+      document.getElementById('today-boosts').textContent = data.today.boosts;
+      document.getElementById('today-customers').textContent = data.today.customers;
+      document.getElementById('today-revenue').textContent = '$' + data.today.revenue;
+      
+      // 24h
+      document.getElementById('24h-boosts').textContent = data.last24h.boosts;
+      document.getElementById('24h-customers').textContent = data.last24h.customers;
+      document.getElementById('24h-revenue').textContent = '$' + data.last24h.revenue;
+      
+      // 7d
+      document.getElementById('7d-boosts').textContent = data.last7d.boosts;
+      document.getElementById('7d-customers').textContent = data.last7d.customers;
+      document.getElementById('7d-conversion').textContent = data.last7d.conversionRate;
+      document.getElementById('7d-cac').textContent = data.last7d.cac === 'N/A' ? 'N/A' : '$' + data.last7d.cac;
+      
+      // Keyword stats
+      const kwContainer = document.getElementById('keyword-stats');
+      const kwEntries = Object.entries(data.performance.byKeyword);
+      if (kwEntries.length === 0) {
+        kwContainer.innerHTML = '<div class="text-gray-500">No data yet</div>';
+      } else {
+        kwContainer.innerHTML = kwEntries
+          .sort((a, b) => b[1].boosts - a[1].boosts)
+          .map(([kw, stats]) => `
+            <div class="flex justify-between items-center py-2 border-b border-gray-800">
+              <span class="text-sm truncate flex-1">${kw}</span>
+              <span class="text-orange-400 font-mono ml-2">${stats.boosts}</span>
+            </div>
+          `).join('');
+      }
+      
+      // Blog stats
+      const blogContainer = document.getElementById('blog-stats');
+      const blogEntries = Object.entries(data.performance.byBlogSource);
+      if (blogEntries.length === 0) {
+        blogContainer.innerHTML = '<div class="text-gray-500">No data yet</div>';
+      } else {
+        blogContainer.innerHTML = blogEntries
+          .map(([source, count]) => `
+            <div class="flex justify-between items-center py-2 border-b border-gray-800">
+              <span class="text-sm truncate flex-1">${source}</span>
+              <span class="text-orange-400 font-mono ml-2">${count}</span>
+            </div>
+          `).join('');
+      }
+      
+      // Hour chart
+      const hourChart = document.getElementById('hour-chart');
+      const maxHour = Math.max(...data.performance.byHour, 1);
+      hourChart.innerHTML = data.performance.byHour.map((count, hour) => {
+        const height = (count / maxHour) * 100;
+        const isActive = hour >= 6 && hour <= 22;
+        return `<div class="flex-1 ${isActive ? 'bg-orange-500' : 'bg-gray-700'} rounded-t transition-all" 
+          style="height: ${Math.max(height, 2)}%" title="${hour}:00 - ${count} boosts"></div>`;
+      }).join('');
+      
+      // Recent boosts
+      const boostsContainer = document.getElementById('recent-boosts');
+      if (data.recentBoosts.length === 0) {
+        boostsContainer.innerHTML = '<div class="text-gray-500">No boosts yet</div>';
+      } else {
+        boostsContainer.innerHTML = data.recentBoosts.map(b => `
+          <div class="border-b border-gray-800 pb-3">
+            <div class="text-sm font-medium truncate">${b.blog || 'Unknown blog'}</div>
+            <div class="text-xs text-gray-500">${b.keywords || 'No keywords'} · ${b.blogSource || ''}</div>
+            <div class="flex justify-between mt-1">
+              <span class="text-xs text-gray-600">${new Date(b.createdAt).toLocaleString()}</span>
+              ${b.tweetUrl ? `<a href="${b.tweetUrl}" target="_blank" class="text-xs text-orange-400 hover:underline">View →</a>` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      // Recent customers
+      const custContainer = document.getElementById('recent-customers');
+      if (data.recentCustomers.length === 0) {
+        custContainer.innerHTML = '<div class="text-gray-500">No customers yet</div>';
+      } else {
+        custContainer.innerHTML = data.recentCustomers.map(c => `
+          <div class="border-b border-gray-800 pb-3">
+            <div class="text-sm font-medium truncate">${c.product || 'Unknown product'}</div>
+            <div class="text-xs text-gray-500">${c.blog || 'No blog'}</div>
+            <div class="flex justify-between mt-1">
+              <span class="text-xs ${c.status === 'published' ? 'text-green-500' : 'text-yellow-500'}">${c.status}</span>
+              ${c.tweetUrl ? `<a href="${c.tweetUrl}" target="_blank" class="text-xs text-orange-400 hover:underline">View →</a>` : ''}
+            </div>
+          </div>
+        `).join('');
+      }
+      
+      // Today's keywords
+      const kwTagsContainer = document.getElementById('todays-keywords');
+      kwTagsContainer.innerHTML = data.config.todaysKeywords.map(kw => 
+        `<span class="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm">${kw}</span>`
+      ).join('');
+    }
+    
+    async function triggerBoost() {
+      if (!apiKey) {
+        alert('Enter API key first');
+        return;
+      }
+      
+      const keywords = prompt('Keywords (leave empty for auto-rotation):');
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/self-boost`, {
+          method: 'POST',
+          headers: { 
+            'Authorization': `Bearer ${apiKey}`,
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(keywords ? { keywords } : {})
+        });
+        
+        const data = await res.json();
+        
+        if (data.success) {
+          alert(`✅ Boost posted!\n\nKeywords: ${data.keywords}\nBlog: ${data.blog.title}\n\n${data.tweetUrl}`);
+          loadDashboard();
+        } else {
+          alert('❌ Boost failed: ' + (data.error || 'Unknown error'));
+        }
+      } catch (err) {
+        alert('❌ Error: ' + err.message);
+      }
+    }
+    
+    // Auto-load if key exists
+    if (apiKey) {
+      document.getElementById('api-key').value = apiKey;
+      loadDashboard();
+    }
+    
+    // Auto-refresh every 5 minutes
+    setInterval(() => {
+      if (apiKey) loadDashboard();
+    }, 5 * 60 * 1000);
+  </script>
+</body>
+</html>

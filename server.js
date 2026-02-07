@@ -362,6 +362,12 @@ if (process.env.NODE_ENV === 'production') {
   app.use(express.static('dist'));
 }
 
+// Serve admin dashboard
+app.use('/public', express.static(join(__dirname, 'public')));
+app.get('/admin', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'admin.html'));
+});
+
 // ============================================
 // Blog Search
 // ============================================
@@ -1002,6 +1008,145 @@ app.get('/api/admin/self-boost/stats', async (req, res) => {
     },
     roi: `${roi}%`,
     keywords: getTodaysKeywords(),
+  });
+});
+
+// Full dashboard with all metrics
+app.get('/api/admin/dashboard', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const allOrders = await orderStore.all();
+  const selfPromoOrders = allOrders.filter(o => o.source === 'self-promo');
+  const customerOrders = allOrders.filter(o => o.source !== 'self-promo' && !o.sessionId?.startsWith('self_'));
+  
+  // Revenue & costs
+  const revenue = customerOrders.filter(o => o.status === 'published').length * 1.75;
+  const actualCostPerBoost = 0.008; // ~$0.008 actual API cost
+  const actualSpend = selfPromoOrders.length * actualCostPerBoost;
+  
+  // Time-based analysis
+  const now = new Date();
+  const today = now.toDateString();
+  const last24h = now.getTime() - 24 * 60 * 60 * 1000;
+  const last7d = now.getTime() - 7 * 24 * 60 * 60 * 1000;
+  
+  const boostsToday = selfPromoOrders.filter(o => new Date(o.createdAt).toDateString() === today).length;
+  const boostsLast24h = selfPromoOrders.filter(o => new Date(o.createdAt).getTime() > last24h).length;
+  const boostsLast7d = selfPromoOrders.filter(o => new Date(o.createdAt).getTime() > last7d).length;
+  
+  const customersToday = customerOrders.filter(o => new Date(o.createdAt).toDateString() === today).length;
+  const customersLast24h = customerOrders.filter(o => new Date(o.createdAt).getTime() > last24h).length;
+  const customersLast7d = customerOrders.filter(o => new Date(o.createdAt).getTime() > last7d).length;
+  
+  // Keyword performance
+  const keywordStats = {};
+  selfPromoOrders.forEach(o => {
+    const kw = o.keywords || 'unknown';
+    if (!keywordStats[kw]) {
+      keywordStats[kw] = { boosts: 0, tweets: [] };
+    }
+    keywordStats[kw].boosts++;
+    if (o.tweetId) {
+      keywordStats[kw].tweets.push({
+        tweetId: o.tweetId,
+        tweetUrl: o.tweetUrl,
+        blog: o.blog?.title,
+        createdAt: o.createdAt,
+      });
+    }
+  });
+  
+  // Blog source performance
+  const blogStats = {};
+  selfPromoOrders.forEach(o => {
+    const source = o.blog?.url ? new URL(o.blog.url).hostname.replace('www.', '') : 'unknown';
+    if (!blogStats[source]) {
+      blogStats[source] = { boosts: 0, blogs: [] };
+    }
+    blogStats[source].boosts++;
+    blogStats[source].blogs.push(o.blog?.title);
+  });
+  
+  // Hour of day analysis (for finding best times)
+  const hourStats = Array(24).fill(0);
+  selfPromoOrders.forEach(o => {
+    const hour = new Date(o.createdAt).getHours();
+    hourStats[hour]++;
+  });
+  
+  // Recent activity feed
+  const recentBoosts = selfPromoOrders.slice(0, 10).map(o => ({
+    keywords: o.keywords,
+    blog: o.blog?.title,
+    blogSource: o.blog?.url ? new URL(o.blog.url).hostname.replace('www.', '') : null,
+    tweetUrl: o.tweetUrl,
+    createdAt: o.createdAt,
+  }));
+  
+  const recentCustomers = customerOrders.slice(0, 10).map(o => ({
+    product: o.productData?.name,
+    blog: o.blog?.title,
+    tweetUrl: o.tweetUrl,
+    status: o.status,
+    createdAt: o.createdAt,
+  }));
+  
+  // Calculate conversion rate (customers per boost)
+  const conversionRate = selfPromoOrders.length > 0 
+    ? (customersLast7d / Math.max(boostsLast7d, 1) * 100).toFixed(2) 
+    : '0.00';
+  
+  // CAC calculation
+  const cac = customersLast7d > 0 
+    ? (boostsLast7d * actualCostPerBoost / customersLast7d).toFixed(4)
+    : 'N/A';
+  
+  res.json({
+    summary: {
+      totalBoosts: selfPromoOrders.length,
+      totalCustomers: customerOrders.length,
+      totalRevenue: revenue.toFixed(2),
+      actualSpend: actualSpend.toFixed(4),
+      profit: (revenue - actualSpend).toFixed(2),
+      roi: actualSpend > 0 ? ((revenue - actualSpend) / actualSpend * 100).toFixed(0) + '%' : 'N/A',
+    },
+    today: {
+      boosts: boostsToday,
+      customers: customersToday,
+      revenue: (customersToday * 1.75).toFixed(2),
+    },
+    last24h: {
+      boosts: boostsLast24h,
+      customers: customersLast24h,
+      revenue: (customersLast24h * 1.75).toFixed(2),
+    },
+    last7d: {
+      boosts: boostsLast7d,
+      customers: customersLast7d,
+      revenue: (customersLast7d * 1.75).toFixed(2),
+      conversionRate: conversionRate + '%',
+      cac: cac,
+    },
+    performance: {
+      byKeyword: keywordStats,
+      byBlogSource: Object.entries(blogStats)
+        .sort((a, b) => b[1].boosts - a[1].boosts)
+        .slice(0, 10)
+        .reduce((acc, [k, v]) => ({ ...acc, [k]: v.boosts }), {}),
+      byHour: hourStats,
+    },
+    recentBoosts,
+    recentCustomers,
+    config: {
+      keywordRotation: KEYWORD_ROTATION,
+      todaysKeywords: getTodaysKeywords(),
+      costPerBoost: actualCostPerBoost,
+    },
   });
 });
 
