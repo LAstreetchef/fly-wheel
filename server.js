@@ -577,6 +577,8 @@ async function sendConfirmationEmail(order) {
   
   const productName = order.productData?.name || 'your product';
   const tweetUrl = order.tweetUrl || '#';
+  const blogTitle = order.blog?.title || 'a relevant blog';
+  const blogUrl = order.blog?.url || '#';
   
   try {
     await resend.emails.send({
@@ -597,6 +599,16 @@ async function sendConfirmationEmail(order) {
                 👉 View Your Boost on X →
               </a>
             </div>
+          </div>
+          
+          <div style="background: #111; border-radius: 12px; padding: 24px; margin: 24px 0;">
+            <h2 style="color: #f97316; font-size: 18px; margin: 0 0 12px 0;">🤝 Your Blog Partner</h2>
+            <p style="color: #ccc; margin: 0 0 12px 0;">We paired <strong style="color: #fff;">${productName}</strong> with this relevant content:</p>
+            <a href="${blogUrl}" target="_blank" style="display: block; background: #1a1a1a; border: 1px solid #333; border-radius: 8px; padding: 16px; text-decoration: none; color: inherit;">
+              <p style="color: #fff; font-weight: 600; margin: 0 0 4px 0; font-size: 15px;">${blogTitle}</p>
+              <p style="color: #f97316; font-size: 13px; margin: 0;">Read the article →</p>
+            </a>
+            <p style="color: #888; font-size: 13px; margin: 12px 0 0 0;">💡 <em>Consider reaching out to the author — a genuine connection could lead to more exposure!</em></p>
           </div>
           
           <div style="background: #111; border-radius: 12px; padding: 24px; margin: 24px 0;">
