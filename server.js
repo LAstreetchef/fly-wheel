@@ -485,20 +485,40 @@ Check out ${productData.name} if you're into this!
 }
 
 // ============================================
-// Twitter Posting (@flywheelsquad account)
+// Twitter Posting (multi-account support)
 // ============================================
 
-async function postTweet(text) {
-  const apiKey = process.env.TWITTER_API_KEY;
-  const apiSecret = process.env.TWITTER_API_SECRET;
-  const accessToken = process.env.TWITTER_ACCESS_TOKEN;
-  const accessSecret = process.env.TWITTER_ACCESS_SECRET;
+const TWITTER_ACCOUNTS = {
+  flywheelsquad: {
+    handle: 'flywheelsquad',
+    apiKey: () => process.env.TWITTER_API_KEY,
+    apiSecret: () => process.env.TWITTER_API_SECRET,
+    accessToken: () => process.env.TWITTER_ACCESS_TOKEN,
+    accessSecret: () => process.env.TWITTER_ACCESS_SECRET,
+  },
+  themessageis4u: {
+    handle: 'themessageis4u',
+    apiKey: () => process.env.TWITTER2_API_KEY,
+    apiSecret: () => process.env.TWITTER2_API_SECRET,
+    accessToken: () => process.env.TWITTER2_ACCESS_TOKEN,
+    accessSecret: () => process.env.TWITTER2_ACCESS_SECRET,
+  },
+};
+
+async function postTweet(text, accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
+  
+  const apiKey = account.apiKey();
+  const apiSecret = account.apiSecret();
+  const accessToken = account.accessToken();
+  const accessSecret = account.accessSecret();
   
   if (!accessToken || !accessSecret) {
-    console.warn('⚠️  Twitter tokens not set, mock posting');
+    console.warn(`⚠️  Twitter tokens not set for ${account.handle}, mock posting`);
     return {
       tweetId: 'mock_' + Date.now(),
-      tweetUrl: 'https://x.com/flywheelsquad/status/mock_' + Date.now(),
+      tweetUrl: `https://x.com/${account.handle}/status/mock_` + Date.now(),
+      account: account.handle,
     };
   }
 
@@ -513,7 +533,8 @@ async function postTweet(text) {
   
   return {
     tweetId: data.id,
-    tweetUrl: `https://x.com/flywheelsquad/status/${data.id}`,
+    tweetUrl: `https://x.com/${account.handle}/status/${data.id}`,
+    account: account.handle,
   };
 }
 
@@ -910,7 +931,9 @@ app.post('/api/admin/self-boost', async (req, res) => {
   try {
     // Get keywords (from request or use rotation)
     const keywords = req.body.keywords || getTodaysKeywords()[Math.floor(Math.random() * 3)];
-    console.log(`🔄 Self-boost starting with keywords: "${keywords}"`);
+    // Get account (flywheelsquad or themessageis4u)
+    const account = req.body.account || 'flywheelsquad';
+    console.log(`🔄 Self-boost starting with keywords: "${keywords}" on @${account}`);
     
     // Search for blogs
     const blogs = await searchBlogs(keywords);
@@ -931,9 +954,9 @@ app.post('/api/admin/self-boost', async (req, res) => {
       .replace('[BLOG_LINK]', blog.url)
       .replace('[PRODUCT_LINK]', DAUFINDER_PRODUCT.productUrl);
     
-    // Post to Twitter
-    const result = await postTweet(finalContent);
-    console.log(`🚀 Self-boost posted: ${result.tweetUrl}`);
+    // Post to Twitter (with account selection)
+    const result = await postTweet(finalContent, account);
+    console.log(`🚀 Self-boost posted to @${result.account}: ${result.tweetUrl}`);
     
     // Create order record for tracking
     const orderId = `self_${Date.now()}`;
@@ -945,6 +968,7 @@ app.post('/api/admin/self-boost', async (req, res) => {
       email: DAUFINDER_PRODUCT.email,
       tweetUrl: result.tweetUrl,
       tweetId: result.tweetId,
+      twitterAccount: result.account,
       publishedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       source: 'self-promo', // Track this is internal
@@ -959,6 +983,7 @@ app.post('/api/admin/self-boost', async (req, res) => {
     
     res.json({
       success: true,
+      account: result.account,
       tweetUrl: result.tweetUrl,
       tweetId: result.tweetId,
       keywords,
