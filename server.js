@@ -112,26 +112,35 @@ Check out ${productData.name} if you're into this!
 }
 
 // ============================================
-// Twitter Posting (BlogBoost System Account)
+// Twitter Posting (@flywheelsquad account)
 // ============================================
 
 async function postTweet(text) {
+  const apiKey = process.env.TWITTER_API_KEY;
+  const apiSecret = process.env.TWITTER_API_SECRET;
   const accessToken = process.env.TWITTER_ACCESS_TOKEN;
+  const accessSecret = process.env.TWITTER_ACCESS_SECRET;
   
-  if (!accessToken) {
-    console.warn('⚠️  TWITTER_ACCESS_TOKEN not set, mock posting');
+  if (!accessToken || !accessSecret) {
+    console.warn('⚠️  Twitter tokens not set, mock posting');
     return {
       tweetId: 'mock_' + Date.now(),
-      tweetUrl: 'https://x.com/BlogBoost/status/mock_' + Date.now(),
+      tweetUrl: 'https://x.com/flywheelsquad/status/mock_' + Date.now(),
     };
   }
 
-  const client = new TwitterApi(accessToken);
+  const client = new TwitterApi({
+    appKey: apiKey,
+    appSecret: apiSecret,
+    accessToken: accessToken,
+    accessSecret: accessSecret,
+  });
+  
   const { data } = await client.v2.tweet(text);
   
   return {
     tweetId: data.id,
-    tweetUrl: `https://x.com/i/status/${data.id}`,
+    tweetUrl: `https://x.com/flywheelsquad/status/${data.id}`,
   };
 }
 
