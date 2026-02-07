@@ -5,14 +5,144 @@ import Stripe from 'stripe';
 import Anthropic from '@anthropic-ai/sdk';
 import { TwitterApi } from 'twitter-api-v2';
 import { Resend } from 'resend';
+import Database from 'better-sqlite3';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
 const anthropic = new Anthropic();
 const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null;
 
-// In-memory order store
-const orders = new Map();
+// ============================================
+// SQLite Order Store
+// ============================================
+
+const dbPath = process.env.DB_PATH || join(__dirname, 'orders.db');
+const db = new Database(dbPath);
+
+// Initialize schema
+db.exec(`
+  CREATE TABLE IF NOT EXISTS orders (
+    session_id TEXT PRIMARY KEY,
+    status TEXT NOT NULL DEFAULT 'pending',
+    product_data TEXT,
+    blog TEXT,
+    content TEXT,
+    email TEXT,
+    tweet_url TEXT,
+    tweet_id TEXT,
+    published_at TEXT,
+    created_at TEXT NOT NULL,
+    follow_up_sent INTEGER DEFAULT 0,
+    metrics TEXT,
+    error TEXT
+  )
+`);
+
+// Order helper functions
+const orderStore = {
+  get(sessionId) {
+    const row = db.prepare('SELECT * FROM orders WHERE session_id = ?').get(sessionId);
+    if (!row) return null;
+    return {
+      status: row.status,
+      productData: row.product_data ? JSON.parse(row.product_data) : null,
+      blog: row.blog ? JSON.parse(row.blog) : null,
+      content: row.content,
+      email: row.email,
+      tweetUrl: row.tweet_url,
+      tweetId: row.tweet_id,
+      publishedAt: row.published_at,
+      createdAt: row.created_at,
+      followUpSent: !!row.follow_up_sent,
+      metrics: row.metrics ? JSON.parse(row.metrics) : null,
+      error: row.error,
+    };
+  },
+  
+  set(sessionId, order) {
+    const stmt = db.prepare(`
+      INSERT INTO orders (session_id, status, product_data, blog, content, email, tweet_url, tweet_id, published_at, created_at, follow_up_sent, metrics, error)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(session_id) DO UPDATE SET
+        status = excluded.status,
+        product_data = excluded.product_data,
+        blog = excluded.blog,
+        content = excluded.content,
+        email = excluded.email,
+        tweet_url = excluded.tweet_url,
+        tweet_id = excluded.tweet_id,
+        published_at = excluded.published_at,
+        follow_up_sent = excluded.follow_up_sent,
+        metrics = excluded.metrics,
+        error = excluded.error
+    `);
+    stmt.run(
+      sessionId,
+      order.status || 'pending',
+      order.productData ? JSON.stringify(order.productData) : null,
+      order.blog ? JSON.stringify(order.blog) : null,
+      order.content || null,
+      order.email || null,
+      order.tweetUrl || null,
+      order.tweetId || null,
+      order.publishedAt || null,
+      order.createdAt || new Date().toISOString(),
+      order.followUpSent ? 1 : 0,
+      order.metrics ? JSON.stringify(order.metrics) : null,
+      order.error || null
+    );
+  },
+  
+  all() {
+    const rows = db.prepare('SELECT * FROM orders ORDER BY created_at DESC').all();
+    return rows.map(row => ({
+      sessionId: row.session_id,
+      status: row.status,
+      productData: row.product_data ? JSON.parse(row.product_data) : null,
+      blog: row.blog ? JSON.parse(row.blog) : null,
+      content: row.content,
+      email: row.email,
+      tweetUrl: row.tweet_url,
+      tweetId: row.tweet_id,
+      publishedAt: row.published_at,
+      createdAt: row.created_at,
+      followUpSent: !!row.follow_up_sent,
+      metrics: row.metrics ? JSON.parse(row.metrics) : null,
+      error: row.error,
+    }));
+  },
+  
+  pendingFollowUps() {
+    return db.prepare(`
+      SELECT * FROM orders 
+      WHERE status = 'published' 
+        AND follow_up_sent = 0 
+        AND email IS NOT NULL 
+        AND tweet_id IS NOT NULL
+    `).all().map(row => ({
+      sessionId: row.session_id,
+      status: row.status,
+      email: row.email,
+      tweetId: row.tweet_id,
+      publishedAt: row.published_at,
+    }));
+  }
+};
+
+// Backwards compatibility wrapper
+const orders = {
+  get: (id) => orderStore.get(id),
+  set: (id, order) => orderStore.set(id, order),
+  entries: () => orderStore.all().map(o => [o.sessionId, o]),
+  get size() { return db.prepare('SELECT COUNT(*) as count FROM orders').get().count; }
+};
+
+console.log(`📦 Orders database: ${dbPath} (${orders.size} orders)`);
 
 // Config
 const BOOST_PRICE = 175; // $1.75 in cents
@@ -349,10 +479,10 @@ app.get('/api/admin/orders', (req, res) => {
   if (adminKey && authHeader !== `Bearer ${adminKey}`) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
-  const allOrders = [];
-  for (const [sessionId, order] of orders) {
-    allOrders.push({ sessionId: sessionId.substring(0, 20) + '...', ...order });
-  }
+  const allOrders = orderStore.all().map(order => ({
+    sessionId: order.sessionId?.substring(0, 20) + '...',
+    ...order
+  }));
   res.json(allOrders);
 });
 
@@ -368,11 +498,13 @@ app.post('/api/admin/send-followups', async (req, res) => {
   const FOLLOWUP_DELAY = 1 * 60 * 1000; // 1 minute (testing) - change back to 24 * 60 * 60 * 1000 for production
   let sent = 0;
   
-  for (const [sessionId, order] of orders) {
-    if (order.status !== 'published' || order.followUpSent || !order.email || !order.tweetId) continue;
-    
-    const publishedAt = new Date(order.publishedAt).getTime();
+  const pending = orderStore.pendingFollowUps();
+  for (const row of pending) {
+    const publishedAt = new Date(row.publishedAt).getTime();
     if (now - publishedAt < FOLLOWUP_DELAY) continue;
+    
+    const order = orderStore.get(row.sessionId);
+    if (!order) continue;
     
     const metrics = await getTweetMetrics(order.tweetId);
     if (metrics) {
@@ -380,13 +512,13 @@ app.post('/api/admin/send-followups', async (req, res) => {
       if (emailSent) {
         order.followUpSent = true;
         order.metrics = metrics;
-        orders.set(sessionId, order);
+        orderStore.set(row.sessionId, order);
         sent++;
       }
     }
   }
   
-  res.json({ sent, checked: orders.size });
+  res.json({ sent, checked: pending.length });
 });
 
 // ============================================
