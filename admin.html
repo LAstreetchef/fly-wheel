@@ -142,6 +142,15 @@
       </div>
     </div>
 
+    <!-- Boost Performance (with metrics) -->
+    <div class="glass rounded-xl p-5 mt-6">
+      <h3 class="text-lg font-semibold mb-4 text-purple-400">📈 Top Performing Boosts</h3>
+      <div class="text-xs text-gray-500 mb-3">Sorted by impressions • Stats update 24h after posting</div>
+      <div id="boost-performance" class="space-y-3 max-h-96 overflow-y-auto">
+        <div class="text-gray-500">Loading...</div>
+      </div>
+    </div>
+
     <!-- Config -->
     <div class="glass rounded-xl p-5 mt-6">
       <h3 class="text-lg font-semibold mb-4 text-orange-400">⚙️ Today's Keywords</h3>
@@ -292,6 +301,45 @@
       kwTagsContainer.innerHTML = data.config.todaysKeywords.map(kw => 
         `<span class="px-3 py-1 bg-orange-500/20 text-orange-400 rounded-full text-sm">${kw}</span>`
       ).join('');
+      
+      // Boost performance
+      const perfContainer = document.getElementById('boost-performance');
+      if (!data.boostPerformance || data.boostPerformance.length === 0) {
+        perfContainer.innerHTML = '<div class="text-gray-500">No boosts with metrics yet</div>';
+      } else {
+        perfContainer.innerHTML = data.boostPerformance.map(b => {
+          const m = b.metrics;
+          const hasMetrics = m && m.impressions !== undefined;
+          return `
+            <div class="border-b border-gray-800 pb-3">
+              <div class="flex justify-between items-start">
+                <div class="flex-1">
+                  <div class="text-sm font-medium truncate">${b.product}</div>
+                  <div class="text-xs text-gray-500 truncate">${b.blog}</div>
+                  <div class="text-xs text-gray-600 mt-1">
+                    ${b.source === 'prime' ? '⭐ Prime' : b.source === 'self-promo' ? '🔄 Self' : '💰 Paid'} · 
+                    ${new Date(b.createdAt).toLocaleDateString()}
+                  </div>
+                </div>
+                ${hasMetrics ? `
+                  <div class="text-right ml-4">
+                    <div class="text-lg font-bold text-purple-400">${m.impressions?.toLocaleString() || 0}</div>
+                    <div class="text-xs text-gray-500">impressions</div>
+                    <div class="text-xs text-gray-400 mt-1">
+                      ❤️ ${m.likes || 0} · 🔁 ${m.retweets || 0} · 💬 ${m.replies || 0}
+                    </div>
+                  </div>
+                ` : `
+                  <div class="text-right ml-4">
+                    <div class="text-xs text-gray-500">Pending...</div>
+                  </div>
+                `}
+              </div>
+              ${b.tweetUrl ? `<a href="${b.tweetUrl}" target="_blank" class="text-xs text-purple-400 hover:underline mt-1 inline-block">View on X →</a>` : ''}
+            </div>
+          `;
+        }).join('');
+      }
     }
     
     async function triggerBoost() {
