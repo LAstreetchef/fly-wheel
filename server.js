@@ -1136,10 +1136,26 @@ async function likeTweet(tweetId, accountName = 'flywheelsquad') {
   try {
     const me = await client.v2.me();
     await client.v2.like(me.data.id, tweetId);
-    console.log(`❤️  Liked tweet ${tweetId}`);
+    console.log(`❤️  Liked tweet ${tweetId} from @${accountName}`);
     return true;
   } catch (err) {
     console.error('Like error:', err.message);
+    return false;
+  }
+}
+
+// Retweet a tweet
+async function retweetTweet(tweetId, accountName = 'flywheelsquad') {
+  const client = getTwitterClient(accountName);
+  if (!client) return false;
+  
+  try {
+    const me = await client.v2.me();
+    await client.v2.retweet(me.data.id, tweetId);
+    console.log(`🔁 Retweeted tweet ${tweetId} from @${accountName}`);
+    return true;
+  } catch (err) {
+    console.error('Retweet error:', err.message);
     return false;
   }
 }
@@ -1222,6 +1238,121 @@ Reply only with the tweet text, nothing else.`
     console.error('Reply generation error:', err.message);
     return null;
   }
+}
+
+// ============================================
+// Cross-Account Engagement System
+// ============================================
+
+// Engaging reply templates for cross-account engagement
+const CROSS_ENGAGE_REPLIES = [
+  "This is such an underrated gem 💎",
+  "Bookmarked! Great find 🔖",
+  "The SEO community needs to see this 👀",
+  "Solid breakdown here 🎯",
+  "Been looking for content like this 🙌",
+  "Quality over quantity. This is it.",
+  "Adding this to my reading list 📚",
+  "The data here is 🔥",
+  "This deserves more attention",
+  "Exactly what founders need to read",
+  "Saving this one ⭐",
+  "Underrated thread alert 🚨",
+  "More of this please 👏",
+  "The insights here are gold",
+  "Finally, some useful content",
+];
+
+// Get the OTHER account for cross-engagement
+function getOtherAccount(accountName) {
+  return accountName === 'flywheelsquad' ? 'themessageis4u' : 'flywheelsquad';
+}
+
+// Cross-engage: Have the OTHER account like, retweet, and reply
+async function crossEngage(tweetId, postingAccount = 'flywheelsquad', options = {}) {
+  const {
+    doLike = true,
+    doRetweet = true,
+    doReply = true,
+    delayMs = 2000, // Small delay between actions to look natural
+  } = options;
+  
+  const otherAccount = getOtherAccount(postingAccount);
+  const results = {
+    account: otherAccount,
+    liked: false,
+    retweeted: false,
+    replied: false,
+    replyId: null,
+  };
+  
+  console.log(`🔄 Cross-engaging tweet ${tweetId} from @${otherAccount}...`);
+  
+  try {
+    // Like from other account
+    if (doLike) {
+      await new Promise(r => setTimeout(r, delayMs));
+      results.liked = await likeTweet(tweetId, otherAccount);
+    }
+    
+    // Retweet from other account
+    if (doRetweet) {
+      await new Promise(r => setTimeout(r, delayMs));
+      results.retweeted = await retweetTweet(tweetId, otherAccount);
+    }
+    
+    // Reply from other account
+    if (doReply) {
+      await new Promise(r => setTimeout(r, delayMs));
+      const reply = CROSS_ENGAGE_REPLIES[Math.floor(Math.random() * CROSS_ENGAGE_REPLIES.length)];
+      const replyResult = await replyToTweet(tweetId, reply, otherAccount);
+      if (replyResult) {
+        results.replied = true;
+        results.replyId = replyResult.id;
+      }
+    }
+    
+    console.log(`✅ Cross-engagement complete: liked=${results.liked}, RT=${results.retweeted}, replied=${results.replied}`);
+    return results;
+    
+  } catch (err) {
+    console.error('Cross-engagement error:', err.message);
+    return results;
+  }
+}
+
+// Full engagement blast: both accounts engage
+async function fullEngagementBlast(tweetId, postingAccount = 'flywheelsquad') {
+  const results = {
+    crossEngage: null,
+    selfReply: null,
+  };
+  
+  // Cross-engage from other account
+  results.crossEngage = await crossEngage(tweetId, postingAccount);
+  
+  // Also add a self-reply thread from the posting account (boosts visibility)
+  const selfReplies = [
+    "Thread incoming... 🧵",
+    "What makes this stand out ⬇️",
+    "Key takeaway here 👇",
+    "Why this matters for founders:",
+    "The best part about this article:",
+  ];
+  
+  try {
+    await new Promise(r => setTimeout(r, 3000)); // Delay before self-reply
+    const selfReply = selfReplies[Math.floor(Math.random() * selfReplies.length)];
+    const replyResult = await replyToTweet(tweetId, selfReply, postingAccount);
+    if (replyResult) {
+      results.selfReply = replyResult.id;
+      console.log(`💬 Self-reply added from @${postingAccount}`);
+    }
+  } catch (err) {
+    console.error('Self-reply error:', err.message);
+  }
+  
+  return results;
 }
 
 // Run an engagement cycle
@@ -1646,6 +1777,10 @@ app.post('/api/prime/boost', async (req, res) => {
     
     // Post to Twitter
     const result = await postTweet(finalContent);
+    
+    // Cross-engage from both accounts to boost stats
+    const engagement = await fullEngagementBlast(result.tweetId, 'flywheelsquad');
+    console.log(`🔥 Prime boost engagement blast:`, engagement);
     
     // Create order record
     const orderId = `prime_${Date.now()}_${email.split('@')[0]}`;
@@ -2092,6 +2227,10 @@ app.post('/api/prime/redeem-points', async (req, res) => {
     // Post to Twitter
     const result = await postTweet(finalContent);
     
+    // Cross-engage to boost stats
+    const engagement = await fullEngagementBlast(result.tweetId, 'flywheelsquad');
+    console.log(`🔥 Rewards boost engagement blast:`, engagement);
+    
     // Create order record
     const orderId = `rewards_${Date.now()}_${email.split('@')[0]}`;
     await orders.set(orderId, {
@@ -2508,6 +2647,10 @@ app.post('/api/admin/self-boost', async (req, res) => {
     // Post to Twitter (with account selection)
     const result = await postTweet(finalContent, account);
     console.log(`🚀 Self-boost posted to @${result.account}: ${result.tweetUrl}`);
+    
+    // Cross-engage from the other account (like, retweet, reply)
+    const engagement = await fullEngagementBlast(result.tweetId, account);
+    console.log(`🔥 Engagement blast complete:`, engagement);
     
     // Create order record for tracking
     const orderId = `self_${Date.now()}`;
@@ -3024,6 +3167,11 @@ app.post('/webhook', async (req, res) => {
           .replace('[PRODUCT_LINK]', productData.productUrl || '');
         
         const result = await postTweet(content);
+        
+        // Cross-engage to boost customer's stats (fire-and-forget)
+        fullEngagementBlast(result.tweetId, 'flywheelsquad')
+          .then(eng => console.log('🔥 Customer boost engagement:', eng))
+          .catch(err => console.error('Engagement error:', err.message));
         
         order.status = 'published';
         order.tweetUrl = result.tweetUrl;
