@@ -184,6 +184,20 @@ if (usePostgres) {
   
   console.log(`📦 Orders database: PostgreSQL (${await orderStore.count()} orders)`);
   
+  // Prime accounts table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS prime_accounts (
+      email TEXT PRIMARY KEY,
+      tier TEXT NOT NULL,
+      boost_balance INTEGER NOT NULL DEFAULT 0,
+      stripe_customer_id TEXT,
+      stripe_subscription_id TEXT,
+      billing_cycle_anchor TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  
 } else {
   // SQLite for local development
   const dbPath = process.env.DB_PATH || join(__dirname, 'orders.db');
@@ -212,6 +226,20 @@ if (usePostgres) {
   // Add columns if they don't exist (for existing DBs)
   try { db.exec('ALTER TABLE orders ADD COLUMN source TEXT'); } catch(e) {}
   try { db.exec('ALTER TABLE orders ADD COLUMN keywords TEXT'); } catch(e) {}
+  
+  // Prime accounts table (SQLite)
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS prime_accounts (
+      email TEXT PRIMARY KEY,
+      tier TEXT NOT NULL,
+      boost_balance INTEGER NOT NULL DEFAULT 0,
+      stripe_customer_id TEXT,
+      stripe_subscription_id TEXT,
+      billing_cycle_anchor TEXT,
+      created_at TEXT NOT NULL,
+      updated_at TEXT NOT NULL
+    )
+  `);
   
   orderStore = {
     async get(sessionId) {
@@ -323,10 +351,170 @@ const orders = {
   set: (id, order) => orderStore.set(id, order),
 };
 
+// ============================================
+// Prime Account Store
+// ============================================
+
+let primeStore;
+
+if (usePostgres) {
+  const pool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  });
+  
+  primeStore = {
+    async get(email) {
+      const { rows } = await pool.query('SELECT * FROM prime_accounts WHERE email = $1', [email.toLowerCase()]);
+      if (!rows[0]) return null;
+      const row = rows[0];
+      return {
+        email: row.email,
+        tier: row.tier,
+        boostBalance: row.boost_balance,
+        stripeCustomerId: row.stripe_customer_id,
+        stripeSubscriptionId: row.stripe_subscription_id,
+        billingCycleAnchor: row.billing_cycle_anchor,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+    },
+    
+    async set(email, account) {
+      const now = new Date().toISOString();
+      await pool.query(`
+        INSERT INTO prime_accounts (email, tier, boost_balance, stripe_customer_id, stripe_subscription_id, billing_cycle_anchor, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        ON CONFLICT(email) DO UPDATE SET
+          tier = EXCLUDED.tier,
+          boost_balance = EXCLUDED.boost_balance,
+          stripe_customer_id = EXCLUDED.stripe_customer_id,
+          stripe_subscription_id = EXCLUDED.stripe_subscription_id,
+          billing_cycle_anchor = EXCLUDED.billing_cycle_anchor,
+          updated_at = EXCLUDED.updated_at
+      `, [
+        email.toLowerCase(),
+        account.tier,
+        account.boostBalance,
+        account.stripeCustomerId || null,
+        account.stripeSubscriptionId || null,
+        account.billingCycleAnchor || null,
+        account.createdAt || now,
+        now
+      ]);
+    },
+    
+    async useBoost(email) {
+      const result = await pool.query(`
+        UPDATE prime_accounts 
+        SET boost_balance = boost_balance - 1, updated_at = NOW()
+        WHERE email = $1 AND boost_balance > 0
+        RETURNING boost_balance
+      `, [email.toLowerCase()]);
+      return result.rows.length > 0 ? result.rows[0].boost_balance : null;
+    },
+    
+    async resetBalance(email, newBalance) {
+      await pool.query(`
+        UPDATE prime_accounts 
+        SET boost_balance = $2, updated_at = NOW()
+        WHERE email = $1
+      `, [email.toLowerCase(), newBalance]);
+    },
+  };
+} else {
+  // SQLite prime store
+  const dbPath = process.env.DB_PATH || join(__dirname, 'orders.db');
+  const db = new Database(dbPath);
+  
+  primeStore = {
+    async get(email) {
+      const row = db.prepare('SELECT * FROM prime_accounts WHERE email = ?').get(email.toLowerCase());
+      if (!row) return null;
+      return {
+        email: row.email,
+        tier: row.tier,
+        boostBalance: row.boost_balance,
+        stripeCustomerId: row.stripe_customer_id,
+        stripeSubscriptionId: row.stripe_subscription_id,
+        billingCycleAnchor: row.billing_cycle_anchor,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+      };
+    },
+    
+    async set(email, account) {
+      const now = new Date().toISOString();
+      db.prepare(`
+        INSERT INTO prime_accounts (email, tier, boost_balance, stripe_customer_id, stripe_subscription_id, billing_cycle_anchor, created_at, updated_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(email) DO UPDATE SET
+          tier = excluded.tier,
+          boost_balance = excluded.boost_balance,
+          stripe_customer_id = excluded.stripe_customer_id,
+          stripe_subscription_id = excluded.stripe_subscription_id,
+          billing_cycle_anchor = excluded.billing_cycle_anchor,
+          updated_at = excluded.updated_at
+      `).run(
+        email.toLowerCase(),
+        account.tier,
+        account.boostBalance,
+        account.stripeCustomerId || null,
+        account.stripeSubscriptionId || null,
+        account.billingCycleAnchor || null,
+        account.createdAt || now,
+        now
+      );
+    },
+    
+    async useBoost(email) {
+      const result = db.prepare(`
+        UPDATE prime_accounts 
+        SET boost_balance = boost_balance - 1, updated_at = datetime('now')
+        WHERE email = ? AND boost_balance > 0
+        RETURNING boost_balance
+      `).get(email.toLowerCase());
+      return result ? result.boost_balance : null;
+    },
+    
+    async resetBalance(email, newBalance) {
+      db.prepare(`
+        UPDATE prime_accounts 
+        SET boost_balance = ?, updated_at = datetime('now')
+        WHERE email = ?
+      `).run(newBalance, email.toLowerCase());
+    },
+  };
+}
+
 // Config
 const BOOST_PRICE = 175; // $1.75 in cents
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
+
+// ============================================
+// DAUfinder Prime - Subscription Tiers
+// ============================================
+const PRIME_TIERS = {
+  starter: {
+    name: 'Starter',
+    boosts: 100,
+    price: 2900, // $29
+    priceId: process.env.STRIPE_PRICE_STARTER, // Set in env after creating
+  },
+  growth: {
+    name: 'Growth',
+    boosts: 1000,
+    price: 19900, // $199
+    priceId: process.env.STRIPE_PRICE_GROWTH,
+  },
+  scale: {
+    name: 'Scale',
+    boosts: 10000,
+    price: 99900, // $999
+    priceId: process.env.STRIPE_PRICE_SCALE,
+  },
+};
 
 // Middleware
 app.use(cors());
@@ -643,6 +831,224 @@ app.get(['/api/status/:sessionId', '/api/boost/status/:sessionId'], async (req, 
   const order = await orders.get(req.params.sessionId);
   if (!order) return res.status(404).json({ status: 'not_found' });
   res.json(order);
+});
+
+// ============================================
+// DAUfinder Prime - Subscription Endpoints
+// ============================================
+
+// Get Prime tiers info
+app.get('/api/prime/tiers', (req, res) => {
+  const tiers = Object.entries(PRIME_TIERS).map(([id, tier]) => ({
+    id,
+    name: tier.name,
+    boosts: tier.boosts,
+    price: tier.price / 100,
+    pricePerBoost: ((tier.price / 100) / tier.boosts).toFixed(2),
+  }));
+  res.json({ tiers });
+});
+
+// Get account status
+app.get('/api/account/:email', async (req, res) => {
+  try {
+    const email = req.params.email.toLowerCase();
+    const account = await primeStore.get(email);
+    
+    if (!account) {
+      return res.json({ 
+        exists: false, 
+        email,
+        tier: null,
+        boostBalance: 0,
+      });
+    }
+    
+    res.json({
+      exists: true,
+      email: account.email,
+      tier: account.tier,
+      tierName: PRIME_TIERS[account.tier]?.name || account.tier,
+      boostBalance: account.boostBalance,
+      maxBoosts: PRIME_TIERS[account.tier]?.boosts || 0,
+      billingCycleAnchor: account.billingCycleAnchor,
+    });
+  } catch (error) {
+    console.error('Account lookup error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Create subscription checkout
+app.post('/api/subscribe', checkoutLimiter, async (req, res) => {
+  try {
+    const { email, tier } = req.body;
+    
+    if (!email || !tier) {
+      return res.status(400).json({ error: 'Email and tier required' });
+    }
+    
+    const tierConfig = PRIME_TIERS[tier];
+    if (!tierConfig) {
+      return res.status(400).json({ error: 'Invalid tier' });
+    }
+    
+    if (!tierConfig.priceId) {
+      // Create price on the fly if not configured (for testing)
+      console.warn(`⚠️  No priceId for ${tier}, creating inline price`);
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: 'usd',
+            product_data: {
+              name: `DAUfinder Prime - ${tierConfig.name}`,
+              description: `${tierConfig.boosts.toLocaleString()} boosts per month`,
+            },
+            unit_amount: tierConfig.price,
+            recurring: { interval: 'month' },
+          },
+          quantity: 1,
+        }],
+        mode: 'subscription',
+        success_url: `${FRONTEND_URL}?prime_success=true&email=${encodeURIComponent(email)}`,
+        cancel_url: `${FRONTEND_URL}?prime=true`,
+        customer_email: email,
+        metadata: {
+          email: email.toLowerCase(),
+          tier,
+          boosts: tierConfig.boosts.toString(),
+        },
+      });
+      
+      return res.json({ url: session.url, sessionId: session.id });
+    }
+    
+    // Use pre-configured price ID
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price: tierConfig.priceId,
+        quantity: 1,
+      }],
+      mode: 'subscription',
+      success_url: `${FRONTEND_URL}?prime_success=true&email=${encodeURIComponent(email)}`,
+      cancel_url: `${FRONTEND_URL}?prime=true`,
+      customer_email: email,
+      metadata: {
+        email: email.toLowerCase(),
+        tier,
+        boosts: tierConfig.boosts.toString(),
+      },
+    });
+    
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('Subscribe error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Use a boost from Prime balance (no payment)
+app.post('/api/prime/boost', async (req, res) => {
+  try {
+    const { email, productData, blog, content } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+    
+    // Verify account exists and has balance
+    const account = await primeStore.get(email);
+    if (!account) {
+      return res.status(404).json({ error: 'No Prime account found' });
+    }
+    
+    if (account.boostBalance <= 0) {
+      return res.status(400).json({ error: 'No boosts remaining', balance: 0 });
+    }
+    
+    if (!productData?.name || !blog?.url || !content) {
+      return res.status(400).json({ error: 'Missing required data (productData, blog, content)' });
+    }
+    
+    // Deduct boost
+    const newBalance = await primeStore.useBoost(email);
+    if (newBalance === null) {
+      return res.status(400).json({ error: 'Failed to use boost' });
+    }
+    
+    // Replace placeholders
+    let finalContent = content
+      .replace('[BLOG_LINK]', blog.url)
+      .replace('[PRODUCT_LINK]', productData.productUrl || '');
+    
+    // Post to Twitter
+    const result = await postTweet(finalContent);
+    
+    // Create order record
+    const orderId = `prime_${Date.now()}_${email.split('@')[0]}`;
+    await orders.set(orderId, {
+      status: 'published',
+      productData,
+      blog,
+      content: finalContent,
+      email,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      publishedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      source: 'prime',
+      followUpSent: false,
+    });
+    
+    console.log(`🌟 Prime boost used by ${email} | Balance: ${newBalance} | Tweet: ${result.tweetUrl}`);
+    
+    res.json({
+      success: true,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      remainingBalance: newBalance,
+    });
+    
+  } catch (error) {
+    console.error('Prime boost error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Cancel subscription
+app.post('/api/prime/cancel', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+    
+    const account = await primeStore.get(email);
+    if (!account || !account.stripeSubscriptionId) {
+      return res.status(404).json({ error: 'No active subscription found' });
+    }
+    
+    // Cancel at period end (they keep remaining boosts)
+    await stripe.subscriptions.update(account.stripeSubscriptionId, {
+      cancel_at_period_end: true,
+    });
+    
+    console.log(`🛑 Prime subscription canceled for ${email}`);
+    
+    res.json({ 
+      success: true, 
+      message: 'Subscription will cancel at end of billing period',
+      remainingBalance: account.boostBalance,
+    });
+    
+  } catch (error) {
+    console.error('Cancel subscription error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ============================================
@@ -1233,8 +1639,32 @@ app.post('/webhook', async (req, res) => {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
+  // Handle one-time payment (existing DAUfinder flow)
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object;
+    
+    // Check if this is a subscription checkout
+    if (session.mode === 'subscription') {
+      console.log('🌟 Prime subscription created:', session.id);
+      const email = session.metadata?.email || session.customer_email;
+      const tier = session.metadata?.tier;
+      const boosts = parseInt(session.metadata?.boosts || '0', 10);
+      
+      if (email && tier) {
+        await primeStore.set(email, {
+          tier,
+          boostBalance: boosts,
+          stripeCustomerId: session.customer,
+          stripeSubscriptionId: session.subscription,
+          billingCycleAnchor: new Date().toISOString(),
+          createdAt: new Date().toISOString(),
+        });
+        console.log(`✅ Prime account created: ${email} | Tier: ${tier} | Boosts: ${boosts}`);
+      }
+      return res.json({ received: true });
+    }
+    
+    // Regular one-time payment
     console.log('✅ Payment received:', session.id);
     console.log('   Metadata email:', session.metadata?.email || '(none)');
     
@@ -1271,6 +1701,55 @@ app.post('/webhook', async (req, res) => {
         order.status = 'failed';
         order.error = error.message;
         await orders.set(session.id, order);
+      }
+    }
+  }
+  
+  // Handle subscription renewal (invoice paid)
+  if (event.type === 'invoice.paid') {
+    const invoice = event.data.object;
+    
+    // Only process subscription renewals (not first payment)
+    if (invoice.billing_reason === 'subscription_cycle') {
+      const subscriptionId = invoice.subscription;
+      const customerId = invoice.customer;
+      
+      try {
+        // Get subscription to find metadata
+        const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+        const email = subscription.metadata?.email || invoice.customer_email;
+        const tier = subscription.metadata?.tier;
+        const boosts = parseInt(subscription.metadata?.boosts || '0', 10);
+        
+        if (email && tier) {
+          const account = await primeStore.get(email);
+          if (account) {
+            // Reset balance on renewal
+            await primeStore.resetBalance(email, boosts);
+            console.log(`🔄 Prime balance reset for ${email}: ${boosts} boosts`);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to process subscription renewal:', err.message);
+      }
+    }
+  }
+  
+  // Handle subscription canceled
+  if (event.type === 'customer.subscription.deleted') {
+    const subscription = event.data.object;
+    const email = subscription.metadata?.email;
+    
+    if (email) {
+      const account = await primeStore.get(email);
+      if (account) {
+        // Keep account but clear subscription info
+        await primeStore.set(email, {
+          ...account,
+          tier: 'canceled',
+          stripeSubscriptionId: null,
+        });
+        console.log(`🛑 Prime subscription ended for ${email}`);
       }
     }
   }
