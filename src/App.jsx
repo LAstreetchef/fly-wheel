@@ -686,17 +686,21 @@ export default function App() {
             
             <div className="space-y-6">
               {[
-                { num: '1', icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
-                { num: '2', icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
-                { num: '3', icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
-                { num: '4', icon: '🚀', title: 'Pay & post', desc: '$1.99 — we post instantly + send you performance stats' },
+                { img: '/fly-wheel/squad/stella.png', icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
+                { img: '/fly-wheel/squad/research.png', icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
+                { img: '/fly-wheel/squad/writer.png', icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
+                { img: '/fly-wheel/squad/rank.png', icon: '🚀', title: 'Pay & post', desc: '$1.99 — we post instantly + send you performance stats' },
               ].map((s, i) => (
-                <div key={i} className="flex items-start gap-4">
-                  <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black">
-                    {s.num}
-                  </span>
+                <div key={i} className="flex items-start gap-4 group">
+                  <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-gray-600 group-hover:border-orange-500 transition-all duration-300">
+                    <img 
+                      src={s.img} 
+                      alt="" 
+                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-300"
+                    />
+                  </div>
                   <div>
-                    <h3 className="font-bold text-white flex items-center gap-2">
+                    <h3 className="font-bold text-white flex items-center gap-2 group-hover:text-orange-400 transition-colors">
                       <span>{s.icon}</span> {s.title}
                     </h3>
                     <p className="text-gray-400 text-sm">{s.desc}</p>
