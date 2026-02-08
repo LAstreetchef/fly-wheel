@@ -703,6 +703,41 @@ export default function App() {
                   </div>
                 </div>
               ))}
+              
+              {/* Stats Preview Eye Candy */}
+              <div className="mt-4 p-4 bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 relative overflow-hidden">
+                <div className="absolute top-2 right-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">📊 Sample Stats</div>
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <div className="text-2xl font-black text-orange-400">2.8K</div>
+                    <div className="text-xs text-gray-500">Impressions</div>
+                    <div className="mt-1 h-8 flex items-end justify-center gap-0.5">
+                      {[40, 65, 45, 80, 60, 90, 75].map((h, i) => (
+                        <div key={i} className="w-1.5 bg-gradient-to-t from-orange-500 to-yellow-400 rounded-t" style={{height: `${h}%`}}></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-green-400">156</div>
+                    <div className="text-xs text-gray-500">Engagements</div>
+                    <div className="mt-1 h-8 flex items-end justify-center gap-0.5">
+                      {[30, 50, 70, 55, 85, 65, 95].map((h, i) => (
+                        <div key={i} className="w-1.5 bg-gradient-to-t from-green-500 to-emerald-400 rounded-t" style={{height: `${h}%`}}></div>
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <div className="text-2xl font-black text-blue-400">89</div>
+                    <div className="text-xs text-gray-500">Link Clicks</div>
+                    <div className="mt-1 h-8 flex items-end justify-center gap-0.5">
+                      {[25, 40, 60, 45, 70, 80, 65].map((h, i) => (
+                        <div key={i} className="w-1.5 bg-gradient-to-t from-blue-500 to-cyan-400 rounded-t" style={{height: `${h}%`}}></div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                <div className="mt-3 text-center text-xs text-gray-500">You'll get real stats like these emailed to you 📧</div>
+              </div>
             </div>
 
             {/* Ask Stella */}
