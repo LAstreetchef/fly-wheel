@@ -2353,6 +2353,25 @@ app.get('/api/admin/dashboard', async (req, res) => {
     },
     recentBoosts,
     recentCustomers,
+    // All boosts with metrics, sorted by impressions
+    boostPerformance: allOrders
+      .filter(o => o.tweetId && o.status === 'published')
+      .map(o => ({
+        tweetId: o.tweetId,
+        tweetUrl: o.tweetUrl,
+        product: o.productData?.name || 'Unknown',
+        blog: o.blog?.title || 'Unknown',
+        blogUrl: o.blog?.url,
+        email: o.email,
+        source: o.source || 'customer',
+        createdAt: o.createdAt,
+        metrics: o.metrics || null,
+      }))
+      .sort((a, b) => {
+        const aImp = a.metrics?.impressions || 0;
+        const bImp = b.metrics?.impressions || 0;
+        return bImp - aImp;
+      }),
     config: {
       keywordRotation: KEYWORD_ROTATION,
       todaysKeywords: getTodaysKeywords(),
