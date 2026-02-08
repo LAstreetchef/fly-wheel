@@ -1424,6 +1424,350 @@ Reply only with the tweet text, nothing else.`
 }
 
 // ============================================
+// HIGH IMPACT ENGAGEMENT FEATURES
+// ============================================
+
+// 1. QUOTE TWEETS - More visible than plain RTs
+async function quoteTweet(tweetId, quoteText, accountName = 'flywheelsquad') {
+  const client = getTwitterClient(accountName);
+  if (!client) {
+    console.warn(`⚠️  No Twitter client for @${accountName} (quote tweet)`);
+    return null;
+  }
+  
+  try {
+    const { data } = await client.v2.tweet({
+      text: quoteText,
+      quote_tweet_id: tweetId,
+    });
+    console.log(`💬 Quote tweeted ${tweetId} from @${accountName}`);
+    twitterHealth[accountName].lastSuccess = new Date().toISOString();
+    return data;
+  } catch (err) {
+    parseTwitterError(err, accountName);
+    return null;
+  }
+}
+
+// Generate smart quote tweet text using Claude
+async function generateQuoteText(blogTitle, blogUrl, keywords = '') {
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 100,
+      messages: [{
+        role: 'user',
+        content: `Generate a SHORT quote tweet comment for sharing this article:
+Title: "${blogTitle}"
+Topic: ${keywords || 'general'}
+
+Rules:
+- Max 80 characters
+- Sound genuinely interested, not promotional
+- Add a take or highlight something specific
+- Use 1 emoji max
+- No hashtags (added separately)
+
+Examples of good quote tweets:
+- "The section on content clusters is 🔥"
+- "Finally someone explains this properly"
+- "This changed how I think about SEO"
+- "Underrated breakdown right here"
+
+Reply with ONLY the quote text.`
+      }]
+    });
+    return response.content[0].text.trim();
+  } catch (err) {
+    console.error('Quote text generation error:', err.message);
+    // Fallback templates
+    const fallbacks = [
+      "This is worth reading 🔥",
+      "Great breakdown here",
+      "Solid insights 💡",
+      "Adding this to my reading list",
+      "More people need to see this",
+    ];
+    return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+  }
+}
+
+// 2. THREAD BUILDER - Threads get 2-3x more impressions
+async function generateThreadContent(blogTitle, blogUrl, productName, keywords = '') {
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `Create a 3-tweet thread about this article for a content marketing account.
+
+Article: "${blogTitle}"
+URL: ${blogUrl}
+Product being promoted: ${productName}
+Topic: ${keywords || 'marketing/SEO'}
+
+Format (respond with ONLY this JSON, no other text):
+{
+  "tweet1": "Main hook tweet with the link (max 250 chars, include [LINK] placeholder)",
+  "tweet2": "Key insight or takeaway from the article (max 250 chars)",
+  "tweet3": "Why this matters + soft CTA (max 250 chars)"
+}
+
+Rules:
+- tweet1 should hook attention and include [LINK]
+- tweet2 should provide value/insight
+- tweet3 should tie back to the product naturally
+- Keep it conversational, not corporate
+- No hashtags (added separately)`
+      }]
+    });
+    
+    const text = response.content[0].text.trim();
+    // Parse JSON from response
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    return null;
+  } catch (err) {
+    console.error('Thread generation error:', err.message);
+    return null;
+  }
+}
+
+// Post a thread (chain of tweets)
+async function postThread(tweets, accountName = 'flywheelsquad') {
+  const client = getTwitterClient(accountName);
+  if (!client) {
+    console.warn(`⚠️  No Twitter client for @${accountName} (thread)`);
+    return null;
+  }
+  
+  const results = [];
+  let lastTweetId = null;
+  
+  for (let i = 0; i < tweets.length; i++) {
+    try {
+      let tweetData = { text: tweets[i] };
+      
+      // If not the first tweet, make it a reply to the previous
+      if (lastTweetId) {
+        tweetData.reply = { in_reply_to_tweet_id: lastTweetId };
+      }
+      
+      const { data } = await client.v2.tweet(tweetData);
+      results.push(data);
+      lastTweetId = data.id;
+      console.log(`🧵 Thread tweet ${i + 1}/${tweets.length} posted: ${data.id}`);
+      
+      // Small delay between tweets
+      if (i < tweets.length - 1) {
+        await new Promise(r => setTimeout(r, 1500));
+      }
+    } catch (err) {
+      console.error(`Thread tweet ${i + 1} failed:`, err.message);
+      parseTwitterError(err, accountName);
+      break;
+    }
+  }
+  
+  twitterHealth[accountName].lastSuccess = new Date().toISOString();
+  return results.length > 0 ? results : null;
+}
+
+// 3. AUTO-FOLLOW BLOG AUTHORS - Extract Twitter from blog pages
+async function extractTwitterFromBlog(blogUrl) {
+  try {
+    const response = await fetch(blogUrl, {
+      headers: { 'User-Agent': 'Mozilla/5.0 (compatible; DAUfinder/1.0)' },
+      timeout: 10000,
+    });
+    
+    if (!response.ok) return null;
+    
+    const html = await response.text();
+    
+    // Look for Twitter links in various formats
+    const patterns = [
+      /twitter\.com\/([a-zA-Z0-9_]{1,15})(?:["\s\?\/]|$)/gi,
+      /x\.com\/([a-zA-Z0-9_]{1,15})(?:["\s\?\/]|$)/gi,
+      /@([a-zA-Z0-9_]{1,15})(?=[\s,\.]|$)/g,
+    ];
+    
+    const handles = new Set();
+    
+    for (const pattern of patterns) {
+      let match;
+      while ((match = pattern.exec(html)) !== null) {
+        const handle = match[1].toLowerCase();
+        // Filter out common false positives
+        if (!['share', 'intent', 'home', 'search', 'login', 'signup', 'settings', 'i', 'explore'].includes(handle)) {
+          handles.add(handle);
+        }
+      }
+    }
+    
+    // Return the first valid-looking handle (often the author)
+    const validHandles = Array.from(handles).filter(h => h.length >= 2 && h.length <= 15);
+    console.log(`🔍 Found Twitter handles on ${blogUrl}:`, validHandles.slice(0, 5));
+    
+    return validHandles.length > 0 ? validHandles[0] : null;
+  } catch (err) {
+    console.error('Twitter extraction error:', err.message);
+    return null;
+  }
+}
+
+// Follow blog author if we can find their Twitter
+async function followBlogAuthor(blogUrl, accountName = 'flywheelsquad') {
+  const handle = await extractTwitterFromBlog(blogUrl);
+  if (!handle) {
+    console.log('📝 No Twitter handle found for blog author');
+    return null;
+  }
+  
+  // Get user ID from handle
+  const user = await getUserByUsername(handle, accountName);
+  if (!user) {
+    console.log(`📝 Could not find Twitter user @${handle}`);
+    return null;
+  }
+  
+  // Follow them
+  const followed = await followUser(user.id, accountName);
+  if (followed) {
+    console.log(`✅ Followed blog author @${handle}`);
+    return { handle, userId: user.id };
+  }
+  
+  return null;
+}
+
+// 4. ENGAGEMENT WAVES - Come back later to boost visibility
+const engagementWaveQueue = [];
+
+function scheduleEngagementWave(tweetId, blogTitle, accountName, delayMinutes = 120) {
+  const waveTime = Date.now() + (delayMinutes * 60 * 1000);
+  engagementWaveQueue.push({
+    tweetId,
+    blogTitle,
+    accountName,
+    waveTime,
+    executed: false,
+  });
+  console.log(`⏰ Engagement wave scheduled for tweet ${tweetId} in ${delayMinutes} minutes`);
+}
+
+async function executeEngagementWave(wave) {
+  if (wave.executed) return;
+  wave.executed = true;
+  
+  console.log(`🌊 Executing engagement wave for tweet ${wave.tweetId}`);
+  
+  const otherAccount = wave.accountName === 'flywheelsquad' ? 'themessageis4u' : 'flywheelsquad';
+  
+  // 1. Add a follow-up reply from the original account
+  const followUpReplies = [
+    "Thread: Key takeaways from this article 👇",
+    "Update: This is getting great engagement 📈",
+    "Bookmark this one if you're in the space 🔖",
+    "Still one of the best breakdowns I've seen on this topic",
+    "Worth a re-read if you missed it earlier",
+  ];
+  const replyText = followUpReplies[Math.floor(Math.random() * followUpReplies.length)];
+  await replyToTweet(wave.tweetId, replyText, wave.accountName);
+  
+  await new Promise(r => setTimeout(r, 3000));
+  
+  // 2. Quote tweet from the other account
+  const quoteText = await generateQuoteText(wave.blogTitle, '', '');
+  if (quoteText) {
+    await quoteTweet(wave.tweetId, quoteText, otherAccount);
+  }
+  
+  console.log(`✅ Engagement wave complete for tweet ${wave.tweetId}`);
+}
+
+// Process engagement waves (call this periodically)
+async function processEngagementWaves() {
+  const now = Date.now();
+  const dueWaves = engagementWaveQueue.filter(w => !w.executed && w.waveTime <= now);
+  
+  for (const wave of dueWaves) {
+    try {
+      await executeEngagementWave(wave);
+    } catch (err) {
+      console.error('Engagement wave error:', err.message);
+    }
+    await new Promise(r => setTimeout(r, 5000)); // Delay between waves
+  }
+  
+  // Clean up old executed waves
+  const cutoff = now - (24 * 60 * 60 * 1000); // Keep 24h of history
+  while (engagementWaveQueue.length > 0 && engagementWaveQueue[0].waveTime < cutoff) {
+    engagementWaveQueue.shift();
+  }
+  
+  return dueWaves.length;
+}
+
+// 5. HASHTAG INJECTION - Auto-add relevant hashtags
+const KEYWORD_HASHTAGS = {
+  'seo': ['#SEO', '#ContentMarketing', '#DigitalMarketing'],
+  'content': ['#ContentMarketing', '#ContentStrategy', '#Marketing'],
+  'marketing': ['#Marketing', '#DigitalMarketing', '#GrowthHacking'],
+  'startup': ['#startup', '#buildinpublic', '#entrepreneur'],
+  'founder': ['#founder', '#buildinpublic', '#startups'],
+  'saas': ['#SaaS', '#buildinpublic', '#indiehackers'],
+  'indie': ['#indiehackers', '#buildinpublic', '#solopreneur'],
+  'growth': ['#GrowthHacking', '#Marketing', '#startup'],
+  'blog': ['#blogging', '#ContentMarketing', '#SEO'],
+  'traffic': ['#SEO', '#WebTraffic', '#DigitalMarketing'],
+  'product': ['#ProductHunt', '#buildinpublic', '#startup'],
+  'launch': ['#launch', '#ProductHunt', '#buildinpublic'],
+  'ai': ['#AI', '#MachineLearning', '#tech'],
+  'tool': ['#tools', '#productivity', '#SaaS'],
+};
+
+function getHashtagsForKeywords(keywords) {
+  const keywordLower = keywords.toLowerCase();
+  const hashtags = new Set();
+  
+  for (const [key, tags] of Object.entries(KEYWORD_HASHTAGS)) {
+    if (keywordLower.includes(key)) {
+      tags.forEach(tag => hashtags.add(tag));
+    }
+  }
+  
+  // Return max 3 hashtags to avoid looking spammy
+  return Array.from(hashtags).slice(0, 3);
+}
+
+function injectHashtags(content, keywords) {
+  const hashtags = getHashtagsForKeywords(keywords);
+  if (hashtags.length === 0) return content;
+  
+  // Check if content already has hashtags
+  if (content.includes('#')) return content;
+  
+  // Check character limit (280 - current - hashtags - spaces)
+  const hashtagStr = '\n\n' + hashtags.join(' ');
+  if (content.length + hashtagStr.length > 280) {
+    // Truncate content if needed
+    const maxContent = 280 - hashtagStr.length - 3;
+    if (content.length > maxContent) {
+      content = content.substring(0, maxContent) + '...';
+    }
+  }
+  
+  return content + hashtagStr;
+}
+
+// Run engagement wave processor every 5 minutes
+setInterval(processEngagementWaves, 5 * 60 * 1000);
+
+// ============================================
 // Cross-Account Engagement System
 // ============================================
 
@@ -1455,16 +1799,18 @@ function getOtherAccount(accountName) {
 async function crossEngage(tweetId, postingAccount = 'flywheelsquad', options = {}) {
   const {
     doLike = true,
-    doRetweet = true,
+    doQuote = true,  // Quote tweets instead of plain RT
     doReply = true,
-    delayMs = 2000, // Small delay between actions to look natural
+    blogTitle = '',
+    delayMs = 2000,
   } = options;
   
   const otherAccount = getOtherAccount(postingAccount);
   const results = {
     account: otherAccount,
     liked: false,
-    retweeted: false,
+    quoted: false,
+    quoteId: null,
     replied: false,
     replyId: null,
   };
@@ -1478,10 +1824,15 @@ async function crossEngage(tweetId, postingAccount = 'flywheelsquad', options = 
       results.liked = await likeTweet(tweetId, otherAccount);
     }
     
-    // Retweet from other account
-    if (doRetweet) {
+    // Quote tweet from other account (better than plain RT)
+    if (doQuote) {
       await new Promise(r => setTimeout(r, delayMs));
-      results.retweeted = await retweetTweet(tweetId, otherAccount);
+      const quoteText = await generateQuoteText(blogTitle || 'this article', '', '');
+      const quoteResult = await quoteTweet(tweetId, quoteText, otherAccount);
+      if (quoteResult) {
+        results.quoted = true;
+        results.quoteId = quoteResult.id;
+      }
     }
     
     // Reply from other account
@@ -1495,7 +1846,7 @@ async function crossEngage(tweetId, postingAccount = 'flywheelsquad', options = 
       }
     }
     
-    console.log(`✅ Cross-engagement complete: liked=${results.liked}, RT=${results.retweeted}, replied=${results.replied}`);
+    console.log(`✅ Cross-engagement complete: liked=${results.liked}, quoted=${results.quoted}, replied=${results.replied}`);
     return results;
     
   } catch (err) {
@@ -1504,17 +1855,34 @@ async function crossEngage(tweetId, postingAccount = 'flywheelsquad', options = 
   }
 }
 
-// Full engagement blast: both accounts engage
-async function fullEngagementBlast(tweetId, postingAccount = 'flywheelsquad') {
+// Full engagement blast: both accounts engage + schedule follow-up wave
+async function fullEngagementBlast(tweetId, postingAccount = 'flywheelsquad', options = {}) {
+  const { blogTitle = '', blogUrl = '', keywords = '' } = options;
+  
   const results = {
     crossEngage: null,
     selfReply: null,
+    authorFollowed: null,
+    waveScheduled: false,
   };
   
-  // Cross-engage from other account
-  results.crossEngage = await crossEngage(tweetId, postingAccount);
+  // Cross-engage from other account (with quote tweet)
+  results.crossEngage = await crossEngage(tweetId, postingAccount, { blogTitle });
   
-  // Also add a self-reply thread from the posting account (boosts visibility)
+  // Follow the blog author if we can find their Twitter
+  if (blogUrl) {
+    followBlogAuthor(blogUrl, postingAccount)
+      .then(author => {
+        if (author) results.authorFollowed = author;
+      })
+      .catch(err => console.error('Author follow error:', err.message));
+  }
+  
+  // Schedule engagement wave for 2 hours later
+  scheduleEngagementWave(tweetId, blogTitle, postingAccount, 120);
+  results.waveScheduled = true;
+  
+  // Also add a self-reply thread from the posting account
   const selfReplies = [
     "Thread incoming... 🧵",
     "What makes this stand out ⬇️",
@@ -1524,7 +1892,7 @@ async function fullEngagementBlast(tweetId, postingAccount = 'flywheelsquad') {
   ];
   
   try {
-    await new Promise(r => setTimeout(r, 3000)); // Delay before self-reply
+    await new Promise(r => setTimeout(r, 3000));
     const selfReply = selfReplies[Math.floor(Math.random() * selfReplies.length)];
     const replyResult = await replyToTweet(tweetId, selfReply, postingAccount);
     if (replyResult) {
@@ -1965,11 +2333,19 @@ app.post('/api/prime/boost', async (req, res) => {
       .replace('[BLOG_LINK]', blog.url)
       .replace('[PRODUCT_LINK]', productData.productUrl || '');
     
+    // Inject hashtags based on product/blog keywords
+    const keywords = productData.keywords || blog.title || '';
+    finalContent = injectHashtags(finalContent, keywords);
+    
     // Post to Twitter
     const result = await postTweet(finalContent);
     
-    // Cross-engage from both accounts to boost stats
-    const engagement = await fullEngagementBlast(result.tweetId, 'flywheelsquad');
+    // Full engagement: quote tweet, like, reply, follow author, schedule wave
+    const engagement = await fullEngagementBlast(result.tweetId, 'flywheelsquad', {
+      blogTitle: blog.title,
+      blogUrl: blog.url,
+      keywords,
+    });
     console.log(`🔥 Prime boost engagement blast:`, engagement);
     
     // Create order record
@@ -2830,16 +3206,25 @@ app.post('/api/admin/self-boost', async (req, res) => {
     console.log(`✨ Generated content: ${content.substring(0, 100)}...`);
     
     // Replace placeholders
-    const finalContent = content
+    let finalContent = content
       .replace('[BLOG_LINK]', blog.url)
       .replace('[PRODUCT_LINK]', DAUFINDER_PRODUCT.productUrl);
+    
+    // Inject relevant hashtags based on keywords
+    finalContent = injectHashtags(finalContent, keywords);
+    console.log(`#️⃣ Hashtags injected, final length: ${finalContent.length}`);
     
     // Post to Twitter (with account selection)
     const result = await postTweet(finalContent, account);
     console.log(`🚀 Self-boost posted to @${result.account}: ${result.tweetUrl}`);
     
-    // Cross-engage from the other account (like, retweet, reply)
-    const engagement = await fullEngagementBlast(result.tweetId, account);
+    // Cross-engage from the other account (quote tweet + like + reply)
+    // Also follow blog author and schedule engagement wave
+    const engagement = await fullEngagementBlast(result.tweetId, account, {
+      blogTitle: blog.title,
+      blogUrl: blog.url,
+      keywords,
+    });
     console.log(`🔥 Engagement blast complete:`, engagement);
     
     // Create order record for tracking
@@ -2883,6 +3268,118 @@ app.post('/api/admin/self-boost', async (req, res) => {
     console.error('❌ Self-boost failed:', error.message);
     res.status(500).json({ error: error.message });
   }
+});
+
+// Thread boost - post as a thread instead of single tweet
+app.post('/api/admin/self-boost/thread', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const keywords = req.body.keywords || getTodaysKeywords()[Math.floor(Math.random() * 3)];
+    const account = req.body.account || 'flywheelsquad';
+    
+    // Search for blogs
+    const blogs = await searchBlogs(keywords);
+    if (!blogs || blogs.length === 0) {
+      return res.status(404).json({ error: 'No blogs found', keywords });
+    }
+    
+    const blog = blogs[Math.floor(Math.random() * Math.min(3, blogs.length))];
+    
+    // Generate thread content
+    const threadContent = await generateThreadContent(blog.title, blog.url, DAUFINDER_PRODUCT.name, keywords);
+    if (!threadContent) {
+      return res.status(500).json({ error: 'Failed to generate thread content' });
+    }
+    
+    // Build tweet array
+    const tweets = [
+      threadContent.tweet1.replace('[LINK]', blog.url),
+      threadContent.tweet2,
+      threadContent.tweet3,
+    ];
+    
+    // Add hashtags to last tweet
+    tweets[2] = injectHashtags(tweets[2], keywords);
+    
+    // Post the thread
+    const results = await postThread(tweets, account);
+    if (!results || results.length === 0) {
+      return res.status(500).json({ error: 'Failed to post thread' });
+    }
+    
+    const firstTweet = results[0];
+    const tweetUrl = `https://x.com/${account}/status/${firstTweet.id}`;
+    
+    // Run engagement on the thread
+    const engagement = await fullEngagementBlast(firstTweet.id, account, {
+      blogTitle: blog.title,
+      blogUrl: blog.url,
+      keywords,
+    });
+    
+    console.log(`🧵 Thread posted: ${tweetUrl}`);
+    
+    res.json({
+      success: true,
+      type: 'thread',
+      account,
+      tweetUrl,
+      tweetId: firstTweet.id,
+      threadLength: results.length,
+      keywords,
+      blog: { title: blog.title, url: blog.url },
+      engagement,
+    });
+    
+  } catch (error) {
+    console.error('❌ Thread boost failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Get engagement wave queue status
+app.get('/api/admin/engagement/waves', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const now = Date.now();
+  const pending = engagementWaveQueue.filter(w => !w.executed);
+  const executed = engagementWaveQueue.filter(w => w.executed);
+  
+  res.json({
+    pending: pending.map(w => ({
+      tweetId: w.tweetId,
+      blogTitle: w.blogTitle,
+      account: w.accountName,
+      scheduledFor: new Date(w.waveTime).toISOString(),
+      minutesUntil: Math.round((w.waveTime - now) / 60000),
+    })),
+    executed: executed.length,
+    total: engagementWaveQueue.length,
+  });
+});
+
+// Manually trigger engagement wave processing
+app.post('/api/admin/engagement/process', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const processed = await processEngagementWaves();
+  res.json({ processed });
 });
 
 // ============================================
