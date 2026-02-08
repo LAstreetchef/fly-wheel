@@ -1466,12 +1466,29 @@ async function pollDms(accountName = 'flywheelsquad') {
       max_results: 20,
     });
     
-    console.log('📨 DM response:', JSON.stringify(events, null, 2).substring(0, 500));
+    console.log('📨 DM response:', JSON.stringify(events, null, 2).substring(0, 1000));
     
-    // Handle empty or missing data
-    const eventList = events?.data || events?.events || [];
-    if (!eventList || eventList.length === 0) {
-      return { processed: 0, messages: [], note: 'No DM events found' };
+    // Handle empty or missing data - twitter-api-v2 returns { data: [...] } or just data array
+    let eventList = [];
+    if (Array.isArray(events)) {
+      eventList = events;
+    } else if (Array.isArray(events?.data)) {
+      eventList = events.data;
+    } else if (Array.isArray(events?.events)) {
+      eventList = events.events;
+    } else if (events && typeof events === 'object') {
+      // Try to find any array in the response
+      for (const key of Object.keys(events)) {
+        if (Array.isArray(events[key])) {
+          eventList = events[key];
+          console.log(`📨 Found events in key: ${key}`);
+          break;
+        }
+      }
+    }
+    
+    if (eventList.length === 0) {
+      return { processed: 0, messages: [], note: 'No DM events found', rawResponse: JSON.stringify(events).substring(0, 500) };
     }
     
     // Get our own user ID to filter out our own messages
