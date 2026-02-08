@@ -1022,6 +1022,298 @@ async function postTweet(text, accountName = 'flywheelsquad') {
 }
 
 // ============================================
+// Growth Automation Module
+// ============================================
+
+function getTwitterClient(accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
+  
+  const apiKey = account.apiKey();
+  const apiSecret = account.apiSecret();
+  const accessToken = account.accessToken();
+  const accessSecret = account.accessSecret();
+  
+  if (!accessToken || !accessSecret) {
+    return null;
+  }
+
+  return new TwitterApi({
+    appKey: apiKey,
+    appSecret: apiSecret,
+    accessToken: accessToken,
+    accessSecret: accessSecret,
+  });
+}
+
+// Growth hashtags and keywords to monitor
+const GROWTH_HASHTAGS = [
+  '#buildinpublic',
+  '#indiehackers', 
+  '#saas',
+  '#startup',
+  '#makers',
+  '#solopreneur',
+  '#shipfast',
+  '#growthhacking',
+];
+
+const GROWTH_KEYWORDS = [
+  'launching my product',
+  'just shipped',
+  'looking for beta testers',
+  'getting first users',
+  'marketing my startup',
+  'need more traffic',
+  'product hunt launch',
+];
+
+// Tips for content flywheel
+const GROWTH_TIPS = [
+  "💡 Tip: The best time to post on X is 8-10am EST when founders are checking feeds.\n\nMost successful boosts we've seen hit during morning coffee time ☕",
+  "🎯 Stop spending hours on content.\n\nFind a relevant blog → Match your product → Let AI write the copy → Post.\n\nThat's the flywheel.",
+  "📊 Data point: Products paired with niche blogs get 3x more engaged clicks than generic promo posts.\n\nContext > Blast marketing.",
+  "🔄 The Flywheel effect:\n\n1. Post valuable content\n2. Engage with your niche\n3. Build followers\n4. More reach on next post\n5. Repeat\n\nCompounding > one-time campaigns",
+  "🚀 Most founders overthink their first launch.\n\nJust get in front of people who already care about your niche.\n\nFind the blogs they read. Meet them there.",
+  "💰 CAC math:\n\nPaid ads: $5-50 per click\nInfluencer posts: $100-1000\nNiche blog matching: <$2\n\nSometimes the unsexy option wins.",
+  "🎪 Hot take: Your product doesn't need to go viral.\n\nIt needs 100 people who genuinely care.\n\nTarget > Volume.",
+  "⚡ Speed hack: Don't write marketing copy from scratch.\n\nFind what's already working in your niche.\nAdapt. Ship. Test.\n\nIteration beats perfection.",
+];
+
+// Search for tweets by query
+async function searchTweets(query, maxResults = 10, accountName = 'flywheelsquad') {
+  const client = getTwitterClient(accountName);
+  if (!client) {
+    console.warn('⚠️  Twitter client not available for search');
+    return [];
+  }
+  
+  try {
+    const result = await client.v2.search(query, {
+      max_results: maxResults,
+      'tweet.fields': ['author_id', 'created_at', 'public_metrics'],
+      'user.fields': ['username', 'public_metrics'],
+      expansions: ['author_id'],
+    });
+    
+    return result.data?.data || [];
+  } catch (err) {
+    console.error('Tweet search error:', err.message);
+    return [];
+  }
+}
+
+// Like a tweet
+async function likeTweet(tweetId, accountName = 'flywheelsquad') {
+  const client = getTwitterClient(accountName);
+  if (!client) return false;
+  
+  try {
+    const me = await client.v2.me();
+    await client.v2.like(me.data.id, tweetId);
+    console.log(`❤️  Liked tweet ${tweetId}`);
+    return true;
+  } catch (err) {
+    console.error('Like error:', err.message);
+    return false;
+  }
+}
+
+// Reply to a tweet
+async function replyToTweet(tweetId, text, accountName = 'flywheelsquad') {
+  const client = getTwitterClient(accountName);
+  if (!client) return null;
+  
+  try {
+    const { data } = await client.v2.reply(text, tweetId);
+    console.log(`💬 Replied to tweet ${tweetId}`);
+    return data;
+  } catch (err) {
+    console.error('Reply error:', err.message);
+    return null;
+  }
+}
+
+// Follow a user
+async function followUser(userId, accountName = 'flywheelsquad') {
+  const client = getTwitterClient(accountName);
+  if (!client) return false;
+  
+  try {
+    const me = await client.v2.me();
+    await client.v2.follow(me.data.id, userId);
+    console.log(`👤 Followed user ${userId}`);
+    return true;
+  } catch (err) {
+    console.error('Follow error:', err.message);
+    return false;
+  }
+}
+
+// Get user by username
+async function getUserByUsername(username, accountName = 'flywheelsquad') {
+  const client = getTwitterClient(accountName);
+  if (!client) return null;
+  
+  try {
+    const { data } = await client.v2.userByUsername(username, {
+      'user.fields': ['public_metrics', 'description'],
+    });
+    return data;
+  } catch (err) {
+    console.error('User lookup error:', err.message);
+    return null;
+  }
+}
+
+// Generate a thoughtful reply using Claude
+async function generateReply(tweetText, authorHandle) {
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 150,
+      messages: [{
+        role: 'user',
+        content: `You're @flywheelsquad, a friendly account that helps indie founders get their first users.
+
+Generate a SHORT, genuine reply to this tweet from @${authorHandle}:
+"${tweetText}"
+
+Rules:
+- Max 200 characters
+- Be helpful or encouraging, not salesy
+- Don't mention DAUfinder or any product
+- Sound human, not corporate
+- If they're launching something, congratulate them
+- If they're struggling, empathize
+- Add value or ask a genuine question
+
+Reply only with the tweet text, nothing else.`
+      }]
+    });
+    
+    return response.content[0].text.trim();
+  } catch (err) {
+    console.error('Reply generation error:', err.message);
+    return null;
+  }
+}
+
+// Run an engagement cycle
+async function runEngagementCycle(options = {}) {
+  const {
+    hashtags = GROWTH_HASHTAGS.slice(0, 3),
+    maxTweets = 5,
+    shouldLike = true,
+    shouldReply = true,
+    shouldFollow = false,
+    accountName = 'flywheelsquad',
+  } = options;
+  
+  const results = {
+    searched: 0,
+    liked: 0,
+    replied: 0,
+    followed: 0,
+    errors: [],
+  };
+  
+  for (const hashtag of hashtags) {
+    try {
+      const tweets = await searchTweets(hashtag, maxTweets, accountName);
+      results.searched += tweets.length;
+      
+      for (const tweet of tweets) {
+        // Skip our own tweets
+        if (tweet.text?.includes('@flywheelsquad') || tweet.text?.includes('@themessageis4u')) {
+          continue;
+        }
+        
+        // Like the tweet
+        if (shouldLike) {
+          const liked = await likeTweet(tweet.id, accountName);
+          if (liked) results.liked++;
+          await new Promise(r => setTimeout(r, 1000)); // Rate limit delay
+        }
+        
+        // Generate and post reply
+        if (shouldReply && tweet.text) {
+          const replyText = await generateReply(tweet.text, tweet.author_id);
+          if (replyText) {
+            const replied = await replyToTweet(tweet.id, replyText, accountName);
+            if (replied) results.replied++;
+            await new Promise(r => setTimeout(r, 2000)); // Rate limit delay
+          }
+        }
+        
+        // Follow the author
+        if (shouldFollow && tweet.author_id) {
+          const followed = await followUser(tweet.author_id, accountName);
+          if (followed) results.followed++;
+          await new Promise(r => setTimeout(r, 1000)); // Rate limit delay
+        }
+      }
+    } catch (err) {
+      results.errors.push(`${hashtag}: ${err.message}`);
+    }
+  }
+  
+  console.log(`🌱 Engagement cycle complete:`, results);
+  return results;
+}
+
+// Post a tip from the content flywheel
+async function postGrowthTip(accountName = 'flywheelsquad') {
+  const tip = GROWTH_TIPS[Math.floor(Math.random() * GROWTH_TIPS.length)];
+  
+  try {
+    const result = await postTweet(tip, accountName);
+    console.log(`📝 Posted growth tip: ${result.tweetUrl}`);
+    return result;
+  } catch (err) {
+    console.error('Growth tip post error:', err.message);
+    return null;
+  }
+}
+
+// Post a case study from recent boost stats
+async function postCaseStudy(accountName = 'flywheelsquad') {
+  try {
+    const allOrders = await orderStore.all();
+    
+    // Find a boost with good metrics
+    const goodBoosts = allOrders
+      .filter(o => o.metrics?.impressions > 500 && o.status === 'published')
+      .sort((a, b) => (b.metrics?.impressions || 0) - (a.metrics?.impressions || 0));
+    
+    if (goodBoosts.length === 0) {
+      console.log('No good boosts for case study yet');
+      return null;
+    }
+    
+    const boost = goodBoosts[0];
+    const m = boost.metrics;
+    
+    const caseStudy = `📊 Boost results for "${boost.productData?.name || 'a product'}":
+
+📈 ${m.impressions?.toLocaleString()} impressions
+❤️ ${m.likes} likes
+🔁 ${m.retweets} retweets
+💬 ${m.replies} replies
+
+Paired with: ${boost.blog?.title || 'a relevant niche blog'}
+
+This is what targeted distribution looks like.`;
+    
+    const result = await postTweet(caseStudy, accountName);
+    console.log(`📊 Posted case study: ${result.tweetUrl}`);
+    return result;
+  } catch (err) {
+    console.error('Case study post error:', err.message);
+    return null;
+  }
+}
+
+// ============================================
 // API Routes
 // ============================================
 
@@ -2267,6 +2559,207 @@ app.get('/api/admin/self-boost/stats', async (req, res) => {
     roi: `${roi}%`,
     keywords: getTodaysKeywords(),
   });
+});
+
+// ============================================
+// Growth Automation Endpoints
+// ============================================
+
+// Run engagement cycle (like + reply to relevant tweets)
+app.post('/api/admin/growth/engage', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { 
+    hashtags, 
+    maxTweets = 5, 
+    shouldLike = true, 
+    shouldReply = true,
+    shouldFollow = false,
+    account = 'flywheelsquad'
+  } = req.body;
+  
+  try {
+    const results = await runEngagementCycle({
+      hashtags: hashtags || GROWTH_HASHTAGS.slice(0, 3),
+      maxTweets,
+      shouldLike,
+      shouldReply,
+      shouldFollow,
+      accountName: account,
+    });
+    
+    res.json({ success: true, results });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Post a growth tip
+app.post('/api/admin/growth/tip', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { account = 'flywheelsquad' } = req.body;
+  
+  try {
+    const result = await postGrowthTip(account);
+    if (result) {
+      res.json({ success: true, tweetUrl: result.tweetUrl, tweetId: result.tweetId });
+    } else {
+      res.status(500).json({ error: 'Failed to post tip' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Post a case study from boost stats
+app.post('/api/admin/growth/case-study', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { account = 'flywheelsquad' } = req.body;
+  
+  try {
+    const result = await postCaseStudy(account);
+    if (result) {
+      res.json({ success: true, tweetUrl: result.tweetUrl, tweetId: result.tweetId });
+    } else {
+      res.json({ success: false, message: 'No boosts with good metrics yet for case study' });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Follow users from search results
+app.post('/api/admin/growth/follow', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { query, maxUsers = 5, account = 'flywheelsquad' } = req.body;
+  
+  if (!query) {
+    return res.status(400).json({ error: 'Query required' });
+  }
+  
+  try {
+    const tweets = await searchTweets(query, maxUsers * 2, account);
+    const followedIds = new Set();
+    let followed = 0;
+    
+    for (const tweet of tweets) {
+      if (followed >= maxUsers) break;
+      if (followedIds.has(tweet.author_id)) continue;
+      
+      const success = await followUser(tweet.author_id, account);
+      if (success) {
+        followed++;
+        followedIds.add(tweet.author_id);
+      }
+      await new Promise(r => setTimeout(r, 1500)); // Rate limit
+    }
+    
+    res.json({ success: true, followed, query });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Run full growth cycle (engagement + tip posting)
+app.post('/api/admin/growth/cycle', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { 
+    account = 'flywheelsquad',
+    engagementEnabled = true,
+    tipEnabled = true,
+    followEnabled = false,
+  } = req.body;
+  
+  const results = {
+    engagement: null,
+    tip: null,
+    errors: [],
+  };
+  
+  try {
+    // Run engagement
+    if (engagementEnabled) {
+      results.engagement = await runEngagementCycle({
+        hashtags: GROWTH_HASHTAGS.slice(0, 2),
+        maxTweets: 3,
+        shouldLike: true,
+        shouldReply: true,
+        shouldFollow: followEnabled,
+        accountName: account,
+      });
+    }
+    
+    // Post a tip (randomly, ~30% of the time)
+    if (tipEnabled && Math.random() < 0.3) {
+      const tipResult = await postGrowthTip(account);
+      results.tip = tipResult ? tipResult.tweetUrl : null;
+    }
+    
+    console.log('🌱 Full growth cycle complete:', results);
+    res.json({ success: true, results });
+  } catch (err) {
+    results.errors.push(err.message);
+    res.status(500).json({ success: false, results, error: err.message });
+  }
+});
+
+// Get growth stats
+app.get('/api/admin/growth/stats', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  try {
+    const client = getTwitterClient('flywheelsquad');
+    if (!client) {
+      return res.json({ error: 'Twitter client not configured' });
+    }
+    
+    const me = await client.v2.me({ 'user.fields': ['public_metrics'] });
+    
+    res.json({
+      account: me.data.username,
+      followers: me.data.public_metrics?.followers_count || 0,
+      following: me.data.public_metrics?.following_count || 0,
+      tweets: me.data.public_metrics?.tweet_count || 0,
+      hashtags: GROWTH_HASHTAGS,
+      tipsAvailable: GROWTH_TIPS.length,
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Full dashboard with all metrics
