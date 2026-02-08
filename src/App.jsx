@@ -24,6 +24,10 @@ export default function App() {
   const [rewards, setRewards] = useState(null)
   const [rewardsSyncing, setRewardsSyncing] = useState(false)
   const [showRewards, setShowRewards] = useState(false)
+  
+  // User boost history
+  const [userBoosts, setUserBoosts] = useState(null)
+  const [showMyBoosts, setShowMyBoosts] = useState(false)
 
   // Load ElevenLabs widget
   useEffect(() => {
@@ -110,11 +114,24 @@ export default function App() {
       const data = await res.json()
       if (data.exists) {
         setPrimeAccount(data)
+        // Also fetch user's boost history
+        fetchUserBoosts(email)
       } else {
         setPrimeAccount(null)
+        setUserBoosts(null)
       }
     } catch (e) {
       console.error('Failed to check account:', e)
+    }
+  }
+  
+  const fetchUserBoosts = async (email) => {
+    try {
+      const res = await fetch(`${API_URL}/api/account/${encodeURIComponent(email)}/boosts`)
+      const data = await res.json()
+      setUserBoosts(data)
+    } catch (e) {
+      console.error('Failed to fetch boosts:', e)
     }
   }
   
@@ -129,6 +146,8 @@ export default function App() {
     setPrimeEmail('')
     setPrimeAccount(null)
     setRewards(null)
+    setUserBoosts(null)
+    setShowMyBoosts(false)
   }
   
   const loadRewards = async (email) => {
@@ -513,9 +532,19 @@ export default function App() {
                       </div>
                       <p className="text-gray-500 text-sm">{primeEmail} · {primeAccount.tierName} plan</p>
                     </div>
-                    <div className="flex gap-2">
+                    <div className="flex gap-2 flex-wrap">
                       <button
-                        onClick={() => setShowRewards(!showRewards)}
+                        onClick={() => { setShowMyBoosts(!showMyBoosts); setShowRewards(false); }}
+                        className={`px-4 py-3 rounded-xl font-bold transition-all ${
+                          showMyBoosts 
+                            ? 'bg-blue-500 text-white' 
+                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                        }`}
+                      >
+                        📈 My Boosts
+                      </button>
+                      <button
+                        onClick={() => { setShowRewards(!showRewards); setShowMyBoosts(false); }}
                         className={`px-4 py-3 rounded-xl font-bold transition-all ${
                           showRewards 
                             ? 'bg-purple-500 text-white' 
@@ -674,6 +703,78 @@ export default function App() {
                           )}
                         </div>
                       )}
+                    </div>
+                  )}
+                  
+                  {/* My Boosts Section */}
+                  {showMyBoosts && (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl">
+                      <h3 className="text-lg font-bold text-blue-400 mb-3">📈 My Boost Performance</h3>
+                      
+                      {/* Totals */}
+                      {userBoosts?.totals && userBoosts.totals.count > 0 && (
+                        <div className="grid grid-cols-4 gap-2 mb-4 text-center">
+                          <div className="bg-gray-800/50 rounded-lg p-2">
+                            <div className="text-xl font-bold text-blue-400">{userBoosts.totals.count}</div>
+                            <div className="text-xs text-gray-400">Boosts</div>
+                          </div>
+                          <div className="bg-gray-800/50 rounded-lg p-2">
+                            <div className="text-xl font-bold text-blue-400">{userBoosts.totals.impressions.toLocaleString()}</div>
+                            <div className="text-xs text-gray-400">Impressions</div>
+                          </div>
+                          <div className="bg-gray-800/50 rounded-lg p-2">
+                            <div className="text-xl font-bold text-blue-400">{userBoosts.totals.engagements}</div>
+                            <div className="text-xs text-gray-400">Engagements</div>
+                          </div>
+                          <div className="bg-gray-800/50 rounded-lg p-2">
+                            <div className="text-xl font-bold text-blue-400">{userBoosts.totals.likes}</div>
+                            <div className="text-xs text-gray-400">Likes</div>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* Boost List */}
+                      {!userBoosts || userBoosts.boosts?.length === 0 ? (
+                        <p className="text-gray-400 text-sm text-center py-4">No boosts yet. Use your first boost to see stats here!</p>
+                      ) : (
+                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                          {userBoosts.boosts.map((boost, i) => (
+                            <div key={i} className="bg-gray-800/50 rounded-lg p-3">
+                              <div className="flex justify-between items-start">
+                                <div className="flex-1 min-w-0">
+                                  <div className="font-medium text-sm truncate">{boost.product}</div>
+                                  <div className="text-xs text-gray-500 truncate">{boost.blog}</div>
+                                  <div className="text-xs text-gray-600 mt-1">
+                                    {new Date(boost.createdAt).toLocaleDateString()}
+                                  </div>
+                                </div>
+                                {boost.metrics ? (
+                                  <div className="text-right ml-3">
+                                    <div className="text-lg font-bold text-blue-400">{boost.metrics.impressions?.toLocaleString() || 0}</div>
+                                    <div className="text-xs text-gray-500">impressions</div>
+                                    <div className="text-xs text-gray-400 mt-1">
+                                      ❤️ {boost.metrics.likes || 0} · 🔁 {boost.metrics.retweets || 0}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <div className="text-right ml-3">
+                                    <div className="text-xs text-gray-500">Stats pending...</div>
+                                    <div className="text-xs text-gray-600">Ready in ~24h</div>
+                                  </div>
+                                )}
+                              </div>
+                              {boost.tweetUrl && (
+                                <a href={boost.tweetUrl} target="_blank" rel="noopener noreferrer" 
+                                   className="text-xs text-blue-400 hover:underline mt-2 inline-block">
+                                  View on X →
+                                </a>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                      
+                      <p className="text-xs text-gray-600 mt-3">Stats update 24 hours after each boost</p>
                     </div>
                   )}
                 </div>

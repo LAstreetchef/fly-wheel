@@ -1174,6 +1174,53 @@ app.get('/api/account/:email', async (req, res) => {
   }
 });
 
+// Get user's boost history
+app.get('/api/account/:email/boosts', async (req, res) => {
+  try {
+    const email = req.params.email.toLowerCase();
+    const allOrders = await orderStore.all();
+    
+    // Filter orders for this user
+    const userBoosts = allOrders
+      .filter(o => o.email?.toLowerCase() === email && o.status === 'published')
+      .map(o => ({
+        id: o.sessionId,
+        product: o.productData?.name || 'Unknown',
+        blog: o.blog?.title || 'Unknown',
+        blogUrl: o.blog?.url,
+        tweetUrl: o.tweetUrl,
+        tweetId: o.tweetId,
+        createdAt: o.createdAt,
+        metrics: o.metrics || null,
+      }))
+      .sort((a, b) => {
+        // Sort by impressions if available, otherwise by date
+        const aImp = a.metrics?.impressions || 0;
+        const bImp = b.metrics?.impressions || 0;
+        if (aImp !== bImp) return bImp - aImp;
+        return new Date(b.createdAt) - new Date(a.createdAt);
+      });
+    
+    // Calculate totals
+    const totalImpressions = userBoosts.reduce((sum, b) => sum + (b.metrics?.impressions || 0), 0);
+    const totalEngagements = userBoosts.reduce((sum, b) => sum + (b.metrics?.engagements || 0), 0);
+    const totalLikes = userBoosts.reduce((sum, b) => sum + (b.metrics?.likes || 0), 0);
+    
+    res.json({
+      boosts: userBoosts,
+      totals: {
+        count: userBoosts.length,
+        impressions: totalImpressions,
+        engagements: totalEngagements,
+        likes: totalLikes,
+      }
+    });
+  } catch (error) {
+    console.error('Boost history error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Create subscription checkout
 app.post('/api/subscribe', checkoutLimiter, async (req, res) => {
   try {
