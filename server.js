@@ -10,6 +10,7 @@ import pg from 'pg';
 import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
+import fs from 'fs';
 
 // ============================================
 // Simple In-Memory Cache
@@ -1093,12 +1094,118 @@ async function verifyTwitterCredentials(accountName = 'flywheelsquad') {
   }
 }
 
+// ============================================
+// Gemini Image Generation
+// ============================================
+
+async function generateBoostImage(topic, keywords = []) {
+  const apiKey = process.env.GEMINI_API_KEY;
+  if (!apiKey) {
+    console.warn('⚠️  GEMINI_API_KEY not set, skipping image generation');
+    return null;
+  }
+
+  const prompt = `Create a clean, professional social media graphic for Twitter/X about: "${topic}"
+  
+Style requirements:
+- Modern, minimalist design
+- Bold typography with key message
+- Vibrant but professional colors
+- No text smaller than 24pt
+- 1200x675px aspect ratio (Twitter optimal)
+- Include subtle visual elements related to: ${keywords.join(', ') || topic}
+- Should look like a professional marketing graphic, not AI-generated art
+
+The image should be eye-catching in a Twitter feed and communicate value instantly.`;
+
+  try {
+    const response = await fetch(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{
+            parts: [{ text: prompt }]
+          }],
+          generationConfig: {
+            responseModalities: ['TEXT', 'IMAGE']
+          }
+        })
+      }
+    );
+
+    if (!response.ok) {
+      const error = await response.text();
+      console.error('❌ Gemini API error:', error);
+      return null;
+    }
+
+    const data = await response.json();
+    
+    // Extract image from response
+    const parts = data.candidates?.[0]?.content?.parts || [];
+    for (const part of parts) {
+      if (part.inlineData?.mimeType?.startsWith('image/')) {
+        const imageBuffer = Buffer.from(part.inlineData.data, 'base64');
+        console.log(`✅ Generated image: ${imageBuffer.length} bytes`);
+        return {
+          buffer: imageBuffer,
+          mimeType: part.inlineData.mimeType
+        };
+      }
+    }
+
+    console.warn('⚠️  No image in Gemini response');
+    return null;
+  } catch (err) {
+    console.error('❌ Image generation failed:', err.message);
+    return null;
+  }
+}
+
+// ============================================
+// Twitter Media Upload
+// ============================================
+
+async function uploadTwitterMedia(imageBuffer, mimeType, accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
+  
+  const apiKey = account.apiKey();
+  const apiSecret = account.apiSecret();
+  const accessToken = account.accessToken();
+  const accessSecret = account.accessSecret();
+
+  if (!accessToken || !accessSecret) {
+    console.warn(`⚠️  Twitter tokens not set for ${account.handle}`);
+    return null;
+  }
+
+  const client = new TwitterApi({
+    appKey: apiKey,
+    appSecret: apiSecret,
+    accessToken: accessToken,
+    accessSecret: accessSecret,
+  });
+
+  try {
+    // Upload media using v1 API
+    const mediaId = await client.v1.uploadMedia(imageBuffer, { mimeType });
+    console.log(`✅ Media uploaded to @${account.handle}: ${mediaId}`);
+    return mediaId;
+  } catch (err) {
+    console.error(`❌ Media upload failed for @${account.handle}:`, err.message);
+    return null;
+  }
+}
+
 // Post tweet with retry and fallback
 async function postTweet(text, accountName = 'flywheelsquad', options = {}) {
   const { 
     retries = 2, 
     fallbackToOther = true,
     retryDelayMs = 2000,
+    mediaIds = null,
   } = options;
   
   const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
@@ -1134,7 +1241,13 @@ async function postTweet(text, accountName = 'flywheelsquad', options = {}) {
         await new Promise(r => setTimeout(r, retryDelayMs * attempt));
       }
       
-      const { data } = await client.v2.tweet(text);
+      // Build tweet payload
+      const tweetPayload = { text };
+      if (mediaIds && mediaIds.length > 0) {
+        tweetPayload.media = { media_ids: mediaIds };
+      }
+      
+      const { data } = await client.v2.tweet(tweetPayload);
       
       // Update health on success
       const health = twitterHealth[accountName];
@@ -3272,7 +3385,9 @@ app.post('/api/admin/self-boost', async (req, res) => {
     const keywords = req.body.keywords || getTodaysKeywords()[Math.floor(Math.random() * 3)];
     // Get account (flywheelsquad or themessageis4u)
     const account = req.body.account || 'flywheelsquad';
-    console.log(`🔄 Self-boost starting with keywords: "${keywords}" on @${account}`);
+    // Whether to include AI-generated image
+    const withImage = req.body.withImage || false;
+    console.log(`🔄 Self-boost starting with keywords: "${keywords}" on @${account}${withImage ? ' (with image)' : ''}`);
     
     // Search for blogs
     const blogs = await searchBlogs(keywords);
@@ -3297,8 +3412,22 @@ app.post('/api/admin/self-boost', async (req, res) => {
     finalContent = injectHashtags(finalContent, keywords);
     console.log(`#️⃣ Hashtags injected, final length: ${finalContent.length}`);
     
-    // Post to Twitter (with account selection)
-    const result = await postTweet(finalContent, account);
+    // Generate and upload image if requested
+    let mediaIds = null;
+    if (withImage) {
+      console.log(`🎨 Generating image for: ${blog.title}`);
+      const image = await generateBoostImage(blog.title, keywords.split(' '));
+      if (image) {
+        const mediaId = await uploadTwitterMedia(image.buffer, image.mimeType, account);
+        if (mediaId) {
+          mediaIds = [mediaId];
+          console.log(`📸 Image attached: ${mediaId}`);
+        }
+      }
+    }
+    
+    // Post to Twitter (with account selection and optional media)
+    const result = await postTweet(finalContent, account, { mediaIds });
     console.log(`🚀 Self-boost posted to @${result.account}: ${result.tweetUrl}`);
     
     // Cross-engage from the other account (quote tweet + like + reply)
@@ -3480,7 +3609,8 @@ app.post('/api/greentruck/boost', async (req, res) => {
 
   try {
     const keywords = req.body.keywords || getGreentruckKeywords()[Math.floor(Math.random() * 3)];
-    console.log(`🥗 GreenTruck boost starting with keywords: "${keywords}"`);
+    const withImage = req.body.withImage || false;
+    console.log(`🥗 GreenTruck boost starting with keywords: "${keywords}"${withImage ? ' (with image)' : ''}`);
     
     // Search for health/eco blogs
     const blogs = await searchBlogs(keywords);
@@ -3497,8 +3627,22 @@ app.post('/api/greentruck/boost', async (req, res) => {
     // Inject eco hashtags
     const finalContent = injectGreentruckHashtags(content, keywords);
     
+    // Generate and upload image if requested
+    let mediaIds = null;
+    if (withImage) {
+      console.log(`🎨 Generating image for: ${blog.title}`);
+      const image = await generateBoostImage(blog.title, keywords.split(' '));
+      if (image) {
+        const mediaId = await uploadTwitterMedia(image.buffer, image.mimeType, 'greentruck');
+        if (mediaId) {
+          mediaIds = [mediaId];
+          console.log(`📸 Image attached: ${mediaId}`);
+        }
+      }
+    }
+    
     // Post to @greentruck
-    const result = await postTweet(finalContent, 'greentruck');
+    const result = await postTweet(finalContent, 'greentruck', { mediaIds });
     console.log(`🌿 GreenTruck posted: ${result.tweetUrl}`);
     
     // Cross-engage from DAUfinder accounts to boost visibility
@@ -3945,6 +4089,107 @@ app.post('/api/admin/twitter/test', async (req, res) => {
       error: err.message,
       details: parseTwitterError(err, account),
     });
+  }
+});
+
+// Test image generation
+app.post('/api/admin/image/test', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const topic = req.body.topic || 'content marketing flywheel for startups';
+    const keywords = req.body.keywords || ['marketing', 'growth', 'startup'];
+    
+    console.log(`🎨 Testing image generation for: ${topic}`);
+    const image = await generateBoostImage(topic, keywords);
+    
+    if (!image) {
+      return res.status(500).json({ error: 'Image generation failed' });
+    }
+    
+    // Return base64 image or save to file
+    if (req.body.returnBase64) {
+      res.json({
+        success: true,
+        mimeType: image.mimeType,
+        size: image.buffer.length,
+        base64: image.buffer.toString('base64'),
+      });
+    } else {
+      // Save to file and return path
+      const filename = `test-image-${Date.now()}.png`;
+      const filepath = join(__dirname, filename);
+      fs.writeFileSync(filepath, image.buffer);
+      res.json({
+        success: true,
+        mimeType: image.mimeType,
+        size: image.buffer.length,
+        savedTo: filepath,
+      });
+    }
+  } catch (error) {
+    console.error('❌ Image test failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Test image + tweet (with image attached)
+app.post('/api/admin/image/tweet-test', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const topic = req.body.topic || 'AI-powered content marketing';
+    const text = req.body.text || `🚀 Testing image tweets!\n\nTopic: ${topic}\n\n#buildinpublic`;
+    const account = req.body.account || 'flywheelsquad';
+    const dryRun = req.body.dryRun !== false; // default to dry run for safety
+    
+    console.log(`🎨 Generating test image for: ${topic}`);
+    const image = await generateBoostImage(topic, topic.split(' '));
+    
+    if (!image) {
+      return res.status(500).json({ error: 'Image generation failed' });
+    }
+    
+    console.log(`📤 Uploading image to @${account}...`);
+    const mediaId = await uploadTwitterMedia(image.buffer, image.mimeType, account);
+    
+    if (!mediaId) {
+      return res.status(500).json({ error: 'Media upload failed' });
+    }
+    
+    if (dryRun) {
+      res.json({
+        success: true,
+        dryRun: true,
+        mediaId,
+        text,
+        account,
+        message: 'Set dryRun=false to actually post',
+      });
+    } else {
+      const result = await postTweet(text, account, { mediaIds: [mediaId] });
+      res.json({
+        success: true,
+        dryRun: false,
+        tweetUrl: result.tweetUrl,
+        tweetId: result.tweetId,
+        mediaId,
+        account: result.account,
+      });
+    }
+  } catch (error) {
+    console.error('❌ Image tweet test failed:', error.message);
+    res.status(500).json({ error: error.message });
   }
 });
 
