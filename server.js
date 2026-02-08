@@ -988,7 +988,111 @@ const TWITTER_ACCOUNTS = {
   },
 };
 
-async function postTweet(text, accountName = 'flywheelsquad') {
+// Track Twitter health status per account
+const twitterHealth = {
+  flywheelsquad: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
+  themessageis4u: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
+};
+
+// Parse Twitter API errors for better debugging
+function parseTwitterError(err, accountName) {
+  const health = twitterHealth[accountName] || twitterHealth.flywheelsquad;
+  health.lastError = new Date().toISOString();
+  health.errorCount++;
+  
+  const errorInfo = {
+    account: accountName,
+    message: err.message,
+    code: err.code,
+    statusCode: err.data?.status || err.statusCode,
+    twitterCode: err.data?.errors?.[0]?.code,
+    twitterMessage: err.data?.errors?.[0]?.message,
+    rateLimitReset: err.rateLimit?.reset,
+  };
+  
+  // Track rate limits
+  if (err.rateLimit?.reset) {
+    health.rateLimitReset = new Date(err.rateLimit.reset * 1000).toISOString();
+  }
+  
+  // Detailed error classification
+  if (errorInfo.statusCode === 401 || errorInfo.twitterCode === 32) {
+    errorInfo.diagnosis = 'AUTH_INVALID - Token expired or revoked. Need to regenerate.';
+  } else if (errorInfo.statusCode === 403) {
+    if (errorInfo.twitterCode === 187) {
+      errorInfo.diagnosis = 'DUPLICATE_TWEET - Already posted this content.';
+    } else if (errorInfo.twitterCode === 326) {
+      errorInfo.diagnosis = 'ACCOUNT_LOCKED - Account locked, needs verification.';
+    } else if (errorInfo.twitterCode === 261) {
+      errorInfo.diagnosis = 'APP_SUSPENDED - Twitter app suspended.';
+    } else {
+      errorInfo.diagnosis = 'FORBIDDEN - Check app permissions or account status.';
+    }
+  } else if (errorInfo.statusCode === 429) {
+    errorInfo.diagnosis = `RATE_LIMITED - Wait until ${health.rateLimitReset}`;
+  } else if (errorInfo.statusCode === 503) {
+    errorInfo.diagnosis = 'TWITTER_DOWN - Twitter service unavailable.';
+  }
+  
+  console.error(`🚨 Twitter Error [@${accountName}]:`, JSON.stringify(errorInfo, null, 2));
+  return errorInfo;
+}
+
+// Verify Twitter credentials work
+async function verifyTwitterCredentials(accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName];
+  if (!account) return { valid: false, error: 'Unknown account' };
+  
+  const apiKey = account.apiKey();
+  const apiSecret = account.apiSecret();
+  const accessToken = account.accessToken();
+  const accessSecret = account.accessSecret();
+  
+  if (!apiKey || !apiSecret || !accessToken || !accessSecret) {
+    return { 
+      valid: false, 
+      error: 'Missing credentials',
+      missing: {
+        apiKey: !apiKey,
+        apiSecret: !apiSecret,
+        accessToken: !accessToken,
+        accessSecret: !accessSecret,
+      }
+    };
+  }
+  
+  try {
+    const client = new TwitterApi({
+      appKey: apiKey,
+      appSecret: apiSecret,
+      accessToken,
+      accessSecret,
+    });
+    
+    const me = await client.v2.me();
+    const health = twitterHealth[accountName];
+    health.lastSuccess = new Date().toISOString();
+    health.errorCount = 0;
+    
+    return { 
+      valid: true, 
+      user: me.data,
+      health: twitterHealth[accountName],
+    };
+  } catch (err) {
+    const errorInfo = parseTwitterError(err, accountName);
+    return { valid: false, error: errorInfo };
+  }
+}
+
+// Post tweet with retry and fallback
+async function postTweet(text, accountName = 'flywheelsquad', options = {}) {
+  const { 
+    retries = 2, 
+    fallbackToOther = true,
+    retryDelayMs = 2000,
+  } = options;
+  
   const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
   
   const apiKey = account.apiKey();
@@ -997,12 +1101,14 @@ async function postTweet(text, accountName = 'flywheelsquad') {
   const accessSecret = account.accessSecret();
   
   if (!accessToken || !accessSecret) {
-    console.warn(`⚠️  Twitter tokens not set for ${account.handle}, mock posting`);
-    return {
-      tweetId: 'mock_' + Date.now(),
-      tweetUrl: `https://x.com/${account.handle}/status/mock_` + Date.now(),
-      account: account.handle,
-    };
+    console.warn(`⚠️  Twitter tokens not set for ${account.handle}`);
+    // Try fallback account
+    if (fallbackToOther) {
+      const otherAccount = accountName === 'flywheelsquad' ? 'themessageis4u' : 'flywheelsquad';
+      console.log(`🔄 Trying fallback account @${otherAccount}...`);
+      return postTweet(text, otherAccount, { ...options, fallbackToOther: false });
+    }
+    throw new Error(`Twitter tokens not configured for @${account.handle}`);
   }
 
   const client = new TwitterApi({
@@ -1012,13 +1118,56 @@ async function postTweet(text, accountName = 'flywheelsquad') {
     accessSecret: accessSecret,
   });
   
-  const { data } = await client.v2.tweet(text);
+  let lastError;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      if (attempt > 0) {
+        console.log(`🔄 Retry attempt ${attempt}/${retries} for @${account.handle}...`);
+        await new Promise(r => setTimeout(r, retryDelayMs * attempt));
+      }
+      
+      const { data } = await client.v2.tweet(text);
+      
+      // Update health on success
+      const health = twitterHealth[accountName];
+      health.lastSuccess = new Date().toISOString();
+      health.errorCount = 0;
+      
+      console.log(`✅ Tweet posted to @${account.handle}: ${data.id}`);
+      
+      return {
+        tweetId: data.id,
+        tweetUrl: `https://x.com/${account.handle}/status/${data.id}`,
+        account: account.handle,
+      };
+    } catch (err) {
+      lastError = err;
+      const errorInfo = parseTwitterError(err, accountName);
+      
+      // Don't retry on auth errors - they won't fix themselves
+      if (errorInfo.statusCode === 401 || errorInfo.statusCode === 403) {
+        break;
+      }
+      
+      // Don't retry if rate limited - wait for reset
+      if (errorInfo.statusCode === 429) {
+        break;
+      }
+    }
+  }
   
-  return {
-    tweetId: data.id,
-    tweetUrl: `https://x.com/${account.handle}/status/${data.id}`,
-    account: account.handle,
-  };
+  // Try fallback account on failure
+  if (fallbackToOther) {
+    const otherAccount = accountName === 'flywheelsquad' ? 'themessageis4u' : 'flywheelsquad';
+    console.log(`🔄 Primary account @${account.handle} failed, trying @${otherAccount}...`);
+    try {
+      return await postTweet(text, otherAccount, { ...options, fallbackToOther: false });
+    } catch (fallbackErr) {
+      console.error(`❌ Fallback account also failed:`, fallbackErr.message);
+    }
+  }
+  
+  throw lastError;
 }
 
 // ============================================
@@ -1128,73 +1277,107 @@ async function searchTweets(query, maxResults = 10, accountName = 'flywheelsquad
   }
 }
 
-// Like a tweet
+// Like a tweet (with detailed error logging)
 async function likeTweet(tweetId, accountName = 'flywheelsquad') {
   const client = getTwitterClient(accountName);
-  if (!client) return false;
+  if (!client) {
+    console.warn(`⚠️  No Twitter client for @${accountName} (like)`);
+    return false;
+  }
   
   try {
     const me = await client.v2.me();
     await client.v2.like(me.data.id, tweetId);
     console.log(`❤️  Liked tweet ${tweetId} from @${accountName}`);
+    twitterHealth[accountName].lastSuccess = new Date().toISOString();
     return true;
   } catch (err) {
-    console.error('Like error:', err.message);
+    // Ignore "already liked" errors (Twitter code 139)
+    if (err.data?.errors?.[0]?.code === 139) {
+      console.log(`❤️  Already liked tweet ${tweetId}`);
+      return true;
+    }
+    parseTwitterError(err, accountName);
     return false;
   }
 }
 
-// Retweet a tweet
+// Retweet a tweet (with detailed error logging)
 async function retweetTweet(tweetId, accountName = 'flywheelsquad') {
   const client = getTwitterClient(accountName);
-  if (!client) return false;
+  if (!client) {
+    console.warn(`⚠️  No Twitter client for @${accountName} (retweet)`);
+    return false;
+  }
   
   try {
     const me = await client.v2.me();
     await client.v2.retweet(me.data.id, tweetId);
     console.log(`🔁 Retweeted tweet ${tweetId} from @${accountName}`);
+    twitterHealth[accountName].lastSuccess = new Date().toISOString();
     return true;
   } catch (err) {
-    console.error('Retweet error:', err.message);
+    // Ignore "already retweeted" errors (Twitter code 327)
+    if (err.data?.errors?.[0]?.code === 327) {
+      console.log(`🔁 Already retweeted tweet ${tweetId}`);
+      return true;
+    }
+    parseTwitterError(err, accountName);
     return false;
   }
 }
 
-// Reply to a tweet
+// Reply to a tweet (with detailed error logging)
 async function replyToTweet(tweetId, text, accountName = 'flywheelsquad') {
   const client = getTwitterClient(accountName);
-  if (!client) return null;
+  if (!client) {
+    console.warn(`⚠️  No Twitter client for @${accountName} (reply)`);
+    return null;
+  }
   
   try {
     const { data } = await client.v2.reply(text, tweetId);
-    console.log(`💬 Replied to tweet ${tweetId}`);
+    console.log(`💬 Replied to tweet ${tweetId} from @${accountName}`);
+    twitterHealth[accountName].lastSuccess = new Date().toISOString();
     return data;
   } catch (err) {
-    console.error('Reply error:', err.message);
+    parseTwitterError(err, accountName);
     return null;
   }
 }
 
-// Follow a user
+// Follow a user (with detailed error logging)
 async function followUser(userId, accountName = 'flywheelsquad') {
   const client = getTwitterClient(accountName);
-  if (!client) return false;
+  if (!client) {
+    console.warn(`⚠️  No Twitter client for @${accountName} (follow)`);
+    return false;
+  }
   
   try {
     const me = await client.v2.me();
     await client.v2.follow(me.data.id, userId);
-    console.log(`👤 Followed user ${userId}`);
+    console.log(`👤 Followed user ${userId} from @${accountName}`);
+    twitterHealth[accountName].lastSuccess = new Date().toISOString();
     return true;
   } catch (err) {
-    console.error('Follow error:', err.message);
+    // Ignore "already following" errors (Twitter code 160)
+    if (err.data?.errors?.[0]?.code === 160) {
+      console.log(`👤 Already following user ${userId}`);
+      return true;
+    }
+    parseTwitterError(err, accountName);
     return false;
   }
 }
 
-// Get user by username
+// Get user by username (with detailed error logging)
 async function getUserByUsername(username, accountName = 'flywheelsquad') {
   const client = getTwitterClient(accountName);
-  if (!client) return null;
+  if (!client) {
+    console.warn(`⚠️  No Twitter client for @${accountName} (user lookup)`);
+    return null;
+  }
   
   try {
     const { data } = await client.v2.userByUsername(username, {
@@ -1202,7 +1385,7 @@ async function getUserByUsername(username, accountName = 'flywheelsquad') {
     });
     return data;
   } catch (err) {
-    console.error('User lookup error:', err.message);
+    parseTwitterError(err, accountName);
     return null;
   }
 }
@@ -2692,6 +2875,114 @@ app.post('/api/admin/self-boost', async (req, res) => {
   } catch (error) {
     console.error('❌ Self-boost failed:', error.message);
     res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// Twitter Health & Diagnostics
+// ============================================
+
+// Check Twitter credentials and health
+app.get('/api/admin/twitter/health', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  console.log('🔍 Running Twitter health check...');
+  
+  const results = {
+    timestamp: new Date().toISOString(),
+    accounts: {},
+    summary: { healthy: 0, unhealthy: 0 },
+  };
+  
+  for (const accountName of Object.keys(TWITTER_ACCOUNTS)) {
+    const check = await verifyTwitterCredentials(accountName);
+    results.accounts[accountName] = {
+      ...check,
+      storedHealth: twitterHealth[accountName],
+    };
+    
+    if (check.valid) {
+      results.summary.healthy++;
+    } else {
+      results.summary.unhealthy++;
+    }
+  }
+  
+  results.allHealthy = results.summary.unhealthy === 0;
+  
+  res.json(results);
+});
+
+// Get current Twitter health status (cached, no API call)
+app.get('/api/admin/twitter/status', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  res.json({
+    timestamp: new Date().toISOString(),
+    health: twitterHealth,
+    envCheck: {
+      flywheelsquad: {
+        apiKey: !!process.env.TWITTER_API_KEY,
+        apiSecret: !!process.env.TWITTER_API_SECRET,
+        accessToken: !!process.env.TWITTER_ACCESS_TOKEN,
+        accessSecret: !!process.env.TWITTER_ACCESS_SECRET,
+      },
+      themessageis4u: {
+        apiKey: !!process.env.TWITTER2_API_KEY,
+        apiSecret: !!process.env.TWITTER2_API_SECRET,
+        accessToken: !!process.env.TWITTER2_ACCESS_TOKEN,
+        accessSecret: !!process.env.TWITTER2_ACCESS_SECRET,
+      },
+    },
+  });
+});
+
+// Test posting (dry run or real)
+app.post('/api/admin/twitter/test', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { account = 'flywheelsquad', dryRun = true } = req.body;
+  const testContent = `🧪 DAUfinder health check - ${new Date().toISOString().slice(0,16)} #test`;
+  
+  if (dryRun) {
+    // Just verify credentials without posting
+    const check = await verifyTwitterCredentials(account);
+    return res.json({
+      dryRun: true,
+      account,
+      credentialsValid: check.valid,
+      ...check,
+    });
+  }
+  
+  try {
+    const result = await postTweet(testContent, account, { fallbackToOther: false, retries: 0 });
+    res.json({
+      success: true,
+      dryRun: false,
+      ...result,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      details: parseTwitterError(err, account),
+    });
   }
 });
 
