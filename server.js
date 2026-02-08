@@ -1079,12 +1079,38 @@ const GROWTH_TIPS = [
   "⚡ Speed hack: Don't write marketing copy from scratch.\n\nFind what's already working in your niche.\nAdapt. Ship. Test.\n\nIteration beats perfection.",
 ];
 
-// Search for tweets by query
+// Get App-Only client (Bearer Token) for search
+async function getAppOnlyClient(accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
+  
+  const apiKey = account.apiKey();
+  const apiSecret = account.apiSecret();
+  
+  if (!apiKey || !apiSecret) {
+    return null;
+  }
+
+  try {
+    const client = new TwitterApi({
+      appKey: apiKey,
+      appSecret: apiSecret,
+    });
+    
+    // Get App-Only Bearer Token
+    const appOnlyClient = await client.appLogin();
+    return appOnlyClient;
+  } catch (err) {
+    console.error('App-Only auth error:', err.message);
+    return null;
+  }
+}
+
+// Search for tweets by query (uses App-Only auth)
 async function searchTweets(query, maxResults = 10, accountName = 'flywheelsquad') {
-  const client = getTwitterClient(accountName);
+  const client = await getAppOnlyClient(accountName);
   if (!client) {
-    console.warn('⚠️  Twitter client not available for search');
-    return [];
+    console.warn('⚠️  Twitter App-Only client not available for search');
+    return { error: 'App-Only client not available' };
   }
   
   try {
