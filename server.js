@@ -868,6 +868,43 @@ app.post('/api/admin/send-followups', async (req, res) => {
   res.json({ sent, checked: pending.length });
 });
 
+// Test email endpoint
+app.post('/api/admin/test-email', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const email = req.body.email || 'kammiceli@gmail.com';
+  const type = req.body.type || 'confirmation'; // 'confirmation' or 'followup'
+  
+  const mockOrder = {
+    email,
+    productData: { name: 'DAUfinder' },
+    blog: { 
+      title: 'How to Find Your First 100 Users', 
+      url: 'https://example.com/blog/first-100-users' 
+    },
+    tweetUrl: 'https://x.com/flywheelsquad/status/1234567890',
+    tweetId: '1234567890',
+  };
+  
+  try {
+    if (type === 'followup') {
+      const mockMetrics = { impressions: 2847, engagements: 156, likes: 89, retweets: 23, replies: 12 };
+      await sendFollowUpEmail(mockOrder, mockMetrics);
+      res.json({ success: true, type: 'followup', to: email });
+    } else {
+      await sendConfirmationEmail(mockOrder);
+      res.json({ success: true, type: 'confirmation', to: email });
+    }
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // ============================================
 // Self-Promotion Flywheel
 // ============================================
