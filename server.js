@@ -986,11 +986,19 @@ const TWITTER_ACCOUNTS = {
     accessToken: () => process.env.TWITTER2_ACCESS_TOKEN,
     accessSecret: () => process.env.TWITTER2_ACCESS_SECRET,
   },
+  greentruck: {
+    handle: 'greentruck',
+    apiKey: () => process.env.GREENTRUCK_API_KEY,
+    apiSecret: () => process.env.GREENTRUCK_API_SECRET,
+    accessToken: () => process.env.GREENTRUCK_ACCESS_TOKEN,
+    accessSecret: () => process.env.GREENTRUCK_ACCESS_SECRET,
+  },
 };
 
 // Track Twitter health status per account
 const twitterHealth = {
   flywheelsquad: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
+  greentruck: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
   themessageis4u: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
 };
 
@@ -3135,6 +3143,81 @@ const DAUFINDER_PRODUCT = {
   email: 'kammiceli@gmail.com',
 };
 
+// GreenTruck Agent - Health, Environmental, Lifestyle niche
+const GREENTRUCK_PRODUCT = {
+  name: 'GreenTruck',
+  description: 'Healthy food, sustainable living, and eco-friendly lifestyle tips.',
+  productUrl: 'https://foodtruckuniversity.com',
+  email: 'kammiceli@gmail.com',
+};
+
+const GREENTRUCK_KEYWORDS = [
+  // Health & Wellness
+  ['healthy eating tips', 'organic food benefits', 'plant-based recipes'],
+  ['wellness lifestyle', 'clean eating guide', 'nutrition facts'],
+  // Sustainability  
+  ['sustainable living', 'eco-friendly products', 'zero waste tips'],
+  ['environmental impact', 'green lifestyle', 'climate action'],
+  // Food & Cooking
+  ['farm to table', 'local food movement', 'healthy recipes'],
+  ['food truck business', 'street food trends', 'mobile food'],
+  // Lifestyle
+  ['mindful living', 'healthy habits', 'wellness tips'],
+  ['green home', 'sustainable fashion', 'eco conscious'],
+];
+
+const GREENTRUCK_HASHTAGS = {
+  'healthy': ['#HealthyEating', '#Wellness', '#CleanEating'],
+  'organic': ['#OrganicFood', '#FarmToTable', '#RealFood'],
+  'sustainable': ['#Sustainability', '#EcoFriendly', '#GreenLiving'],
+  'plant': ['#PlantBased', '#Vegan', '#Vegetarian'],
+  'eco': ['#EcoConscious', '#ZeroWaste', '#GoGreen'],
+  'food': ['#FoodTruck', '#StreetFood', '#Foodie'],
+  'wellness': ['#WellnessJourney', '#HealthyLifestyle', '#SelfCare'],
+  'green': ['#GreenLiving', '#Sustainable', '#EarthFriendly'],
+  'climate': ['#ClimateAction', '#Environment', '#SaveThePlanet'],
+  'local': ['#LocalFood', '#SupportLocal', '#FarmersMarket'],
+};
+
+function getGreentruckKeywords() {
+  const dayOfWeek = new Date().getDay();
+  const index = dayOfWeek % GREENTRUCK_KEYWORDS.length;
+  return GREENTRUCK_KEYWORDS[index];
+}
+
+function getGreentruckHashtags(keywords) {
+  const keywordLower = keywords.toLowerCase();
+  const hashtags = new Set();
+  
+  for (const [key, tags] of Object.entries(GREENTRUCK_HASHTAGS)) {
+    if (keywordLower.includes(key)) {
+      tags.forEach(tag => hashtags.add(tag));
+    }
+  }
+  
+  return Array.from(hashtags).slice(0, 3);
+}
+
+function injectGreentruckHashtags(content, keywords) {
+  const hashtags = getGreentruckHashtags(keywords);
+  if (hashtags.length === 0) {
+    // Default eco hashtags
+    hashtags.push('#HealthyLiving', '#Sustainable', '#GreenTruck');
+  }
+  
+  if (content.includes('#')) return content;
+  
+  const hashtagStr = '\n\n' + hashtags.join(' ');
+  if (content.length + hashtagStr.length > 280) {
+    const maxContent = 280 - hashtagStr.length - 3;
+    if (content.length > maxContent) {
+      content = content.substring(0, maxContent) + '...';
+    }
+  }
+  
+  return content + hashtagStr;
+}
+
 const KEYWORD_ROTATION = [
   // Week 1: Startup/Indie
   ['startup marketing', 'product launch strategy', 'indie hackers growth'],
@@ -3381,6 +3464,235 @@ app.post('/api/admin/engagement/process', async (req, res) => {
   const processed = await processEngagementWaves();
   res.json({ processed });
 });
+
+// ============================================
+// GreenTruck Agent - Health/Eco/Lifestyle
+// ============================================
+
+// GreenTruck self-boost
+app.post('/api/greentruck/boost', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const keywords = req.body.keywords || getGreentruckKeywords()[Math.floor(Math.random() * 3)];
+    console.log(`🥗 GreenTruck boost starting with keywords: "${keywords}"`);
+    
+    // Search for health/eco blogs
+    const blogs = await searchBlogs(keywords);
+    if (!blogs || blogs.length === 0) {
+      return res.status(404).json({ error: 'No blogs found', keywords });
+    }
+    
+    const blog = blogs[Math.floor(Math.random() * Math.min(3, blogs.length))];
+    console.log(`📰 Selected blog: ${blog.title}`);
+    
+    // Generate content with eco-friendly tone
+    const content = await generateGreentruckContent(GREENTRUCK_PRODUCT, blog, keywords);
+    
+    // Inject eco hashtags
+    const finalContent = injectGreentruckHashtags(content, keywords);
+    
+    // Post to @greentruck
+    const result = await postTweet(finalContent, 'greentruck');
+    console.log(`🌿 GreenTruck posted: ${result.tweetUrl}`);
+    
+    // Cross-engage from DAUfinder accounts to boost visibility
+    fullEngagementBlast(result.tweetId, 'flywheelsquad', {
+      blogTitle: blog.title,
+      blogUrl: blog.url,
+      keywords,
+    }).catch(err => console.error('GreenTruck engagement error:', err.message));
+    
+    res.json({
+      success: true,
+      agent: 'greentruck',
+      account: result.account,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      keywords,
+      blog: { title: blog.title, url: blog.url },
+    });
+    
+  } catch (error) {
+    console.error('❌ GreenTruck boost failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GreenTruck thread boost
+app.post('/api/greentruck/thread', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const keywords = req.body.keywords || getGreentruckKeywords()[Math.floor(Math.random() * 3)];
+    
+    const blogs = await searchBlogs(keywords);
+    if (!blogs || blogs.length === 0) {
+      return res.status(404).json({ error: 'No blogs found', keywords });
+    }
+    
+    const blog = blogs[Math.floor(Math.random() * Math.min(3, blogs.length))];
+    
+    // Generate thread content
+    const threadContent = await generateGreentruckThread(blog.title, blog.url, keywords);
+    if (!threadContent) {
+      return res.status(500).json({ error: 'Failed to generate thread' });
+    }
+    
+    const tweets = [
+      threadContent.tweet1.replace('[LINK]', blog.url),
+      threadContent.tweet2,
+      injectGreentruckHashtags(threadContent.tweet3, keywords),
+    ];
+    
+    const results = await postThread(tweets, 'greentruck');
+    if (!results || results.length === 0) {
+      return res.status(500).json({ error: 'Failed to post thread' });
+    }
+    
+    const firstTweet = results[0];
+    const tweetUrl = `https://x.com/greentruck/status/${firstTweet.id}`;
+    
+    console.log(`🧵🌿 GreenTruck thread posted: ${tweetUrl}`);
+    
+    res.json({
+      success: true,
+      agent: 'greentruck',
+      type: 'thread',
+      tweetUrl,
+      tweetId: firstTweet.id,
+      threadLength: results.length,
+      keywords,
+      blog: { title: blog.title, url: blog.url },
+    });
+    
+  } catch (error) {
+    console.error('❌ GreenTruck thread failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// GreenTruck strategic follows
+app.post('/api/greentruck/follow', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const hashtags = ['#sustainability', '#healthyfood', '#ecofriendly', '#plantbased', '#zerowaste'];
+  const query = req.body.query || hashtags[Math.floor(Math.random() * hashtags.length)];
+  const maxUsers = req.body.maxUsers || 5;
+  
+  try {
+    const tweets = await searchTweets(query, maxUsers * 2, 'greentruck');
+    
+    if (!Array.isArray(tweets)) {
+      return res.status(500).json({ error: tweets.error || 'Search failed' });
+    }
+    
+    const followedIds = new Set();
+    let followed = 0;
+    
+    for (const tweet of tweets) {
+      if (followed >= maxUsers) break;
+      if (followedIds.has(tweet.author_id)) continue;
+      
+      const success = await followUser(tweet.author_id, 'greentruck');
+      if (success) {
+        followed++;
+        followedIds.add(tweet.author_id);
+      }
+      await new Promise(r => setTimeout(r, 1500));
+    }
+    
+    console.log(`🌿 GreenTruck followed ${followed} accounts via "${query}"`);
+    res.json({ success: true, agent: 'greentruck', followed, query });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Generate GreenTruck content (eco-friendly tone)
+async function generateGreentruckContent(product, blog, keywords) {
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 250,
+      messages: [{
+        role: 'user',
+        content: `Write a tweet promoting this blog post for a health/eco-focused account.
+
+Blog: "${blog.title}"
+URL: [BLOG_LINK]
+Topic: ${keywords}
+
+Rules:
+- Max 220 characters (leave room for hashtags)
+- Sound passionate about health/sustainability
+- Include the [BLOG_LINK] placeholder
+- Be informative but warm
+- No hashtags (added separately)
+
+Tone: Friendly health advocate, passionate about sustainable living.
+
+Reply with ONLY the tweet text.`
+      }]
+    });
+    return response.content[0].text.trim().replace('[BLOG_LINK]', blog.url);
+  } catch (err) {
+    console.error('GreenTruck content generation error:', err.message);
+    return `🌱 Great read on ${keywords}: ${blog.url}`;
+  }
+}
+
+// Generate GreenTruck thread
+async function generateGreentruckThread(blogTitle, blogUrl, keywords) {
+  try {
+    const response = await anthropic.messages.create({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 400,
+      messages: [{
+        role: 'user',
+        content: `Create a 3-tweet thread for a health/eco Twitter account about this article.
+
+Article: "${blogTitle}"
+URL: ${blogUrl}
+Topic: ${keywords}
+
+Format (respond with ONLY this JSON):
+{
+  "tweet1": "Hook tweet with [LINK] placeholder (max 250 chars)",
+  "tweet2": "Key health/eco insight from the article (max 250 chars)",
+  "tweet3": "Why this matters for sustainable living (max 250 chars)"
+}
+
+Tone: Passionate health advocate, eco-conscious, warm and informative.`
+      }]
+    });
+    
+    const text = response.content[0].text.trim();
+    const jsonMatch = text.match(/\{[\s\S]*\}/);
+    if (jsonMatch) {
+      return JSON.parse(jsonMatch[0]);
+    }
+    return null;
+  } catch (err) {
+    console.error('GreenTruck thread generation error:', err.message);
+    return null;
+  }
+}
 
 // ============================================
 // System Health Monitor
