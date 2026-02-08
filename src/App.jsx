@@ -686,10 +686,10 @@ export default function App() {
             
             <div className="space-y-6">
               {[
-                { img: '/fly-wheel/squad/stella.png', icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
-                { img: '/fly-wheel/squad/research.png', icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
-                { img: '/fly-wheel/squad/writer.png', icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
-                { img: '/fly-wheel/squad/rank.png', icon: '🚀', title: 'Pay & post', desc: '$1.99 — we post instantly + send you performance stats' },
+                { img: '/fly-wheel/squad/glasses.png', icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
+                { img: '/fly-wheel/squad/wink.png', icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
+                { img: '/fly-wheel/squad/jimmy.png', icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
+                { img: '/fly-wheel/squad/stella.png', icon: '🚀', title: 'Pay & post', desc: '$1.99 — we post instantly + send you performance stats' },
               ].map((s, i) => (
                 <div key={i} className="flex items-start gap-4 group">
                   <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-gray-600 group-hover:border-orange-500 transition-all duration-300">
