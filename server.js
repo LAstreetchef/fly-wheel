@@ -1300,6 +1300,17 @@ app.post('/api/prime/boost', async (req, res) => {
     
     console.log(`🌟 Prime boost used by ${email} | Balance: ${newBalance} | Tweet: ${result.tweetUrl}`);
     
+    // Send confirmation email
+    const orderForEmail = {
+      email,
+      productData,
+      blog,
+      tweetUrl: result.tweetUrl,
+    };
+    sendConfirmationEmail(orderForEmail).catch(err => 
+      console.error('Prime boost confirmation email failed:', err.message)
+    );
+    
     res.json({
       success: true,
       tweetUrl: result.tweetUrl,
