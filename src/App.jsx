@@ -534,17 +534,7 @@ export default function App() {
                     </div>
                     <div className="flex gap-2 flex-wrap">
                       <button
-                        onClick={() => { setShowMyBoosts(!showMyBoosts); setShowRewards(false); }}
-                        className={`px-4 py-3 rounded-xl font-bold transition-all ${
-                          showMyBoosts 
-                            ? 'bg-blue-500 text-white' 
-                            : 'bg-gray-700 hover:bg-gray-600 text-white'
-                        }`}
-                      >
-                        📈 My Boosts
-                      </button>
-                      <button
-                        onClick={() => { setShowRewards(!showRewards); setShowMyBoosts(false); }}
+                        onClick={() => setShowRewards(!showRewards)}
                         className={`px-4 py-3 rounded-xl font-bold transition-all ${
                           showRewards 
                             ? 'bg-purple-500 text-white' 
@@ -706,9 +696,8 @@ export default function App() {
                     </div>
                   )}
                   
-                  {/* My Boosts Section */}
-                  {showMyBoosts && (
-                    <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl">
+                  {/* My Boosts Section - Always visible */}
+                  <div className="mt-4 p-4 bg-gradient-to-r from-blue-500/10 to-cyan-500/10 border border-blue-500/30 rounded-xl">
                       <h3 className="text-lg font-bold text-blue-400 mb-3">📈 My Boost Performance</h3>
                       
                       {/* Totals */}
@@ -776,7 +765,6 @@ export default function App() {
                       
                       <p className="text-xs text-gray-600 mt-3">Stats update 24 hours after each boost</p>
                     </div>
-                  )}
                 </div>
               )}
             </div>
