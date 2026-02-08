@@ -689,7 +689,7 @@ export default function App() {
                 { num: '1', icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
                 { num: '2', icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
                 { num: '3', icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
-                { num: '4', icon: '🚀', title: 'Pay & post', desc: '$1.99 via Stripe, posted instantly to X' },
+                { num: '4', icon: '🚀', title: 'Pay & post', desc: '$1.99 — we post instantly + send you performance stats' },
               ].map((s, i) => (
                 <div key={i} className="flex items-start gap-4">
                   <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black">
