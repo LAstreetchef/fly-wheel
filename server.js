@@ -1432,9 +1432,9 @@ async function processDmBoost(senderId, senderUsername, url, keywords) {
     const paymentLink = `https://daufinder.com/pay/${orderId}`;
     await sendDm(senderId, 
       `✅ Posted!\n\n` +
-      `🔗 ${result.tweetUrl}\n\n` +
+      `🔗 Tweet: ${result.tweetUrl}\n\n` +
       `📰 Matched with: ${blog.title}\n\n` +
-      `💳 Complete payment ($1.99): ${paymentLink}\n\n` +
+      `💳 Pay ($1.99): ${paymentLink}\n\n` +
       `Thanks for using DAUfinder! 🚀`
     );
     
