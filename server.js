@@ -2879,6 +2879,148 @@ app.post('/api/admin/self-boost', async (req, res) => {
 });
 
 // ============================================
+// System Health Monitor
+// ============================================
+
+app.get('/api/admin/system/health', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  console.log('🔍 Running full system health check...');
+  
+  const health = {
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    status: 'healthy',
+    services: {},
+    issues: [],
+  };
+  
+  // Check Twitter accounts
+  const twitterChecks = await Promise.all([
+    verifyTwitterCredentials('flywheelsquad'),
+    verifyTwitterCredentials('themessageis4u'),
+  ]);
+  
+  health.services.twitter = {
+    flywheelsquad: {
+      status: twitterChecks[0].valid ? 'healthy' : 'error',
+      username: twitterChecks[0].user?.username || null,
+      error: twitterChecks[0].error?.diagnosis || null,
+      lastSuccess: twitterHealth.flywheelsquad?.lastSuccess,
+    },
+    themessageis4u: {
+      status: twitterChecks[1].valid ? 'healthy' : 'error',
+      username: twitterChecks[1].user?.username || null,
+      error: twitterChecks[1].error?.diagnosis || null,
+      lastSuccess: twitterHealth.themessageis4u?.lastSuccess,
+    },
+  };
+  
+  if (!twitterChecks[0].valid) {
+    health.issues.push({ service: 'twitter', account: 'flywheelsquad', error: twitterChecks[0].error?.diagnosis });
+  }
+  if (!twitterChecks[1].valid) {
+    health.issues.push({ service: 'twitter', account: 'themessageis4u', error: twitterChecks[1].error?.diagnosis });
+  }
+  
+  // Check Email (Resend)
+  const resendKey = process.env.RESEND_API_KEY;
+  health.services.email = {
+    status: resendKey ? 'configured' : 'not_configured',
+    provider: 'resend',
+    configured: !!resendKey,
+  };
+  
+  if (resendKey) {
+    try {
+      // Quick check - just verify API key format (don't send test email)
+      const resendRes = await fetch('https://api.resend.com/domains', {
+        headers: { 'Authorization': `Bearer ${resendKey}` }
+      });
+      health.services.email.status = resendRes.ok ? 'healthy' : 'error';
+      if (!resendRes.ok) {
+        health.services.email.error = `API returned ${resendRes.status}`;
+        health.issues.push({ service: 'email', error: health.services.email.error });
+      }
+    } catch (err) {
+      health.services.email.status = 'error';
+      health.services.email.error = err.message;
+      health.issues.push({ service: 'email', error: err.message });
+    }
+  } else {
+    health.issues.push({ service: 'email', error: 'RESEND_API_KEY not configured' });
+  }
+  
+  // Check Stripe
+  const stripeKey = process.env.STRIPE_SECRET_KEY;
+  health.services.stripe = {
+    status: stripeKey ? 'configured' : 'not_configured',
+    configured: !!stripeKey,
+    webhookConfigured: !!process.env.STRIPE_WEBHOOK_SECRET,
+  };
+  
+  if (stripeKey) {
+    try {
+      // Quick API check
+      const testBalance = await stripe.balance.retrieve();
+      health.services.stripe.status = 'healthy';
+      health.services.stripe.currency = testBalance.available?.[0]?.currency || 'usd';
+    } catch (err) {
+      health.services.stripe.status = 'error';
+      health.services.stripe.error = err.message;
+      health.issues.push({ service: 'stripe', error: err.message });
+    }
+  } else {
+    health.issues.push({ service: 'stripe', error: 'STRIPE_SECRET_KEY not configured' });
+  }
+  
+  // Check Anthropic (for content generation)
+  const anthropicKey = process.env.ANTHROPIC_API_KEY;
+  health.services.anthropic = {
+    status: anthropicKey ? 'configured' : 'not_configured',
+    configured: !!anthropicKey,
+  };
+  
+  if (!anthropicKey) {
+    health.issues.push({ service: 'anthropic', error: 'ANTHROPIC_API_KEY not configured' });
+  }
+  
+  // Check database/storage (orders + prime store)
+  try {
+    const orderCount = (await orderStore.all()).length;
+    const primeCount = (await primeStore.all()).length;
+    health.services.database = {
+      status: 'healthy',
+      orders: orderCount,
+      primeAccounts: primeCount,
+    };
+  } catch (err) {
+    health.services.database = {
+      status: 'error',
+      error: err.message,
+    };
+    health.issues.push({ service: 'database', error: err.message });
+  }
+  
+  // Overall status
+  health.status = health.issues.length === 0 ? 'healthy' : 
+                  health.issues.some(i => i.service === 'twitter' || i.service === 'stripe') ? 'critical' : 'degraded';
+  
+  health.summary = {
+    healthy: Object.values(health.services).filter(s => s.status === 'healthy').length,
+    degraded: Object.values(health.services).filter(s => s.status === 'configured' || s.status === 'degraded').length,
+    errors: health.issues.length,
+  };
+  
+  res.json(health);
+});
+
+// ============================================
 // Twitter Health & Diagnostics
 // ============================================
 
