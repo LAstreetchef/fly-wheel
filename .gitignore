@@ -1,0 +1,29 @@
+# Dependencies
+node_modules/
+
+# Build
+dist-ssr/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+data/
+*.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+npm-debug.log*
+dist/
