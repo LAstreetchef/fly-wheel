@@ -1294,6 +1294,280 @@ async function postTweet(text, accountName = 'flywheelsquad', options = {}) {
 }
 
 // ============================================
+// DM Bot Module
+// ============================================
+
+// Track last processed DM to avoid duplicates
+let lastProcessedDmId = null;
+const dmProcessedIds = new Set(); // Keep track of processed DM IDs
+
+// Parse boost command from DM text
+function parseDmCommand(text) {
+  const lower = text.toLowerCase().trim();
+  
+  // Help command
+  if (lower === 'help' || lower === 'hi' || lower === 'hello') {
+    return { command: 'help' };
+  }
+  
+  // Status command
+  if (lower === 'status') {
+    return { command: 'status' };
+  }
+  
+  // Prime command
+  if (lower === 'prime') {
+    return { command: 'prime' };
+  }
+  
+  // Boost command - extract URL
+  // Formats: "boost https://...", "https://...", "boost mysite.com keywords: saas, growth"
+  const urlRegex = /(https?:\/\/[^\s]+|(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/i;
+  const urlMatch = text.match(urlRegex);
+  
+  if (urlMatch) {
+    let url = urlMatch[1];
+    // Add https if missing
+    if (!url.startsWith('http')) {
+      url = 'https://' + url;
+    }
+    
+    // Extract keywords if provided
+    let keywords = null;
+    const keywordsMatch = text.match(/keywords?:\s*([^$]+)/i);
+    if (keywordsMatch) {
+      keywords = keywordsMatch[1].trim();
+    }
+    
+    return { command: 'boost', url, keywords };
+  }
+  
+  // Unknown command
+  return { command: 'unknown', text };
+}
+
+// Send a DM to a user
+async function sendDm(userId, text, accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
+  
+  const client = new TwitterApi({
+    appKey: account.apiKey(),
+    appSecret: account.apiSecret(),
+    accessToken: account.accessToken(),
+    accessSecret: account.accessSecret(),
+  });
+
+  try {
+    const result = await client.v2.sendDmToParticipant(userId, { text });
+    console.log(`✅ DM sent to ${userId}: ${text.substring(0, 50)}...`);
+    return result;
+  } catch (err) {
+    console.error(`❌ DM send failed:`, err.message);
+    throw err;
+  }
+}
+
+// Process a boost request from DM
+async function processDmBoost(senderId, senderUsername, url, keywords) {
+  console.log(`🚀 Processing DM boost from @${senderUsername}: ${url}`);
+  
+  try {
+    // Acknowledge receipt
+    await sendDm(senderId, `🔍 Got it! Searching for relevant blogs for ${url}...`);
+    
+    // Fetch product info from URL (simplified - just use URL as product)
+    const productData = {
+      productName: url.replace(/https?:\/\/(www\.)?/, '').split('/')[0],
+      productUrl: url,
+      description: `Check out ${url}`,
+    };
+    
+    // Search for blogs
+    const searchKeywords = keywords || productData.productName.replace(/\.[a-z]+$/, '');
+    const blogs = await searchBlogs(searchKeywords);
+    
+    if (!blogs || blogs.length === 0) {
+      await sendDm(senderId, `😕 Couldn't find relevant blogs for "${searchKeywords}". Try different keywords!\n\nUsage: boost ${url} keywords: saas, marketing`);
+      return { success: false, error: 'No blogs found' };
+    }
+    
+    // Pick a blog
+    const blog = blogs[Math.floor(Math.random() * Math.min(3, blogs.length))];
+    console.log(`📰 Selected blog: ${blog.title}`);
+    
+    // Generate content
+    const content = await generateBoostContent(productData, blog);
+    let finalContent = content
+      .replace('[BLOG_LINK]', blog.url)
+      .replace('[PRODUCT_LINK]', url);
+    
+    // Mention the user who requested
+    if (senderUsername && !finalContent.includes(`@${senderUsername}`)) {
+      finalContent = finalContent.replace(/\n\n/, `\n\nvia @${senderUsername}\n\n`);
+    }
+    
+    // Post the tweet
+    const result = await postTweet(finalContent, 'flywheelsquad');
+    console.log(`✅ DM boost posted: ${result.tweetUrl}`);
+    
+    // Create order record
+    const orderId = `dm_${Date.now()}`;
+    await orderStore.set(orderId, {
+      status: 'published',
+      productData,
+      blog,
+      content: finalContent,
+      email: null,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      publishedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      source: 'dm-bot',
+      keywords: searchKeywords,
+      dmSenderId: senderId,
+      dmSenderUsername: senderUsername,
+    });
+    
+    // Send success message with payment link
+    const paymentLink = `https://daufinder.com/pay/${orderId}`;
+    await sendDm(senderId, 
+      `✅ Posted!\n\n` +
+      `🔗 ${result.tweetUrl}\n\n` +
+      `📰 Matched with: ${blog.title}\n\n` +
+      `💳 Complete payment ($1.99): ${paymentLink}\n\n` +
+      `Thanks for using DAUfinder! 🚀`
+    );
+    
+    return { success: true, tweetUrl: result.tweetUrl, orderId };
+    
+  } catch (err) {
+    console.error(`❌ DM boost failed:`, err.message);
+    await sendDm(senderId, `❌ Something went wrong: ${err.message}\n\nPlease try again or contact support.`);
+    return { success: false, error: err.message };
+  }
+}
+
+// Poll for new DMs
+async function pollDms(accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
+  
+  const client = new TwitterApi({
+    appKey: account.apiKey(),
+    appSecret: account.apiSecret(),
+    accessToken: account.accessToken(),
+    accessSecret: account.accessSecret(),
+  });
+
+  try {
+    // Get recent DM events
+    const events = await client.v2.listDmEvents({
+      'dm_event.fields': ['id', 'text', 'sender_id', 'created_at'],
+      max_results: 20,
+    });
+    
+    if (!events.data || events.data.length === 0) {
+      return { processed: 0, messages: [] };
+    }
+    
+    // Get our own user ID to filter out our own messages
+    const me = await client.v2.me();
+    const myUserId = me.data.id;
+    
+    const processed = [];
+    
+    for (const event of events.data) {
+      // Skip if already processed
+      if (dmProcessedIds.has(event.id)) continue;
+      
+      // Skip our own messages
+      if (event.sender_id === myUserId) continue;
+      
+      // Skip if not a message create event
+      if (event.event_type !== 'MessageCreate') continue;
+      
+      const text = event.text || '';
+      const senderId = event.sender_id;
+      
+      // Mark as processed
+      dmProcessedIds.add(event.id);
+      
+      // Keep set from growing too large
+      if (dmProcessedIds.size > 1000) {
+        const arr = Array.from(dmProcessedIds);
+        arr.slice(0, 500).forEach(id => dmProcessedIds.delete(id));
+      }
+      
+      // Get sender username
+      let senderUsername = 'user';
+      try {
+        const sender = await client.v2.user(senderId);
+        senderUsername = sender.data?.username || 'user';
+      } catch (e) {
+        console.warn('Could not fetch sender username:', e.message);
+      }
+      
+      console.log(`📩 DM from @${senderUsername}: ${text}`);
+      
+      // Parse command
+      const parsed = parseDmCommand(text);
+      
+      switch (parsed.command) {
+        case 'help':
+          await sendDm(senderId, 
+            `👋 Welcome to DAUfinder!\n\n` +
+            `Send me a URL and I'll find relevant blogs and create a promo post.\n\n` +
+            `Commands:\n` +
+            `• boost [url] - Create a promo post\n` +
+            `• boost [url] keywords: saas, growth - With specific keywords\n` +
+            `• status - Check your boosts\n` +
+            `• prime - Learn about Prime subscriptions\n\n` +
+            `Example:\nboost https://myapp.com keywords: productivity, startup`
+          );
+          processed.push({ type: 'help', senderId });
+          break;
+          
+        case 'status':
+          // TODO: Look up user's boost history
+          await sendDm(senderId, `📊 Status coming soon! For now, visit https://daufinder.com to see your boosts.`);
+          processed.push({ type: 'status', senderId });
+          break;
+          
+        case 'prime':
+          await sendDm(senderId,
+            `⭐ DAUfinder Prime\n\n` +
+            `Get more boosts at better rates:\n\n` +
+            `• Starter: 100 boosts/mo @ $29\n` +
+            `• Growth: 1,000 boosts/mo @ $199\n` +
+            `• Scale: 10,000 boosts/mo @ $999\n\n` +
+            `Sign up: https://daufinder.com/#prime`
+          );
+          processed.push({ type: 'prime', senderId });
+          break;
+          
+        case 'boost':
+          const result = await processDmBoost(senderId, senderUsername, parsed.url, parsed.keywords);
+          processed.push({ type: 'boost', senderId, ...result });
+          break;
+          
+        default:
+          await sendDm(senderId,
+            `🤔 Not sure what you mean.\n\n` +
+            `To create a boost, send me a URL:\nboost https://yoursite.com\n\n` +
+            `Or type "help" for all commands.`
+          );
+          processed.push({ type: 'unknown', senderId, text });
+      }
+    }
+    
+    return { processed: processed.length, messages: processed };
+    
+  } catch (err) {
+    console.error('❌ DM poll failed:', err.message);
+    throw err;
+  }
+}
+
+// ============================================
 // Growth Automation Module
 // ============================================
 
@@ -4191,6 +4465,82 @@ app.post('/api/admin/image/tweet-test', async (req, res) => {
     }
   } catch (error) {
     console.error('❌ Image tweet test failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// DM Bot Endpoints
+// ============================================
+
+// Poll for new DMs and process them
+app.post('/api/dm/poll', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  try {
+    const result = await pollDms('flywheelsquad');
+    res.json({
+      success: true,
+      ...result,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('❌ DM poll endpoint failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DM bot status
+app.get('/api/dm/status', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  // Get DM-sourced orders
+  const allOrders = await orderStore.all();
+  const dmOrders = allOrders.filter(o => o.source === 'dm-bot');
+  
+  res.json({
+    status: 'active',
+    processedDmIds: dmProcessedIds.size,
+    dmBoosts: {
+      total: dmOrders.length,
+      recent: dmOrders.slice(0, 10).map(o => ({
+        tweetUrl: o.tweetUrl,
+        username: o.dmSenderUsername,
+        createdAt: o.createdAt,
+      })),
+    },
+    timestamp: new Date().toISOString(),
+  });
+});
+
+// Manual send DM (for testing)
+app.post('/api/dm/send', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { userId, text } = req.body;
+  if (!userId || !text) {
+    return res.status(400).json({ error: 'userId and text required' });
+  }
+
+  try {
+    await sendDm(userId, text);
+    res.json({ success: true, userId, textLength: text.length });
+  } catch (error) {
     res.status(500).json({ error: error.message });
   }
 });
