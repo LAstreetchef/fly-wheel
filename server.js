@@ -1560,6 +1560,13 @@ async function runEngagementCycle(options = {}) {
   for (const hashtag of hashtags) {
     try {
       const tweets = await searchTweets(hashtag, maxTweets, accountName);
+      
+      // Check if search returned an error or non-array
+      if (!Array.isArray(tweets)) {
+        results.errors.push(`${hashtag}: ${tweets.error || 'Invalid response'}`);
+        continue;
+      }
+      
       results.searched += tweets.length;
       
       for (const tweet of tweets) {
@@ -3268,6 +3275,12 @@ app.post('/api/admin/growth/follow', async (req, res) => {
   
   try {
     const tweets = await searchTweets(query, maxUsers * 2, account);
+    
+    // Check if search returned an error or non-array
+    if (!Array.isArray(tweets)) {
+      return res.status(500).json({ error: tweets.error || 'Search failed' });
+    }
+    
     const followedIds = new Set();
     let followed = 0;
     
