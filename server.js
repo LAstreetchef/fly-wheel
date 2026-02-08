@@ -357,6 +357,301 @@ const orders = {
 
 let primeStore;
 
+// ============================================
+// Prime Rewards Store
+// ============================================
+
+let rewardsStore;
+
+if (usePostgres) {
+  const rewardsPool = new pg.Pool({
+    connectionString: process.env.DATABASE_URL,
+    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
+  });
+  
+  // Initialize rewards tables
+  await rewardsPool.query(`
+    CREATE TABLE IF NOT EXISTS prime_rewards (
+      email TEXT PRIMARY KEY,
+      twitter_id TEXT,
+      twitter_handle TEXT,
+      twitter_access_token TEXT,
+      twitter_access_secret TEXT,
+      points_balance INTEGER NOT NULL DEFAULT 0,
+      lifetime_points INTEGER NOT NULL DEFAULT 0,
+      follows_flywheelsquad BOOLEAN DEFAULT FALSE,
+      follows_themessageis4u BOOLEAN DEFAULT FALSE,
+      last_sync_at TIMESTAMPTZ,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+  
+  await rewardsPool.query(`
+    CREATE TABLE IF NOT EXISTS prime_reward_history (
+      id SERIAL PRIMARY KEY,
+      email TEXT NOT NULL,
+      tweet_id TEXT,
+      action_type TEXT NOT NULL,
+      points INTEGER NOT NULL,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      UNIQUE(email, tweet_id, action_type)
+    )
+  `);
+  
+  rewardsStore = {
+    async get(email) {
+      const { rows } = await rewardsPool.query('SELECT * FROM prime_rewards WHERE email = $1', [email.toLowerCase()]);
+      if (!rows[0]) return null;
+      const row = rows[0];
+      return {
+        email: row.email,
+        twitterId: row.twitter_id,
+        twitterHandle: row.twitter_handle,
+        twitterAccessToken: row.twitter_access_token,
+        twitterAccessSecret: row.twitter_access_secret,
+        pointsBalance: row.points_balance,
+        lifetimePoints: row.lifetime_points,
+        followsFlywheelsquad: row.follows_flywheelsquad,
+        followsThemessageis4u: row.follows_themessageis4u,
+        lastSyncAt: row.last_sync_at,
+        createdAt: row.created_at,
+      };
+    },
+    
+    async set(email, data) {
+      await rewardsPool.query(`
+        INSERT INTO prime_rewards (email, twitter_id, twitter_handle, twitter_access_token, twitter_access_secret, points_balance, lifetime_points, follows_flywheelsquad, follows_themessageis4u, last_sync_at, created_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        ON CONFLICT(email) DO UPDATE SET
+          twitter_id = COALESCE(EXCLUDED.twitter_id, prime_rewards.twitter_id),
+          twitter_handle = COALESCE(EXCLUDED.twitter_handle, prime_rewards.twitter_handle),
+          twitter_access_token = COALESCE(EXCLUDED.twitter_access_token, prime_rewards.twitter_access_token),
+          twitter_access_secret = COALESCE(EXCLUDED.twitter_access_secret, prime_rewards.twitter_access_secret),
+          points_balance = EXCLUDED.points_balance,
+          lifetime_points = EXCLUDED.lifetime_points,
+          follows_flywheelsquad = EXCLUDED.follows_flywheelsquad,
+          follows_themessageis4u = EXCLUDED.follows_themessageis4u,
+          last_sync_at = EXCLUDED.last_sync_at
+      `, [
+        email.toLowerCase(),
+        data.twitterId || null,
+        data.twitterHandle || null,
+        data.twitterAccessToken || null,
+        data.twitterAccessSecret || null,
+        data.pointsBalance || 0,
+        data.lifetimePoints || 0,
+        data.followsFlywheelsquad || false,
+        data.followsThemessageis4u || false,
+        data.lastSyncAt || null,
+        data.createdAt || new Date().toISOString(),
+      ]);
+    },
+    
+    async addPoints(email, points) {
+      const result = await rewardsPool.query(`
+        UPDATE prime_rewards 
+        SET points_balance = points_balance + $2, lifetime_points = lifetime_points + $2
+        WHERE email = $1
+        RETURNING points_balance, lifetime_points
+      `, [email.toLowerCase(), points]);
+      return result.rows[0] || null;
+    },
+    
+    async usePoints(email, points) {
+      const result = await rewardsPool.query(`
+        UPDATE prime_rewards 
+        SET points_balance = points_balance - $2
+        WHERE email = $1 AND points_balance >= $2
+        RETURNING points_balance
+      `, [email.toLowerCase(), points]);
+      return result.rows.length > 0 ? result.rows[0].points_balance : null;
+    },
+    
+    async recordEngagement(email, tweetId, actionType, points) {
+      try {
+        await rewardsPool.query(`
+          INSERT INTO prime_reward_history (email, tweet_id, action_type, points)
+          VALUES ($1, $2, $3, $4)
+        `, [email.toLowerCase(), tweetId, actionType, points]);
+        return true;
+      } catch (e) {
+        // Duplicate entry - already recorded
+        if (e.code === '23505') return false;
+        throw e;
+      }
+    },
+    
+    async getHistory(email, limit = 20) {
+      const { rows } = await rewardsPool.query(`
+        SELECT tweet_id, action_type, points, created_at 
+        FROM prime_reward_history 
+        WHERE email = $1 
+        ORDER BY created_at DESC 
+        LIMIT $2
+      `, [email.toLowerCase(), limit]);
+      return rows.map(r => ({
+        tweetId: r.tweet_id,
+        actionType: r.action_type,
+        points: r.points,
+        createdAt: r.created_at,
+      }));
+    },
+    
+    async hasEngagement(email, tweetId, actionType) {
+      const { rows } = await rewardsPool.query(`
+        SELECT 1 FROM prime_reward_history 
+        WHERE email = $1 AND tweet_id = $2 AND action_type = $3
+      `, [email.toLowerCase(), tweetId, actionType]);
+      return rows.length > 0;
+    },
+  };
+  
+  console.log('📦 Prime Rewards database: PostgreSQL initialized');
+} else {
+  // SQLite rewards store
+  const dbPath = process.env.DB_PATH || join(__dirname, 'orders.db');
+  const rewardsDb = new Database(dbPath);
+  
+  rewardsDb.exec(`
+    CREATE TABLE IF NOT EXISTS prime_rewards (
+      email TEXT PRIMARY KEY,
+      twitter_id TEXT,
+      twitter_handle TEXT,
+      twitter_access_token TEXT,
+      twitter_access_secret TEXT,
+      points_balance INTEGER NOT NULL DEFAULT 0,
+      lifetime_points INTEGER NOT NULL DEFAULT 0,
+      follows_flywheelsquad INTEGER DEFAULT 0,
+      follows_themessageis4u INTEGER DEFAULT 0,
+      last_sync_at TEXT,
+      created_at TEXT NOT NULL
+    )
+  `);
+  
+  rewardsDb.exec(`
+    CREATE TABLE IF NOT EXISTS prime_reward_history (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      email TEXT NOT NULL,
+      tweet_id TEXT,
+      action_type TEXT NOT NULL,
+      points INTEGER NOT NULL,
+      created_at TEXT NOT NULL,
+      UNIQUE(email, tweet_id, action_type)
+    )
+  `);
+  
+  rewardsStore = {
+    async get(email) {
+      const row = rewardsDb.prepare('SELECT * FROM prime_rewards WHERE email = ?').get(email.toLowerCase());
+      if (!row) return null;
+      return {
+        email: row.email,
+        twitterId: row.twitter_id,
+        twitterHandle: row.twitter_handle,
+        twitterAccessToken: row.twitter_access_token,
+        twitterAccessSecret: row.twitter_access_secret,
+        pointsBalance: row.points_balance,
+        lifetimePoints: row.lifetime_points,
+        followsFlywheelsquad: !!row.follows_flywheelsquad,
+        followsThemessageis4u: !!row.follows_themessageis4u,
+        lastSyncAt: row.last_sync_at,
+        createdAt: row.created_at,
+      };
+    },
+    
+    async set(email, data) {
+      rewardsDb.prepare(`
+        INSERT INTO prime_rewards (email, twitter_id, twitter_handle, twitter_access_token, twitter_access_secret, points_balance, lifetime_points, follows_flywheelsquad, follows_themessageis4u, last_sync_at, created_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ON CONFLICT(email) DO UPDATE SET
+          twitter_id = COALESCE(excluded.twitter_id, prime_rewards.twitter_id),
+          twitter_handle = COALESCE(excluded.twitter_handle, prime_rewards.twitter_handle),
+          twitter_access_token = COALESCE(excluded.twitter_access_token, prime_rewards.twitter_access_token),
+          twitter_access_secret = COALESCE(excluded.twitter_access_secret, prime_rewards.twitter_access_secret),
+          points_balance = excluded.points_balance,
+          lifetime_points = excluded.lifetime_points,
+          follows_flywheelsquad = excluded.follows_flywheelsquad,
+          follows_themessageis4u = excluded.follows_themessageis4u,
+          last_sync_at = excluded.last_sync_at
+      `).run(
+        email.toLowerCase(),
+        data.twitterId || null,
+        data.twitterHandle || null,
+        data.twitterAccessToken || null,
+        data.twitterAccessSecret || null,
+        data.pointsBalance || 0,
+        data.lifetimePoints || 0,
+        data.followsFlywheelsquad ? 1 : 0,
+        data.followsThemessageis4u ? 1 : 0,
+        data.lastSyncAt || null,
+        data.createdAt || new Date().toISOString(),
+      );
+    },
+    
+    async addPoints(email, points) {
+      const result = rewardsDb.prepare(`
+        UPDATE prime_rewards 
+        SET points_balance = points_balance + ?, lifetime_points = lifetime_points + ?
+        WHERE email = ?
+        RETURNING points_balance, lifetime_points
+      `).get(points, points, email.toLowerCase());
+      return result || null;
+    },
+    
+    async usePoints(email, points) {
+      const result = rewardsDb.prepare(`
+        UPDATE prime_rewards 
+        SET points_balance = points_balance - ?
+        WHERE email = ? AND points_balance >= ?
+        RETURNING points_balance
+      `).get(points, email.toLowerCase(), points);
+      return result ? result.points_balance : null;
+    },
+    
+    async recordEngagement(email, tweetId, actionType, points) {
+      try {
+        rewardsDb.prepare(`
+          INSERT INTO prime_reward_history (email, tweet_id, action_type, points, created_at)
+          VALUES (?, ?, ?, ?, ?)
+        `).run(email.toLowerCase(), tweetId, actionType, points, new Date().toISOString());
+        return true;
+      } catch (e) {
+        if (e.code === 'SQLITE_CONSTRAINT_UNIQUE') return false;
+        throw e;
+      }
+    },
+    
+    async getHistory(email, limit = 20) {
+      const rows = rewardsDb.prepare(`
+        SELECT tweet_id, action_type, points, created_at 
+        FROM prime_reward_history 
+        WHERE email = ? 
+        ORDER BY created_at DESC 
+        LIMIT ?
+      `).all(email.toLowerCase(), limit);
+      return rows.map(r => ({
+        tweetId: r.tweet_id,
+        actionType: r.action_type,
+        points: r.points,
+        createdAt: r.created_at,
+      }));
+    },
+    
+    async hasEngagement(email, tweetId, actionType) {
+      const row = rewardsDb.prepare(`
+        SELECT 1 FROM prime_reward_history 
+        WHERE email = ? AND tweet_id = ? AND action_type = ?
+      `).get(email.toLowerCase(), tweetId, actionType);
+      return !!row;
+    },
+  };
+  
+  console.log('📦 Prime Rewards database: SQLite initialized');
+}
+
+// OAuth state storage (in-memory, short-lived)
+const oauthStates = new Map();
+
 if (usePostgres) {
   const pool = new pg.Pool({
     connectionString: process.env.DATABASE_URL,
@@ -1014,6 +1309,443 @@ app.post('/api/prime/boost', async (req, res) => {
     
   } catch (error) {
     console.error('Prime boost error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// Prime Rewards Endpoints
+// ============================================
+
+// Point values
+const REWARD_POINTS = {
+  like: 1,
+  retweet: 3,
+  quote: 5,
+  reply: 2,
+  follow_flywheelsquad: 10,
+  follow_themessageis4u: 10,
+};
+const POINTS_PER_BOOST = 25;
+
+// Our Twitter account IDs (to check follows and get our tweets)
+const OUR_TWITTER_ACCOUNTS = {
+  flywheelsquad: { handle: 'flywheelsquad', id: null }, // Will be populated
+  themessageis4u: { handle: 'themessageis4u', id: null },
+};
+
+// Get rewards status for a Prime member
+app.get('/api/prime/rewards/:email', async (req, res) => {
+  try {
+    const email = req.params.email.toLowerCase();
+    
+    // Check if they're a Prime member
+    const primeAccount = await primeStore.get(email);
+    if (!primeAccount) {
+      return res.status(404).json({ error: 'Not a Prime member' });
+    }
+    
+    // Get or create rewards record
+    let rewards = await rewardsStore.get(email);
+    if (!rewards) {
+      await rewardsStore.set(email, {
+        pointsBalance: 0,
+        lifetimePoints: 0,
+        createdAt: new Date().toISOString(),
+      });
+      rewards = await rewardsStore.get(email);
+    }
+    
+    // Get recent history
+    const history = await rewardsStore.getHistory(email, 10);
+    
+    res.json({
+      email,
+      twitterConnected: !!rewards.twitterHandle,
+      twitterHandle: rewards.twitterHandle,
+      pointsBalance: rewards.pointsBalance,
+      lifetimePoints: rewards.lifetimePoints,
+      pointsNeeded: POINTS_PER_BOOST,
+      canRedeem: rewards.pointsBalance >= POINTS_PER_BOOST,
+      followsFlywheelsquad: rewards.followsFlywheelsquad,
+      followsThemessageis4u: rewards.followsThemessageis4u,
+      lastSyncAt: rewards.lastSyncAt,
+      history,
+      pointValues: REWARD_POINTS,
+    });
+  } catch (error) {
+    console.error('Get rewards error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Start Twitter OAuth flow to connect user's X account
+app.post('/api/prime/connect-twitter', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+    
+    // Check if they're a Prime member
+    const primeAccount = await primeStore.get(email);
+    if (!primeAccount) {
+      return res.status(404).json({ error: 'Not a Prime member' });
+    }
+    
+    const apiKey = process.env.TWITTER_API_KEY;
+    const apiSecret = process.env.TWITTER_API_SECRET;
+    
+    if (!apiKey || !apiSecret) {
+      return res.status(500).json({ error: 'Twitter API not configured' });
+    }
+    
+    // Create OAuth 1.0a client for request token
+    const client = new TwitterApi({
+      appKey: apiKey,
+      appSecret: apiSecret,
+    });
+    
+    // Use API_URL if set, otherwise construct from known ngrok domain
+    const apiBase = process.env.API_URL || (process.env.NODE_ENV === 'production' 
+      ? 'https://fly-wheel.onrender.com' 
+      : 'https://blearier-ashlee-unextravasated.ngrok-free.dev');
+    const callbackUrl = `${apiBase}/api/prime/twitter/callback`;
+    
+    // Get request token
+    const { url, oauth_token, oauth_token_secret } = await client.generateAuthLink(callbackUrl, { linkMode: 'authorize' });
+    
+    // Store state for callback
+    const state = `${email}:${oauth_token}`;
+    oauthStates.set(oauth_token, {
+      email,
+      oauth_token_secret,
+      expires: Date.now() + 10 * 60 * 1000, // 10 min
+    });
+    
+    // Clean up old states
+    for (const [token, data] of oauthStates.entries()) {
+      if (Date.now() > data.expires) oauthStates.delete(token);
+    }
+    
+    console.log(`🔐 Twitter OAuth started for ${email}`);
+    res.json({ authUrl: url });
+  } catch (error) {
+    console.error('Connect Twitter error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Twitter OAuth callback
+app.get('/api/prime/twitter/callback', async (req, res) => {
+  try {
+    const { oauth_token, oauth_verifier } = req.query;
+    
+    if (!oauth_token || !oauth_verifier) {
+      return res.redirect(`${FRONTEND_URL}?rewards_error=missing_oauth`);
+    }
+    
+    const stateData = oauthStates.get(oauth_token);
+    if (!stateData) {
+      return res.redirect(`${FRONTEND_URL}?rewards_error=expired`);
+    }
+    
+    oauthStates.delete(oauth_token);
+    const { email, oauth_token_secret } = stateData;
+    
+    const apiKey = process.env.TWITTER_API_KEY;
+    const apiSecret = process.env.TWITTER_API_SECRET;
+    
+    // Exchange for access token
+    const client = new TwitterApi({
+      appKey: apiKey,
+      appSecret: apiSecret,
+      accessToken: oauth_token,
+      accessSecret: oauth_token_secret,
+    });
+    
+    const { client: loggedClient, accessToken, accessSecret } = await client.login(oauth_verifier);
+    
+    // Get user info
+    const user = await loggedClient.v2.me();
+    
+    // Save to rewards store
+    let rewards = await rewardsStore.get(email);
+    await rewardsStore.set(email, {
+      ...(rewards || {}),
+      twitterId: user.data.id,
+      twitterHandle: user.data.username,
+      twitterAccessToken: accessToken,
+      twitterAccessSecret: accessSecret,
+      pointsBalance: rewards?.pointsBalance || 0,
+      lifetimePoints: rewards?.lifetimePoints || 0,
+      createdAt: rewards?.createdAt || new Date().toISOString(),
+    });
+    
+    console.log(`✅ Twitter connected for ${email}: @${user.data.username}`);
+    res.redirect(`${FRONTEND_URL}?rewards_connected=true&twitter_handle=${user.data.username}`);
+  } catch (error) {
+    console.error('Twitter callback error:', error);
+    res.redirect(`${FRONTEND_URL}?rewards_error=${encodeURIComponent(error.message)}`);
+  }
+});
+
+// Sync points - check user's engagements on our tweets
+app.post('/api/prime/sync-points', async (req, res) => {
+  try {
+    const { email } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+    
+    const rewards = await rewardsStore.get(email);
+    if (!rewards || !rewards.twitterAccessToken) {
+      return res.status(400).json({ error: 'Twitter not connected' });
+    }
+    
+    const apiKey = process.env.TWITTER_API_KEY;
+    const apiSecret = process.env.TWITTER_API_SECRET;
+    
+    // Create client with user's tokens
+    const userClient = new TwitterApi({
+      appKey: apiKey,
+      appSecret: apiSecret,
+      accessToken: rewards.twitterAccessToken,
+      accessSecret: rewards.twitterAccessSecret,
+    });
+    
+    // Create app client for getting our tweets
+    const appClient = new TwitterApi({
+      appKey: apiKey,
+      appSecret: apiSecret,
+      accessToken: process.env.TWITTER_ACCESS_TOKEN,
+      accessSecret: process.env.TWITTER_ACCESS_SECRET,
+    });
+    
+    let pointsEarned = 0;
+    const actions = [];
+    
+    // Get recent tweets from @flywheelsquad (last 50)
+    try {
+      const flywheelUser = await appClient.v2.userByUsername('flywheelsquad');
+      if (flywheelUser.data) {
+        OUR_TWITTER_ACCOUNTS.flywheelsquad.id = flywheelUser.data.id;
+        
+        const tweets = await appClient.v2.userTimeline(flywheelUser.data.id, {
+          max_results: 50,
+          'tweet.fields': ['created_at'],
+        });
+        
+        // Check if user liked each tweet
+        for await (const tweet of tweets) {
+          // Check like
+          try {
+            const likers = await appClient.v2.tweetLikedBy(tweet.id, { max_results: 100 });
+            const userLiked = likers.data?.some(u => u.id === rewards.twitterId);
+            if (userLiked) {
+              const recorded = await rewardsStore.recordEngagement(email, tweet.id, 'like', REWARD_POINTS.like);
+              if (recorded) {
+                pointsEarned += REWARD_POINTS.like;
+                actions.push({ type: 'like', tweetId: tweet.id, points: REWARD_POINTS.like });
+              }
+            }
+          } catch (e) { /* Rate limit or error - skip */ }
+          
+          // Check retweet
+          try {
+            const retweeters = await appClient.v2.tweetRetweetedBy(tweet.id, { max_results: 100 });
+            const userRetweeted = retweeters.data?.some(u => u.id === rewards.twitterId);
+            if (userRetweeted) {
+              const recorded = await rewardsStore.recordEngagement(email, tweet.id, 'retweet', REWARD_POINTS.retweet);
+              if (recorded) {
+                pointsEarned += REWARD_POINTS.retweet;
+                actions.push({ type: 'retweet', tweetId: tweet.id, points: REWARD_POINTS.retweet });
+              }
+            }
+          } catch (e) { /* Skip */ }
+        }
+        
+        // Check if user follows @flywheelsquad
+        if (!rewards.followsFlywheelsquad) {
+          try {
+            const following = await userClient.v2.following(rewards.twitterId, { max_results: 1000 });
+            const followsUs = following.data?.some(u => u.id === flywheelUser.data.id);
+            if (followsUs) {
+              const recorded = await rewardsStore.recordEngagement(email, 'follow', 'follow_flywheelsquad', REWARD_POINTS.follow_flywheelsquad);
+              if (recorded) {
+                pointsEarned += REWARD_POINTS.follow_flywheelsquad;
+                actions.push({ type: 'follow_flywheelsquad', points: REWARD_POINTS.follow_flywheelsquad });
+                rewards.followsFlywheelsquad = true;
+              }
+            }
+          } catch (e) { /* Skip */ }
+        }
+      }
+    } catch (e) {
+      console.error('Error checking @flywheelsquad:', e.message);
+    }
+    
+    // Check @themessageis4u too
+    try {
+      const msgUser = await appClient.v2.userByUsername('themessageis4u');
+      if (msgUser.data) {
+        OUR_TWITTER_ACCOUNTS.themessageis4u.id = msgUser.data.id;
+        
+        const tweets = await appClient.v2.userTimeline(msgUser.data.id, {
+          max_results: 50,
+          'tweet.fields': ['created_at'],
+        });
+        
+        for await (const tweet of tweets) {
+          try {
+            const likers = await appClient.v2.tweetLikedBy(tweet.id, { max_results: 100 });
+            const userLiked = likers.data?.some(u => u.id === rewards.twitterId);
+            if (userLiked) {
+              const recorded = await rewardsStore.recordEngagement(email, tweet.id, 'like', REWARD_POINTS.like);
+              if (recorded) {
+                pointsEarned += REWARD_POINTS.like;
+                actions.push({ type: 'like', tweetId: tweet.id, points: REWARD_POINTS.like });
+              }
+            }
+          } catch (e) { /* Skip */ }
+          
+          try {
+            const retweeters = await appClient.v2.tweetRetweetedBy(tweet.id, { max_results: 100 });
+            const userRetweeted = retweeters.data?.some(u => u.id === rewards.twitterId);
+            if (userRetweeted) {
+              const recorded = await rewardsStore.recordEngagement(email, tweet.id, 'retweet', REWARD_POINTS.retweet);
+              if (recorded) {
+                pointsEarned += REWARD_POINTS.retweet;
+                actions.push({ type: 'retweet', tweetId: tweet.id, points: REWARD_POINTS.retweet });
+              }
+            }
+          } catch (e) { /* Skip */ }
+        }
+        
+        // Check follow
+        if (!rewards.followsThemessageis4u) {
+          try {
+            const following = await userClient.v2.following(rewards.twitterId, { max_results: 1000 });
+            const followsUs = following.data?.some(u => u.id === msgUser.data.id);
+            if (followsUs) {
+              const recorded = await rewardsStore.recordEngagement(email, 'follow', 'follow_themessageis4u', REWARD_POINTS.follow_themessageis4u);
+              if (recorded) {
+                pointsEarned += REWARD_POINTS.follow_themessageis4u;
+                actions.push({ type: 'follow_themessageis4u', points: REWARD_POINTS.follow_themessageis4u });
+                rewards.followsThemessageis4u = true;
+              }
+            }
+          } catch (e) { /* Skip */ }
+        }
+      }
+    } catch (e) {
+      console.error('Error checking @themessageis4u:', e.message);
+    }
+    
+    // Update points if any earned
+    if (pointsEarned > 0) {
+      await rewardsStore.addPoints(email, pointsEarned);
+    }
+    
+    // Update last sync and follow status
+    await rewardsStore.set(email, {
+      ...rewards,
+      lastSyncAt: new Date().toISOString(),
+    });
+    
+    // Get updated balance
+    const updated = await rewardsStore.get(email);
+    
+    console.log(`🔄 Points synced for ${email}: +${pointsEarned} (${actions.length} actions)`);
+    
+    res.json({
+      success: true,
+      pointsEarned,
+      actions,
+      newBalance: updated.pointsBalance,
+      lifetimePoints: updated.lifetimePoints,
+      canRedeem: updated.pointsBalance >= POINTS_PER_BOOST,
+    });
+  } catch (error) {
+    console.error('Sync points error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Redeem points for a free boost
+app.post('/api/prime/redeem-points', async (req, res) => {
+  try {
+    const { email, productData, blog, content } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email required' });
+    }
+    
+    // Check Prime membership
+    const primeAccount = await primeStore.get(email);
+    if (!primeAccount) {
+      return res.status(404).json({ error: 'Not a Prime member' });
+    }
+    
+    // Check points balance
+    const rewards = await rewardsStore.get(email);
+    if (!rewards || rewards.pointsBalance < POINTS_PER_BOOST) {
+      return res.status(400).json({ 
+        error: `Need ${POINTS_PER_BOOST} points to redeem`, 
+        balance: rewards?.pointsBalance || 0 
+      });
+    }
+    
+    if (!productData?.name || !blog?.url || !content) {
+      return res.status(400).json({ error: 'Missing required data (productData, blog, content)' });
+    }
+    
+    // Deduct points
+    const newBalance = await rewardsStore.usePoints(email, POINTS_PER_BOOST);
+    if (newBalance === null) {
+      return res.status(400).json({ error: 'Failed to redeem points' });
+    }
+    
+    // Replace placeholders
+    let finalContent = content
+      .replace('[BLOG_LINK]', blog.url)
+      .replace('[PRODUCT_LINK]', productData.productUrl || '');
+    
+    // Post to Twitter
+    const result = await postTweet(finalContent);
+    
+    // Create order record
+    const orderId = `rewards_${Date.now()}_${email.split('@')[0]}`;
+    await orders.set(orderId, {
+      status: 'published',
+      productData,
+      blog,
+      content: finalContent,
+      email,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      publishedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      source: 'rewards',
+      followUpSent: false,
+    });
+    
+    // Record the redemption in history
+    await rewardsStore.recordEngagement(email, orderId, 'redeem', -POINTS_PER_BOOST);
+    
+    console.log(`🎁 Points redeemed by ${email} | Balance: ${newBalance} | Tweet: ${result.tweetUrl}`);
+    
+    res.json({
+      success: true,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      pointsUsed: POINTS_PER_BOOST,
+      remainingBalance: newBalance,
+    });
+  } catch (error) {
+    console.error('Redeem points error:', error);
     res.status(500).json({ error: error.message });
   }
 });

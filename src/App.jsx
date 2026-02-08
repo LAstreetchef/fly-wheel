@@ -19,6 +19,11 @@ export default function App() {
   const [primeAccount, setPrimeAccount] = useState(null)
   const [primeTiers, setPrimeTiers] = useState([])
   const [primeEmail, setPrimeEmail] = useState(() => localStorage.getItem('primeEmail') || '')
+  
+  // Rewards state
+  const [rewards, setRewards] = useState(null)
+  const [rewardsSyncing, setRewardsSyncing] = useState(false)
+  const [showRewards, setShowRewards] = useState(false)
 
   // Load ElevenLabs widget
   useEffect(() => {
@@ -41,8 +46,25 @@ export default function App() {
   useEffect(() => {
     if (primeEmail) {
       checkPrimeAccount(primeEmail)
+      loadRewards(primeEmail)
       // Auto-fill email in product data
       setProductData(prev => ({ ...prev, email: prev.email || primeEmail }))
+    }
+  }, [primeEmail])
+  
+  // Check for rewards connection callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('rewards_connected') === 'true') {
+      const handle = params.get('twitter_handle')
+      if (primeEmail) {
+        loadRewards(primeEmail)
+      }
+      window.history.replaceState({}, '', '/fly-wheel/')
+    }
+    if (params.get('rewards_error')) {
+      setError(`Twitter connection failed: ${params.get('rewards_error')}`)
+      window.history.replaceState({}, '', '/fly-wheel/')
     }
   }, [primeEmail])
   
@@ -106,6 +128,93 @@ export default function App() {
     localStorage.removeItem('primeEmail')
     setPrimeEmail('')
     setPrimeAccount(null)
+    setRewards(null)
+  }
+  
+  const loadRewards = async (email) => {
+    if (!email) return
+    try {
+      const res = await fetch(`${API_URL}/api/prime/rewards/${encodeURIComponent(email)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setRewards(data)
+      }
+    } catch (e) {
+      console.error('Failed to load rewards:', e)
+    }
+  }
+  
+  const connectTwitter = async () => {
+    if (!primeEmail) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_URL}/api/prime/connect-twitter`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: primeEmail })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      window.location.href = data.authUrl
+    } catch (e) {
+      setError(e.message)
+      setLoading(false)
+    }
+  }
+  
+  const syncRewardsPoints = async () => {
+    if (!primeEmail) return
+    setRewardsSyncing(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_URL}/api/prime/sync-points`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: primeEmail })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      // Reload rewards to get updated balance
+      await loadRewards(primeEmail)
+      if (data.pointsEarned > 0) {
+        alert(`🎉 You earned ${data.pointsEarned} points!`)
+      } else {
+        alert('No new points found. Keep engaging with our posts!')
+      }
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setRewardsSyncing(false)
+    }
+  }
+  
+  const useRewardsBoost = async () => {
+    if (!rewards || rewards.pointsBalance < 25) return
+    setLoading(true)
+    setError(null)
+    try {
+      const res = await fetch(`${API_URL}/api/prime/redeem-points`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: primeEmail,
+          productData,
+          blog: selectedBlog,
+          content
+        })
+      })
+      const data = await res.json()
+      if (!res.ok) throw new Error(data.error)
+      
+      setResult({ tweetUrl: data.tweetUrl })
+      setRewards(prev => ({ ...prev, pointsBalance: data.remainingBalance }))
+      setStep('done')
+    } catch (e) {
+      setError(e.message)
+    } finally {
+      setLoading(false)
+    }
   }
   
   const subscribePrime = async (tier) => {
@@ -304,6 +413,13 @@ export default function App() {
               <div className="hidden sm:flex items-center gap-2 text-sm">
                 <span className="text-yellow-400">⚡ {primeAccount.boostBalance}</span>
                 <span className="text-gray-500">boosts</span>
+                {rewards && rewards.pointsBalance > 0 && (
+                  <>
+                    <span className="text-gray-600">|</span>
+                    <span className="text-purple-400">🎁 {rewards.pointsBalance}</span>
+                    <span className="text-gray-500">pts</span>
+                  </>
+                )}
               </div>
             )}
             <button
@@ -381,28 +497,185 @@ export default function App() {
                   <p className="text-gray-500 text-sm mt-2">Already subscribed? Enter your email to check your balance.</p>
                 </div>
               ) : (
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-yellow-400 text-2xl font-black">{primeAccount.boostBalance}</span>
-                      <span className="text-gray-400">boosts remaining</span>
+                <div className="space-y-4">
+                  <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <div>
+                      <div className="flex items-center gap-2 mb-1">
+                        <span className="text-yellow-400 text-2xl font-black">{primeAccount.boostBalance}</span>
+                        <span className="text-gray-400">boosts remaining</span>
+                        {rewards && (
+                          <>
+                            <span className="text-gray-600 mx-2">|</span>
+                            <span className="text-purple-400 text-2xl font-black">{rewards.pointsBalance}</span>
+                            <span className="text-gray-400">points</span>
+                          </>
+                        )}
+                      </div>
+                      <p className="text-gray-500 text-sm">{primeEmail} · {primeAccount.tierName} plan</p>
                     </div>
-                    <p className="text-gray-500 text-sm">{primeEmail} · {primeAccount.tierName} plan</p>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => setShowRewards(!showRewards)}
+                        className={`px-4 py-3 rounded-xl font-bold transition-all ${
+                          showRewards 
+                            ? 'bg-purple-500 text-white' 
+                            : 'bg-gray-700 hover:bg-gray-600 text-white'
+                        }`}
+                      >
+                        🎁 Rewards
+                      </button>
+                      <button
+                        onClick={() => setShowPrime(false)}
+                        className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-6 py-3 rounded-xl font-bold"
+                      >
+                        Use a Boost →
+                      </button>
+                      <button
+                        onClick={logoutPrime}
+                        className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-xl"
+                      >
+                        Logout
+                      </button>
+                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={() => setShowPrime(false)}
-                      className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-6 py-3 rounded-xl font-bold"
-                    >
-                      Use a Boost →
-                    </button>
-                    <button
-                      onClick={logoutPrime}
-                      className="bg-gray-700 hover:bg-gray-600 text-white px-4 py-3 rounded-xl"
-                    >
-                      Logout
-                    </button>
-                  </div>
+                  
+                  {/* Rewards Section */}
+                  {showRewards && (
+                    <div className="mt-4 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl">
+                      <h3 className="text-lg font-bold text-purple-400 mb-3">🎁 Prime Rewards</h3>
+                      <p className="text-gray-400 text-sm mb-4">
+                        Earn points by engaging with DAUfinder posts on X. Redeem 25 points for a free boost!
+                      </p>
+                      
+                      {/* Point Values */}
+                      <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-4 text-sm">
+                        <div className="bg-gray-800/50 rounded-lg p-2 text-center">
+                          <span className="text-purple-400 font-bold">+1</span> <span className="text-gray-400">Like</span>
+                        </div>
+                        <div className="bg-gray-800/50 rounded-lg p-2 text-center">
+                          <span className="text-purple-400 font-bold">+2</span> <span className="text-gray-400">Reply</span>
+                        </div>
+                        <div className="bg-gray-800/50 rounded-lg p-2 text-center">
+                          <span className="text-purple-400 font-bold">+3</span> <span className="text-gray-400">Retweet</span>
+                        </div>
+                        <div className="bg-gray-800/50 rounded-lg p-2 text-center">
+                          <span className="text-purple-400 font-bold">+5</span> <span className="text-gray-400">Quote</span>
+                        </div>
+                        <div className="bg-gray-800/50 rounded-lg p-2 text-center col-span-2">
+                          <span className="text-purple-400 font-bold">+10</span> <span className="text-gray-400">Follow @flywheelsquad or @themessageis4u</span>
+                        </div>
+                      </div>
+                      
+                      {!rewards?.twitterConnected ? (
+                        <div className="text-center">
+                          <p className="text-gray-400 mb-3">Connect your X account to start earning points</p>
+                          <button
+                            onClick={connectTwitter}
+                            disabled={loading}
+                            className="bg-black border border-gray-600 hover:border-white text-white px-6 py-3 rounded-xl font-bold flex items-center gap-2 mx-auto disabled:opacity-50"
+                          >
+                            <span className="text-xl">𝕏</span>
+                            {loading ? 'Connecting...' : 'Connect X Account'}
+                          </button>
+                        </div>
+                      ) : (
+                        <div>
+                          <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-xl">𝕏</span>
+                              <span className="text-white font-bold">@{rewards.twitterHandle}</span>
+                              <span className="text-green-400 text-sm">✓ Connected</span>
+                            </div>
+                            <button
+                              onClick={syncRewardsPoints}
+                              disabled={rewardsSyncing}
+                              className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg font-bold text-sm disabled:opacity-50"
+                            >
+                              {rewardsSyncing ? '⏳ Syncing...' : '🔄 Sync Points'}
+                            </button>
+                          </div>
+                          
+                          {/* Points Progress */}
+                          <div className="bg-gray-800/50 rounded-xl p-4">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-gray-400">Points Balance</span>
+                              <span className="text-2xl font-black text-purple-400">{rewards.pointsBalance}</span>
+                            </div>
+                            <div className="w-full bg-gray-700 rounded-full h-3 mb-2">
+                              <div 
+                                className="bg-gradient-to-r from-purple-500 to-pink-500 h-3 rounded-full transition-all"
+                                style={{ width: `${Math.min(100, (rewards.pointsBalance / 25) * 100)}%` }}
+                              />
+                            </div>
+                            <div className="flex justify-between text-xs text-gray-500">
+                              <span>0</span>
+                              <span>{rewards.pointsBalance >= 25 ? '🎉 Ready to redeem!' : `${25 - rewards.pointsBalance} more to free boost`}</span>
+                              <span>25</span>
+                            </div>
+                            
+                            {rewards.pointsBalance >= 25 && (
+                              <div className="mt-4 text-center">
+                                <p className="text-green-400 font-bold mb-2">You have enough points for a free boost!</p>
+                                <button
+                                  onClick={() => { setShowPrime(false); setShowRewards(false); }}
+                                  className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-2 rounded-lg font-bold"
+                                >
+                                  Create Boost & Use Points →
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Follow Bonuses */}
+                          <div className="mt-4 grid grid-cols-2 gap-2">
+                            <div className={`p-3 rounded-lg border ${rewards.followsFlywheelsquad ? 'bg-green-500/10 border-green-500/30' : 'bg-gray-800/50 border-gray-700'}`}>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">Follow @flywheelsquad</span>
+                                {rewards.followsFlywheelsquad ? (
+                                  <span className="text-green-400">✓ +10</span>
+                                ) : (
+                                  <a href="https://x.com/flywheelsquad" target="_blank" className="text-purple-400 text-sm hover:underline">+10 pts →</a>
+                                )}
+                              </div>
+                            </div>
+                            <div className={`p-3 rounded-lg border ${rewards.followsThemessageis4u ? 'bg-green-500/10 border-green-500/30' : 'bg-gray-800/50 border-gray-700'}`}>
+                              <div className="flex items-center justify-between">
+                                <span className="text-sm">Follow @themessageis4u</span>
+                                {rewards.followsThemessageis4u ? (
+                                  <span className="text-green-400">✓ +10</span>
+                                ) : (
+                                  <a href="https://x.com/themessageis4u" target="_blank" className="text-purple-400 text-sm hover:underline">+10 pts →</a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          
+                          {/* Recent Activity */}
+                          {rewards.history && rewards.history.length > 0 && (
+                            <div className="mt-4">
+                              <h4 className="text-sm font-bold text-gray-400 mb-2">Recent Activity</h4>
+                              <div className="space-y-1 max-h-32 overflow-y-auto">
+                                {rewards.history.slice(0, 5).map((item, i) => (
+                                  <div key={i} className="flex justify-between text-xs text-gray-500">
+                                    <span>{item.actionType === 'like' ? '❤️' : item.actionType === 'retweet' ? '🔁' : item.actionType.includes('follow') ? '👤' : '📝'} {item.actionType}</span>
+                                    <span className={item.points > 0 ? 'text-green-400' : 'text-red-400'}>
+                                      {item.points > 0 ? '+' : ''}{item.points}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          
+                          {rewards.lastSyncAt && (
+                            <p className="text-xs text-gray-600 mt-3">
+                              Last synced: {new Date(rewards.lastSyncAt).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  )}
                 </div>
               )}
             </div>
@@ -622,6 +895,25 @@ export default function App() {
                         className="bg-gradient-to-r from-yellow-400 to-orange-500 text-black px-6 py-3 rounded-xl font-bold disabled:opacity-50"
                       >
                         {loading ? 'Posting...' : 'Post Free →'}
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Use Rewards Points */}
+                {rewards && rewards.pointsBalance >= 25 && (
+                  <div className="mb-4 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-purple-400 font-bold">🎁 Use Reward Points</p>
+                        <p className="text-sm text-gray-400">{rewards.pointsBalance} points (25 needed)</p>
+                      </div>
+                      <button
+                        onClick={useRewardsBoost}
+                        disabled={loading}
+                        className="bg-gradient-to-r from-purple-500 to-pink-500 text-white px-6 py-3 rounded-xl font-bold disabled:opacity-50"
+                      >
+                        {loading ? 'Posting...' : 'Redeem Points →'}
                       </button>
                     </div>
                   </div>
