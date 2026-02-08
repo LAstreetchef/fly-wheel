@@ -318,7 +318,7 @@ export default function App() {
             </button>
             {!showPrime && (
               <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-3 py-1 rounded-full text-sm font-black">
-                $1.75/post
+                $1.99/post
               </div>
             )}
           </div>
@@ -339,7 +339,7 @@ export default function App() {
               <span className="text-white">Get Your Product</span>{' '}
               <span className="text-orange-400">In Front of Readers</span>
             </h1>
-            <p className="text-gray-400 text-lg">We find relevant blogs, craft a promo post, and publish it to X. Just $1.75.</p>
+            <p className="text-gray-400 text-lg">We find relevant blogs, craft a promo post, and publish it to X. Just $1.99.</p>
           </div>
         ) : (
           <div className="text-center mb-10">
@@ -476,7 +476,7 @@ export default function App() {
                     <div className="text-center font-bold text-orange-400">Prime</div>
                     
                     <div className="text-gray-400">Price per boost</div>
-                    <div className="text-center">$1.75</div>
+                    <div className="text-center">$1.99</div>
                     <div className="text-center text-green-400">As low as $0.10</div>
                     
                     <div className="text-gray-400">100 boosts</div>
@@ -484,7 +484,7 @@ export default function App() {
                     <div className="text-center text-green-400">$29 (83% off)</div>
                     
                     <div className="text-gray-400">1000 boosts</div>
-                    <div className="text-center">$1,750</div>
+                    <div className="text-center">$1,990</div>
                     <div className="text-center text-green-400">$199 (89% off)</div>
                   </div>
                 </div>
@@ -633,11 +633,11 @@ export default function App() {
                   </button>
                   {!primeAccount ? (
                     <button onClick={checkout} disabled={loading} className="flex-[2] bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-3 rounded-xl font-bold text-lg disabled:opacity-50">
-                      {loading ? 'Loading...' : 'Pay $1.75 & Post →'}
+                      {loading ? 'Loading...' : 'Pay $1.99 & Post →'}
                     </button>
                   ) : (
                     <button onClick={checkout} disabled={loading} className="flex-[2] bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-xl font-bold text-lg disabled:opacity-50">
-                      {loading ? 'Loading...' : 'Or Pay $1.75 →'}
+                      {loading ? 'Loading...' : 'Or Pay $1.99 →'}
                     </button>
                   )}
                 </div>
@@ -689,7 +689,7 @@ export default function App() {
                 { num: '1', icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
                 { num: '2', icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
                 { num: '3', icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
-                { num: '4', icon: '🚀', title: 'Pay & post', desc: '$1.75 via Stripe, posted instantly to X' },
+                { num: '4', icon: '🚀', title: 'Pay & post', desc: '$1.99 via Stripe, posted instantly to X' },
               ].map((s, i) => (
                 <div key={i} className="flex items-start gap-4">
                   <span className="flex-shrink-0 w-10 h-10 rounded-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black flex items-center justify-center text-lg font-black">

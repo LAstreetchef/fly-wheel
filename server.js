@@ -488,7 +488,7 @@ if (usePostgres) {
 }
 
 // Config
-const BOOST_PRICE = 175; // $1.75 in cents
+const BOOST_PRICE = 199; // $1.99 in cents
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 
@@ -1317,7 +1317,7 @@ app.post('/api/admin/test-email', async (req, res) => {
 
 const DAUFINDER_PRODUCT = {
   name: 'DAUfinder',
-  description: 'Find daily active users for your product. We match you with relevant blogs, craft a promo post, and publish to X. Just $1.75.',
+  description: 'Find daily active users for your product. We match you with relevant blogs, craft a promo post, and publish to X. Just $1.99.',
   productUrl: 'https://lastreetchef.github.io/fly-wheel/',
   email: 'kammiceli@gmail.com',
 };
@@ -1369,7 +1369,7 @@ app.post('/api/admin/self-boost', async (req, res) => {
     selfPromoStats.lastBoostDate = today;
   }
   
-  const costPerBoost = 1.75; // virtual cost for ROI tracking
+  const costPerBoost = 1.99; // virtual cost for ROI tracking
 
   try {
     // Get keywords (from request or use rotation)
@@ -1460,8 +1460,8 @@ app.get('/api/admin/self-boost/stats', async (req, res) => {
   // Calculate metrics
   const totalOrders = allOrders.length;
   const customerOrders = allOrders.filter(o => o.source !== 'self-promo');
-  const revenue = customerOrders.length * 1.75;
-  const spend = selfPromoOrders.length * 1.75;
+  const revenue = customerOrders.length * 1.99;
+  const spend = selfPromoOrders.length * 1.99;
   const roi = spend > 0 ? ((revenue - spend) / spend * 100).toFixed(1) : 0;
   
   res.json({
@@ -1493,7 +1493,7 @@ app.get('/api/admin/dashboard', async (req, res) => {
   const customerOrders = allOrders.filter(o => o.source !== 'self-promo' && !o.sessionId?.startsWith('self_'));
   
   // Revenue & costs
-  const revenue = customerOrders.filter(o => o.status === 'published').length * 1.75;
+  const revenue = customerOrders.filter(o => o.status === 'published').length * 1.99;
   const actualCostPerBoost = 0.008; // ~$0.008 actual API cost
   const actualSpend = selfPromoOrders.length * actualCostPerBoost;
   
@@ -1586,17 +1586,17 @@ app.get('/api/admin/dashboard', async (req, res) => {
     today: {
       boosts: boostsToday,
       customers: customersToday,
-      revenue: (customersToday * 1.75).toFixed(2),
+      revenue: (customersToday * 1.99).toFixed(2),
     },
     last24h: {
       boosts: boostsLast24h,
       customers: customersLast24h,
-      revenue: (customersLast24h * 1.75).toFixed(2),
+      revenue: (customersLast24h * 1.99).toFixed(2),
     },
     last7d: {
       boosts: boostsLast7d,
       customers: customersLast7d,
-      revenue: (customersLast7d * 1.75).toFixed(2),
+      revenue: (customersLast7d * 1.99).toFixed(2),
       conversionRate: conversionRate + '%',
       cac: cac,
     },
