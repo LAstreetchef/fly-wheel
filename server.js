@@ -1459,36 +1459,48 @@ async function pollDms(accountName = 'flywheelsquad') {
   });
 
   try {
-    // Get recent DM events
+    // Get recent DM events - try multiple methods
     console.log('📨 Fetching DM events...');
-    const events = await client.v2.listDmEvents({
-      'dm_event.fields': ['id', 'text', 'sender_id', 'created_at', 'event_type'],
-      max_results: 20,
-    });
     
-    console.log('📨 DM response:', JSON.stringify(events, null, 2).substring(0, 1000));
-    
-    // Handle empty or missing data - twitter-api-v2 returns { data: [...] } or just data array
+    // Method 1: List all DM events
+    let events;
     let eventList = [];
-    if (Array.isArray(events)) {
-      eventList = events;
-    } else if (Array.isArray(events?.data)) {
-      eventList = events.data;
-    } else if (Array.isArray(events?.events)) {
-      eventList = events.events;
-    } else if (events && typeof events === 'object') {
-      // Try to find any array in the response
-      for (const key of Object.keys(events)) {
-        if (Array.isArray(events[key])) {
-          eventList = events[key];
-          console.log(`📨 Found events in key: ${key}`);
-          break;
-        }
+    
+    try {
+      events = await client.v2.listDmEvents({
+        'dm_event.fields': ['id', 'text', 'sender_id', 'created_at', 'event_type', 'dm_conversation_id'],
+        'event_types': ['MessageCreate'],
+        max_results: 20,
+      });
+      console.log('📨 DM events response:', JSON.stringify(events?._realData || events, null, 2).substring(0, 500));
+      
+      if (events?._realData?.data) {
+        eventList = events._realData.data;
+      } else if (events?.data) {
+        eventList = Array.isArray(events.data) ? events.data : [];
+      }
+    } catch (e) {
+      console.log('📨 listDmEvents failed:', e.message);
+    }
+    
+    // If no events found, try listing conversations
+    if (eventList.length === 0) {
+      console.log('📨 Trying to list DM conversations...');
+      try {
+        const convos = await client.v2.listDmConversations({
+          'dm_conversation.fields': ['id'],
+          max_results: 10,
+        });
+        console.log('📨 Conversations:', JSON.stringify(convos?._realData || convos, null, 2).substring(0, 500));
+      } catch (e) {
+        console.log('📨 listDmConversations failed:', e.message);
       }
     }
     
+    console.log('📨 Found', eventList.length, 'events to process');
+    
     if (eventList.length === 0) {
-      return { processed: 0, messages: [], note: 'No DM events found', rawResponse: JSON.stringify(events).substring(0, 500) };
+      return { processed: 0, messages: [], note: 'No DM events found' };
     }
     
     // Get our own user ID to filter out our own messages
