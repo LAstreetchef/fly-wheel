@@ -1097,8 +1097,8 @@ async function searchTweets(query, maxResults = 10, accountName = 'flywheelsquad
     
     return result.data?.data || [];
   } catch (err) {
-    console.error('Tweet search error:', err.message);
-    return [];
+    console.error('Tweet search error:', err.message, err.data || '');
+    return { error: err.message, data: err.data };
   }
 }
 
@@ -2730,6 +2730,20 @@ app.post('/api/admin/growth/cycle', async (req, res) => {
     results.errors.push(err.message);
     res.status(500).json({ success: false, results, error: err.message });
   }
+});
+
+// Test search endpoint (debug)
+app.get('/api/admin/growth/test-search', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const query = req.query.q || '#buildinpublic';
+  const result = await searchTweets(query, 5, 'flywheelsquad');
+  res.json({ query, result });
 });
 
 // Get growth stats
