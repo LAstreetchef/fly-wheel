@@ -522,7 +522,7 @@ export default function App() {
                             : 'bg-gray-700 hover:bg-gray-600 text-white'
                         }`}
                       >
-                        🎁 Rewards
+                        💰 Payouts
                       </button>
                       <button
                         onClick={() => setShowPrime(false)}
@@ -542,7 +542,7 @@ export default function App() {
                   {/* Rewards Section */}
                   {showRewards && (
                     <div className="mt-4 p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/30 rounded-xl">
-                      <h3 className="text-lg font-bold text-purple-400 mb-3">🎁 Prime Rewards</h3>
+                      <h3 className="text-lg font-bold text-purple-400 mb-3">💰 Prime Payouts</h3>
                       <p className="text-gray-400 text-sm mb-4">
                         Earn points by engaging with DAUfinder posts on X. Redeem 25 points for a free boost!
                       </p>
@@ -900,7 +900,7 @@ export default function App() {
                   </div>
                 )}
                 
-                {/* Use Rewards Points */}
+                {/* Use Payout Points */}
                 {rewards && rewards.pointsBalance >= 25 && (
                   <div className="mb-4 p-4 bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30 rounded-xl">
                     <div className="flex items-center justify-between gap-4">
