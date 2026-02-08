@@ -1460,13 +1460,18 @@ async function pollDms(accountName = 'flywheelsquad') {
 
   try {
     // Get recent DM events
+    console.log('📨 Fetching DM events...');
     const events = await client.v2.listDmEvents({
-      'dm_event.fields': ['id', 'text', 'sender_id', 'created_at'],
+      'dm_event.fields': ['id', 'text', 'sender_id', 'created_at', 'event_type'],
       max_results: 20,
     });
     
-    if (!events.data || events.data.length === 0) {
-      return { processed: 0, messages: [] };
+    console.log('📨 DM response:', JSON.stringify(events, null, 2).substring(0, 500));
+    
+    // Handle empty or missing data
+    const eventList = events?.data || events?.events || [];
+    if (!eventList || eventList.length === 0) {
+      return { processed: 0, messages: [], note: 'No DM events found' };
     }
     
     // Get our own user ID to filter out our own messages
@@ -1475,7 +1480,7 @@ async function pollDms(accountName = 'flywheelsquad') {
     
     const processed = [];
     
-    for (const event of events.data) {
+    for (const event of eventList) {
       // Skip if already processed
       if (dmProcessedIds.has(event.id)) continue;
       
