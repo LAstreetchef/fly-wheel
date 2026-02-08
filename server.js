@@ -1119,6 +1119,7 @@ Style requirements:
 The image should be eye-catching in a Twitter feed and communicate value instantly.`;
 
   try {
+    console.log('🎨 Calling Gemini API for image generation...');
     const response = await fetch(
       `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp-image-generation:generateContent?key=${apiKey}`,
       {
@@ -1137,11 +1138,12 @@ The image should be eye-catching in a Twitter feed and communicate value instant
 
     if (!response.ok) {
       const error = await response.text();
-      console.error('❌ Gemini API error:', error);
-      return null;
+      console.error('❌ Gemini API error:', response.status, error);
+      return { error: `Gemini API ${response.status}: ${error.substring(0, 200)}` };
     }
 
     const data = await response.json();
+    console.log('📦 Gemini response received, parsing...');
     
     // Extract image from response
     const parts = data.candidates?.[0]?.content?.parts || [];
@@ -4108,8 +4110,8 @@ app.post('/api/admin/image/test', async (req, res) => {
     console.log(`🎨 Testing image generation for: ${topic}`);
     const image = await generateBoostImage(topic, keywords);
     
-    if (!image) {
-      return res.status(500).json({ error: 'Image generation failed' });
+    if (!image || image.error) {
+      return res.status(500).json({ error: image?.error || 'Image generation failed' });
     }
     
     // Return base64 image or save to file
