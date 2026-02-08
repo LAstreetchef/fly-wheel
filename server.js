@@ -2993,7 +2993,11 @@ app.get('/api/admin/system/health', async (req, res) => {
   // Check database/storage (orders + prime store)
   try {
     const orderCount = (await orderStore.all()).length;
-    const primeCount = (await primeStore.all()).length;
+    // primeStore might not have all() method in SQLite mode
+    let primeCount = 0;
+    if (typeof primeStore.all === 'function') {
+      primeCount = (await primeStore.all()).length;
+    }
     health.services.database = {
       status: 'healthy',
       orders: orderCount,
