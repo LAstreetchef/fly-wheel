@@ -4,7 +4,8 @@ import tailwindcss from '@tailwindcss/vite'
 
 export default defineConfig({
   plugins: [react(), tailwindcss()],
-  base: '/fly-wheel/',
+  // Use '/' for Render (daufinder.com), '/fly-wheel/' for GitHub Pages
+  base: process.env.VITE_BASE_PATH || '/',
   server: {
     proxy: {
       '/api': 'http://localhost:3001'
