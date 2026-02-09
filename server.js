@@ -1607,7 +1607,7 @@ async function pollDms(accountName = 'flywheelsquad') {
       }
     }
     
-    console.log('📨 Found', eventList.length, 'events to process');
+    console.log('📨 Found', eventList.length, 'DM events, filtering...');
     
     if (eventList.length === 0) {
       return { processed: 0, messages: [], note: 'No DM events found' };
@@ -1617,17 +1617,35 @@ async function pollDms(accountName = 'flywheelsquad') {
     const me = await client.v2.me();
     const myUserId = me.data.id;
     
+    // Known account IDs to always skip (our own accounts)
+    const OUR_ACCOUNT_IDS = new Set([
+      '2018714728483180544', // @flywheelsquad
+      '1592994104234164224', // @themessageis4u (if known)
+      '15774131', // @greentruck
+      myUserId, // Current authenticated user
+    ]);
+    
     const processed = [];
+    let skippedOwn = 0;
+    let skippedProcessed = 0;
     
     for (const event of eventList) {
       // Skip if already processed
-      if (dmProcessedIds.has(event.id)) continue;
+      if (dmProcessedIds.has(event.id)) {
+        skippedProcessed++;
+        continue;
+      }
       
-      // Skip our own messages
-      if (event.sender_id === myUserId) continue;
+      // Skip our own messages (check against all known IDs)
+      if (OUR_ACCOUNT_IDS.has(event.sender_id)) {
+        skippedOwn++;
+        continue;
+      }
       
       // Skip if not a message create event
       if (event.event_type !== 'MessageCreate') continue;
+      
+      console.log(`📨 Processing DM from sender ${event.sender_id}: ${event.text?.substring(0, 50)}...`);
       
       const text = event.text || '';
       const senderId = event.sender_id;
@@ -1701,7 +1719,8 @@ async function pollDms(accountName = 'flywheelsquad') {
       }
     }
     
-    return { processed: processed.length, messages: processed };
+    console.log(`📨 DM poll complete: ${processed.length} processed, ${skippedOwn} skipped (own), ${skippedProcessed} skipped (already processed)`);
+    return { processed: processed.length, messages: processed, skippedOwn, skippedProcessed };
     
   } catch (err) {
     console.error('❌ DM poll failed:', err.message);
