@@ -1367,13 +1367,38 @@ async function sendDm(userId, text, accountName = 'flywheelsquad') {
   }
 }
 
+// Send a DM with media attachment
+async function sendDmWithMedia(userId, text, mediaId, accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
+  
+  const client = new TwitterApi({
+    appKey: account.apiKey(),
+    appSecret: account.apiSecret(),
+    accessToken: account.accessToken(),
+    accessSecret: account.accessSecret(),
+  });
+
+  try {
+    const result = await client.v2.sendDmToParticipant(userId, { 
+      text,
+      attachments: { media_ids: [mediaId] }
+    });
+    console.log(`✅ DM with media sent to ${userId}`);
+    return result;
+  } catch (err) {
+    console.error(`❌ DM with media failed:`, err.message);
+    // Fallback to text-only
+    return sendDm(userId, text, accountName);
+  }
+}
+
 // Process a boost request from DM
 async function processDmBoost(senderId, senderUsername, url, keywords) {
   console.log(`🚀 Processing DM boost from @${senderUsername}: ${url}`);
   
   try {
     // Acknowledge receipt
-    await sendDm(senderId, `🔍 Got it! Searching for relevant blogs for ${url}...`);
+    await sendDm(senderId, `Processing your boost for ${url}...`);
     
     // Fetch product info from URL (simplified - just use URL as product)
     const productData = {
@@ -1387,7 +1412,7 @@ async function processDmBoost(senderId, senderUsername, url, keywords) {
     const blogs = await searchBlogs(searchKeywords);
     
     if (!blogs || blogs.length === 0) {
-      await sendDm(senderId, `😕 Couldn't find relevant blogs for "${searchKeywords}". Try different keywords!\n\nUsage: boost ${url} keywords: saas, marketing`);
+      await sendDm(senderId, `No matching blogs found for "${searchKeywords}". Try different keywords.\n\nExample: boost ${url} keywords: saas, marketing`);
       return { success: false, error: 'No blogs found' };
     }
     
@@ -1430,19 +1455,38 @@ async function processDmBoost(senderId, senderUsername, url, keywords) {
     
     // Send success message with payment link
     const paymentLink = `https://daufinder.com/pay/${orderId}`;
-    await sendDm(senderId, 
-      `✅ Posted!\n\n` +
-      `🔗 Tweet: ${result.tweetUrl}\n\n` +
-      `📰 Matched with: ${blog.title}\n\n` +
-      `💳 Pay ($1.99): ${paymentLink}\n\n` +
-      `Thanks for using DAUfinder! 🚀`
-    );
+    
+    // Professional branded response
+    const dmMessage = 
+      `Your boost is live.\n\n` +
+      `${result.tweetUrl}\n\n` +
+      `Matched: ${blog.title}\n\n` +
+      `Complete payment ($1.99):\n${paymentLink}`;
+    
+    // Try to send with branded image
+    try {
+      const stellaPath = join(__dirname, 'public', 'squad', 'stella.png');
+      if (fs.existsSync(stellaPath)) {
+        const imageBuffer = fs.readFileSync(stellaPath);
+        const mediaId = await uploadTwitterMedia(imageBuffer, 'image/png', 'flywheelsquad');
+        if (mediaId) {
+          await sendDmWithMedia(senderId, dmMessage, mediaId);
+        } else {
+          await sendDm(senderId, dmMessage);
+        }
+      } else {
+        await sendDm(senderId, dmMessage);
+      }
+    } catch (imgErr) {
+      console.log('DM image failed, sending text only:', imgErr.message);
+      await sendDm(senderId, dmMessage);
+    }
     
     return { success: true, tweetUrl: result.tweetUrl, orderId };
     
   } catch (err) {
     console.error(`❌ DM boost failed:`, err.message);
-    await sendDm(senderId, `❌ Something went wrong: ${err.message}\n\nPlease try again or contact support.`);
+    await sendDm(senderId, `Boost failed: ${err.message}\n\nTry again or contact support at daufinder.com`);
     return { success: false, error: err.message };
   }
 }
@@ -1548,32 +1592,31 @@ async function pollDms(accountName = 'flywheelsquad') {
       switch (parsed.command) {
         case 'help':
           await sendDm(senderId, 
-            `👋 Welcome to DAUfinder!\n\n` +
-            `Send me a URL and I'll find relevant blogs and create a promo post.\n\n` +
+            `DAUfinder - Get your product in front of readers.\n\n` +
+            `Send a URL and we'll match it with relevant blogs, craft a promo post, and publish it.\n\n` +
             `Commands:\n` +
-            `• boost [url] - Create a promo post\n` +
-            `• boost [url] keywords: saas, growth - With specific keywords\n` +
-            `• status - Check your boosts\n` +
-            `• prime - Learn about Prime subscriptions\n\n` +
-            `Example:\nboost https://myapp.com keywords: productivity, startup`
+            `boost [url] — Create a promo post ($1.99)\n` +
+            `boost [url] keywords: saas, ai — Target specific niches\n` +
+            `status — View your boosts\n` +
+            `prime — Volume pricing\n\n` +
+            `Example:\nboost https://myapp.com keywords: productivity`
           );
           processed.push({ type: 'help', senderId });
           break;
           
         case 'status':
           // TODO: Look up user's boost history
-          await sendDm(senderId, `📊 Status coming soon! For now, visit https://daufinder.com to see your boosts.`);
+          await sendDm(senderId, `Visit daufinder.com to view your boost history and analytics.`);
           processed.push({ type: 'status', senderId });
           break;
           
         case 'prime':
           await sendDm(senderId,
-            `⭐ DAUfinder Prime\n\n` +
-            `Get more boosts at better rates:\n\n` +
-            `• Starter: 100 boosts/mo @ $29\n` +
-            `• Growth: 1,000 boosts/mo @ $199\n` +
-            `• Scale: 10,000 boosts/mo @ $999\n\n` +
-            `Sign up: https://daufinder.com/#prime`
+            `DAUfinder Prime — Volume pricing\n\n` +
+            `Starter: 100 boosts/mo — $29\n` +
+            `Growth: 1,000 boosts/mo — $199\n` +
+            `Scale: 10,000 boosts/mo — $999\n\n` +
+            `daufinder.com/#prime`
           );
           processed.push({ type: 'prime', senderId });
           break;
@@ -1585,9 +1628,8 @@ async function pollDms(accountName = 'flywheelsquad') {
           
         default:
           await sendDm(senderId,
-            `🤔 Not sure what you mean.\n\n` +
-            `To create a boost, send me a URL:\nboost https://yoursite.com\n\n` +
-            `Or type "help" for all commands.`
+            `Send a URL to create a boost:\nboost https://yoursite.com\n\n` +
+            `Type "help" for all commands.`
           );
           processed.push({ type: 'unknown', senderId, text });
       }
