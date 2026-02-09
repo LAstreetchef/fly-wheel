@@ -11,6 +11,7 @@ import Database from 'better-sqlite3';
 import { fileURLToPath } from 'url';
 import { dirname, join } from 'path';
 import fs from 'fs';
+import sharp from 'sharp';
 
 // ============================================
 // Simple In-Memory Cache
@@ -30,6 +31,109 @@ function getCached(key) {
 
 function setCache(key, value, ttl = CACHE_TTL) {
   cache.set(key, { value, expires: Date.now() + ttl });
+}
+
+// ============================================
+// Boost Image Generator
+// ============================================
+async function generateBoostImage(productName, blogTitle, productUrl = '') {
+  const width = 1200;
+  const height = 630;
+  
+  // Truncate text if too long
+  const truncatedProduct = productName.length > 40 ? productName.slice(0, 37) + '...' : productName;
+  const truncatedBlog = blogTitle.length > 80 ? blogTitle.slice(0, 77) + '...' : blogTitle;
+  
+  // Create SVG with gradient background and text
+  const svg = `
+    <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" style="stop-color:#1a0a00;stop-opacity:1" />
+          <stop offset="50%" style="stop-color:#0a0a0a;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#000000;stop-opacity:1" />
+        </linearGradient>
+        <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#f97316;stop-opacity:1" />
+          <stop offset="100%" style="stop-color:#eab308;stop-opacity:1" />
+        </linearGradient>
+      </defs>
+      
+      <!-- Background -->
+      <rect width="100%" height="100%" fill="url(#bg)"/>
+      
+      <!-- Decorative elements -->
+      <circle cx="100" cy="100" r="200" fill="#f97316" opacity="0.1"/>
+      <circle cx="1100" cy="530" r="150" fill="#eab308" opacity="0.1"/>
+      
+      <!-- Accent bar -->
+      <rect x="60" y="180" width="8" height="120" fill="url(#accent)" rx="4"/>
+      
+      <!-- Product Name -->
+      <text x="90" y="240" font-family="Arial, sans-serif" font-size="56" font-weight="bold" fill="#ffffff">
+        ${escapeXml(truncatedProduct)}
+      </text>
+      
+      <!-- "featured in" label -->
+      <text x="90" y="300" font-family="Arial, sans-serif" font-size="24" fill="#9ca3af">
+        featured in
+      </text>
+      
+      <!-- Blog Title -->
+      <text x="90" y="360" font-family="Arial, sans-serif" font-size="32" fill="#f97316">
+        ${escapeXml(truncatedBlog)}
+      </text>
+      
+      <!-- DAUfinder branding -->
+      <text x="90" y="560" font-family="Arial, sans-serif" font-size="28" font-weight="bold">
+        <tspan fill="#ffffff">DAU</tspan><tspan fill="#f97316">finder</tspan>
+      </text>
+      <text x="260" y="560" font-family="Arial, sans-serif" font-size="20" fill="#6b7280">
+        Boost your product visibility
+      </text>
+      
+      <!-- URL if provided -->
+      ${productUrl ? `<text x="90" y="600" font-family="Arial, sans-serif" font-size="18" fill="#4b5563">${escapeXml(productUrl.slice(0, 60))}</text>` : ''}
+    </svg>
+  `;
+  
+  // Convert SVG to PNG buffer using Sharp
+  const imageBuffer = await sharp(Buffer.from(svg))
+    .png()
+    .toBuffer();
+  
+  return imageBuffer;
+}
+
+function escapeXml(text) {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
+
+// Upload image to Twitter and get media_id
+async function uploadImageToTwitter(imageBuffer, accountName = 'flywheelsquad') {
+  const account = TWITTER_ACCOUNTS[accountName];
+  if (!account) return null;
+  
+  const client = new TwitterApi({
+    appKey: account.apiKey(),
+    appSecret: account.apiSecret(),
+    accessToken: account.accessToken(),
+    accessSecret: account.accessSecret(),
+  });
+  
+  try {
+    const mediaId = await client.v1.uploadMedia(imageBuffer, { mimeType: 'image/png' });
+    console.log(`📸 Image uploaded to Twitter: ${mediaId}`);
+    return mediaId;
+  } catch (err) {
+    console.error('Failed to upload image to Twitter:', err.message);
+    return null;
+  }
 }
 
 const __filename = fileURLToPath(import.meta.url);
@@ -1504,8 +1608,21 @@ async function processDmBoost(senderId, senderUsername, url, keywords) {
       finalContent = finalContent.replace(/\n\n/, `\n\nvia @${senderUsername}\n\n`);
     }
     
-    // Post the tweet
-    const result = await postTweet(finalContent, 'flywheelsquad');
+    // Generate and upload boost image
+    let mediaIds = null;
+    try {
+      const imageBuffer = await generateBoostImage(productData.name, blog.title, url);
+      const mediaId = await uploadImageToTwitter(imageBuffer, 'flywheelsquad');
+      if (mediaId) {
+        mediaIds = [mediaId];
+        console.log(`🖼️ DM boost image attached: ${mediaId}`);
+      }
+    } catch (imgErr) {
+      console.warn('Failed to generate DM boost image:', imgErr.message);
+    }
+    
+    // Post the tweet with image
+    const result = await postTweet(finalContent, 'flywheelsquad', { mediaIds });
     console.log(`✅ DM boost posted: ${result.tweetUrl}`);
     
     // Cross-engage: other accounts like + retweet
@@ -2905,8 +3022,22 @@ app.post('/api/prime/boost', async (req, res) => {
     const keywords = productData.keywords || blog.title || '';
     finalContent = injectHashtags(finalContent, keywords);
     
-    // Post to Twitter
-    const result = await postTweet(finalContent);
+    // Generate and upload boost image
+    let mediaIds = null;
+    try {
+      const imageBuffer = await generateBoostImage(productData.name, blog.title, productData.productUrl);
+      const mediaId = await uploadImageToTwitter(imageBuffer, 'flywheelsquad');
+      if (mediaId) {
+        mediaIds = [mediaId];
+        console.log(`🖼️ Boost image attached: ${mediaId}`);
+      }
+    } catch (imgErr) {
+      console.warn('Failed to generate boost image:', imgErr.message);
+      // Continue without image
+    }
+    
+    // Post to Twitter (with image if available)
+    const result = await postTweet(finalContent, 'flywheelsquad', { mediaIds });
     
     // Full engagement: quote tweet, like, reply, follow author, schedule wave
     const engagement = await fullEngagementBlast(result.tweetId, 'flywheelsquad', {
@@ -4806,6 +4937,26 @@ app.post('/api/admin/image/tweet-test', async (req, res) => {
     }
   } catch (error) {
     console.error('❌ Image tweet test failed:', error.message);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Preview boost image (for testing)
+app.get('/api/admin/boost-image/preview', async (req, res) => {
+  try {
+    const { product, blog, url } = req.query;
+    
+    const productName = product || 'Sample Product';
+    const blogTitle = blog || 'How to Grow Your Startup: A Complete Guide';
+    const productUrl = url || 'https://example.com';
+    
+    const imageBuffer = await generateBoostImage(productName, blogTitle, productUrl);
+    
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=3600');
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('Boost image preview error:', error);
     res.status(500).json({ error: error.message });
   }
 });
