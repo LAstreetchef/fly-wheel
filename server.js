@@ -818,6 +818,12 @@ const PRIME_TIERS = {
 
 // Middleware
 app.use(cors());
+
+// Allow Shopify to embed the app in an iframe
+app.use((req, res, next) => {
+  res.setHeader('Content-Security-Policy', "frame-ancestors https://*.myshopify.com https://admin.shopify.com;");
+  next();
+});
 app.use('/webhook', express.raw({ type: 'application/json' }));
 app.use(express.json());
 
