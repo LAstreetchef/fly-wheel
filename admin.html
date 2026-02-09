@@ -44,6 +44,40 @@
       </div>
     </div>
 
+    <!-- System Health Monitor -->
+    <div id="system-health" class="glass rounded-xl p-4 mb-6">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-gray-400 flex items-center gap-2">
+          <span id="health-indicator" class="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></span>
+          SYSTEM STATUS
+        </h3>
+        <button onclick="loadSystemHealth()" class="text-xs text-gray-500 hover:text-white">↻ Check</button>
+      </div>
+      <div id="health-services" class="grid grid-cols-2 md:grid-cols-5 gap-3">
+        <div class="text-center p-2 rounded bg-black/30">
+          <div class="text-lg" id="health-twitter1">⏳</div>
+          <div class="text-xs text-gray-500">@flywheelsquad</div>
+        </div>
+        <div class="text-center p-2 rounded bg-black/30">
+          <div class="text-lg" id="health-twitter2">⏳</div>
+          <div class="text-xs text-gray-500">@themessageis4u</div>
+        </div>
+        <div class="text-center p-2 rounded bg-black/30">
+          <div class="text-lg" id="health-email">⏳</div>
+          <div class="text-xs text-gray-500">Email</div>
+        </div>
+        <div class="text-center p-2 rounded bg-black/30">
+          <div class="text-lg" id="health-stripe">⏳</div>
+          <div class="text-xs text-gray-500">Stripe</div>
+        </div>
+        <div class="text-center p-2 rounded bg-black/30">
+          <div class="text-lg" id="health-db">⏳</div>
+          <div class="text-xs text-gray-500">Database</div>
+        </div>
+      </div>
+      <div id="health-issues" class="mt-3 text-xs text-red-400 hidden"></div>
+    </div>
+
     <!-- Summary Cards -->
     <div id="summary" class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
       <div class="stat-card glass rounded-xl p-5">
@@ -373,15 +407,78 @@
       }
     }
     
+    async function loadSystemHealth() {
+      if (!apiKey) return;
+      
+      try {
+        const res = await fetch(`${API_BASE}/api/admin/system/health`, {
+          headers: { 'Authorization': `Bearer ${apiKey}` }
+        });
+        
+        if (!res.ok) return;
+        
+        const health = await res.json();
+        renderSystemHealth(health);
+      } catch (err) {
+        console.error('Health check failed:', err);
+      }
+    }
+    
+    function renderSystemHealth(health) {
+      // Status indicator
+      const indicator = document.getElementById('health-indicator');
+      if (health.status === 'healthy') {
+        indicator.className = 'w-2 h-2 rounded-full bg-green-500';
+      } else if (health.status === 'critical') {
+        indicator.className = 'w-2 h-2 rounded-full bg-red-500 animate-pulse';
+      } else {
+        indicator.className = 'w-2 h-2 rounded-full bg-yellow-500 animate-pulse';
+      }
+      
+      // Service icons
+      const statusIcon = (status) => {
+        if (status === 'healthy') return '✅';
+        if (status === 'configured') return '⚙️';
+        if (status === 'error') return '❌';
+        return '⚠️';
+      };
+      
+      document.getElementById('health-twitter1').textContent = 
+        statusIcon(health.services.twitter?.flywheelsquad?.status);
+      document.getElementById('health-twitter2').textContent = 
+        statusIcon(health.services.twitter?.themessageis4u?.status);
+      document.getElementById('health-email').textContent = 
+        statusIcon(health.services.email?.status);
+      document.getElementById('health-stripe').textContent = 
+        statusIcon(health.services.stripe?.status);
+      document.getElementById('health-db').textContent = 
+        statusIcon(health.services.database?.status);
+      
+      // Issues
+      const issuesEl = document.getElementById('health-issues');
+      if (health.issues && health.issues.length > 0) {
+        issuesEl.classList.remove('hidden');
+        issuesEl.innerHTML = '⚠️ ' + health.issues.map(i => 
+          `<span class="inline-block mr-3">${i.service}: ${i.error || 'Error'}</span>`
+        ).join('');
+      } else {
+        issuesEl.classList.add('hidden');
+      }
+    }
+    
     // Auto-load if key exists
     if (apiKey) {
       document.getElementById('api-key').value = apiKey;
       loadDashboard();
+      loadSystemHealth();
     }
     
     // Auto-refresh every 5 minutes
     setInterval(() => {
-      if (apiKey) loadDashboard();
+      if (apiKey) {
+        loadDashboard();
+        loadSystemHealth();
+      }
     }, 5 * 60 * 1000);
   </script>
 </body>
