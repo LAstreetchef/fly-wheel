@@ -4621,6 +4621,123 @@ app.post('/api/dm/send', async (req, res) => {
   }
 });
 
+// ============================================
+// WhatsApp Boost Endpoint
+// ============================================
+
+// Process a boost request from WhatsApp
+app.post('/api/whatsapp/boost', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { phone, message, name } = req.body;
+  if (!message) {
+    return res.status(400).json({ error: 'message required' });
+  }
+
+  console.log(`📱 WhatsApp boost request from ${phone || 'unknown'}: ${message}`);
+
+  // Parse URL from message
+  const urlRegex = /(https?:\/\/[^\s]+|(?:www\.)?[a-zA-Z0-9-]+\.[a-zA-Z]{2,}[^\s]*)/i;
+  const urlMatch = message.match(urlRegex);
+  
+  if (!urlMatch) {
+    return res.json({ 
+      success: false, 
+      reply: `Send a URL to boost.\n\nExample: boost https://yoursite.com\n\nOr with keywords: boost https://yoursite.com keywords: saas, startup`,
+      needsUrl: true
+    });
+  }
+
+  let url = urlMatch[1];
+  if (!url.startsWith('http')) {
+    url = 'https://' + url;
+  }
+
+  // Extract keywords if provided
+  let keywords = null;
+  const keywordsMatch = message.match(/keywords?:\s*([^$]+)/i);
+  if (keywordsMatch) {
+    keywords = keywordsMatch[1].trim();
+  }
+
+  try {
+    // Create product data from URL
+    const productData = {
+      productName: url.replace(/https?:\/\/(www\.)?/, '').split('/')[0],
+      productUrl: url,
+      description: `Check out ${url}`,
+    };
+    
+    // Search for blogs
+    const searchKeywords = keywords || productData.productName.replace(/\.[a-z]+$/, '');
+    const blogs = await searchBlogs(searchKeywords);
+    
+    if (!blogs || blogs.length === 0) {
+      return res.json({
+        success: false,
+        reply: `No matching blogs found for "${searchKeywords}".\n\nTry: boost ${url} keywords: saas, marketing`,
+        noBlogs: true
+      });
+    }
+    
+    // Pick a blog
+    const blog = blogs[Math.floor(Math.random() * Math.min(3, blogs.length))];
+    
+    // Generate content
+    const content = await generateBoostContent(productData, blog);
+    let finalContent = content
+      .replace('[BLOG_LINK]', blog.url)
+      .replace('[PRODUCT_LINK]', url);
+    
+    // Post the tweet
+    const result = await postTweet(finalContent, 'flywheelsquad');
+    
+    // Create order record
+    const orderId = `wa_${Date.now()}`;
+    await orderStore.set(orderId, {
+      status: 'published',
+      productData,
+      blog,
+      content: finalContent,
+      email: null,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      publishedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      source: 'whatsapp',
+      keywords: searchKeywords,
+      whatsappPhone: phone,
+      whatsappName: name,
+    });
+    
+    // Payment link
+    const paymentLink = `https://daufinder.com/pay/${orderId}`;
+    
+    res.json({
+      success: true,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      blog: { title: blog.title, url: blog.url },
+      orderId,
+      paymentLink,
+      reply: `Your boost is live.\n\n${result.tweetUrl}\n\nMatched: ${blog.title}\n\nPay ($1.99): ${paymentLink}`
+    });
+    
+  } catch (err) {
+    console.error('❌ WhatsApp boost failed:', err.message);
+    res.json({
+      success: false,
+      error: err.message,
+      reply: `Boost failed: ${err.message}\n\nTry again or visit daufinder.com`
+    });
+  }
+});
+
 // Get self-promo stats
 app.get('/api/admin/self-boost/stats', async (req, res) => {
   const authHeader = req.headers.authorization;
