@@ -38,6 +38,22 @@ export default function App() {
     document.body.appendChild(script)
     return () => script.remove()
   }, [])
+
+  // Handle bookmarklet params (pre-fill form from URL)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    const url = params.get('url')
+    const title = params.get('title')
+    if (url || title) {
+      setProductData(prev => ({
+        ...prev,
+        productUrl: url || prev.productUrl,
+        name: title || prev.name,
+      }))
+      // Clean URL without losing other state
+      window.history.replaceState({}, '', BASE_PATH + '/')
+    }
+  }, [])
   
   // Load Prime tiers
   useEffect(() => {
