@@ -472,8 +472,8 @@ export default function App() {
         {!showPrime ? (
           <div className="text-center mb-10">
             <h1 className="text-4xl md:text-5xl font-black mb-4">
-              <span className="text-white">Get Your Product</span>{' '}
-              <span className="text-orange-400">In Front of Readers</span>
+              <span className="text-white">Promote your</span>{' '}
+              <span className="text-orange-400">product or service</span>
             </h1>
             <p className="text-gray-400 text-lg">We find relevant blogs, craft a promo post, and publish it to X. Just $1.99.</p>
           </div>
