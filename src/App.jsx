@@ -78,9 +78,11 @@ export default function App() {
     }
   }, [primeEmail])
 
-  // Check Shopify status on email change
+  // Check Shopify status on email change (debounced)
   useEffect(() => {
-    if (primeEmail) {
+    if (!primeEmail || !primeEmail.includes('@') || !primeEmail.includes('.')) return
+    
+    const timer = setTimeout(() => {
       fetch(`${API_URL}/api/shopify/status/${encodeURIComponent(primeEmail)}`)
         .then(res => res.json())
         .then(data => {
@@ -89,7 +91,9 @@ export default function App() {
           if (data.connected) loadShopifyProducts(primeEmail)
         })
         .catch(() => {})
-    }
+    }, 500)
+    
+    return () => clearTimeout(timer)
   }, [primeEmail])
 
   // Load Shopify products
@@ -131,14 +135,18 @@ export default function App() {
       .catch(err => console.error('Failed to load tiers:', err))
   }, [])
   
-  // Check Prime account on load
+  // Check Prime account on load (debounced, only for valid-looking emails)
   useEffect(() => {
-    if (primeEmail) {
+    if (!primeEmail || !primeEmail.includes('@') || !primeEmail.includes('.')) return
+    
+    const timer = setTimeout(() => {
       checkPrimeAccount(primeEmail)
       loadRewards(primeEmail)
       // Auto-fill email in product data
       setProductData(prev => ({ ...prev, email: prev.email || primeEmail }))
-    }
+    }, 500) // Wait 500ms after typing stops
+    
+    return () => clearTimeout(timer)
   }, [primeEmail])
   
   // Check for rewards connection callback
