@@ -3260,7 +3260,7 @@ app.get('/api/shopify/products/:email', async (req, res) => {
     
     const { shop, accessToken } = connection;
     
-    const productsRes = await fetch(`https://${shop}/admin/api/2024-01/products.json?limit=50`, {
+    const productsRes = await fetch(`https://${shop}/admin/api/2026-01/products.json?limit=50`, {
       headers: {
         'X-Shopify-Access-Token': accessToken,
       },
@@ -3269,7 +3269,7 @@ app.get('/api/shopify/products/:email', async (req, res) => {
     if (!productsRes.ok) {
       const err = await productsRes.text();
       console.error('Shopify products error:', err);
-      return res.status(500).json({ error: 'Failed to fetch products' });
+      return res.status(500).json({ error: 'Failed to fetch products', details: err });
     }
     
     const { products } = await productsRes.json();
