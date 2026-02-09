@@ -520,7 +520,7 @@ export default function App() {
               <span className="text-orange-400">finder</span>
             </span>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             {primeAccount && (
               <div className="hidden sm:flex items-center gap-2 text-sm">
                 <span className="text-yellow-400">⚡ {primeAccount.boostBalance}</span>
@@ -536,7 +536,7 @@ export default function App() {
             )}
             <button
               onClick={() => setShowPrime(!showPrime)}
-              className={`px-4 py-2 rounded-full text-sm font-bold transition-all ${
+              className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 showPrime || primeAccount
                   ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black'
                   : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
@@ -545,7 +545,7 @@ export default function App() {
               {primeAccount ? '⚡ Prime' : 'Go Prime'}
             </button>
             {!showPrime && (
-              <div className="bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-3 py-1 rounded-full text-sm font-black">
+              <div className="hidden sm:block bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-3 py-1 rounded-full text-sm font-black whitespace-nowrap">
                 $1.99/post
               </div>
             )}
