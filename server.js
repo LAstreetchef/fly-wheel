@@ -1294,6 +1294,68 @@ async function postTweet(text, accountName = 'flywheelsquad', options = {}) {
 }
 
 // ============================================
+// Cross-Engagement Between Accounts
+// ============================================
+
+const ALL_ACCOUNTS = ['flywheelsquad', 'themessageis4u', 'greentruck'];
+
+// Have other accounts like and retweet a post
+async function crossEngage(tweetId, postingAccount) {
+  const otherAccounts = ALL_ACCOUNTS.filter(a => a !== postingAccount);
+  const results = { likes: [], retweets: [], errors: [] };
+  
+  for (const accountName of otherAccounts) {
+    const account = TWITTER_ACCOUNTS[accountName];
+    if (!account) continue;
+    
+    const accessToken = account.accessToken();
+    const accessSecret = account.accessSecret();
+    if (!accessToken || !accessSecret) {
+      console.log(`⏭️ Skipping ${accountName} - no credentials`);
+      continue;
+    }
+    
+    const client = new TwitterApi({
+      appKey: account.apiKey(),
+      appSecret: account.apiSecret(),
+      accessToken: accessToken,
+      accessSecret: accessSecret,
+    });
+    
+    // Like the tweet
+    try {
+      const me = await client.v2.me();
+      await client.v2.like(me.data.id, tweetId);
+      results.likes.push(accountName);
+      console.log(`❤️ @${accountName} liked tweet ${tweetId}`);
+    } catch (err) {
+      if (!err.message?.includes('already liked')) {
+        results.errors.push({ account: accountName, action: 'like', error: err.message });
+        console.log(`⚠️ @${accountName} like failed: ${err.message}`);
+      }
+    }
+    
+    // Retweet
+    try {
+      const me = await client.v2.me();
+      await client.v2.retweet(me.data.id, tweetId);
+      results.retweets.push(accountName);
+      console.log(`🔁 @${accountName} retweeted tweet ${tweetId}`);
+    } catch (err) {
+      if (!err.message?.includes('already retweeted')) {
+        results.errors.push({ account: accountName, action: 'retweet', error: err.message });
+        console.log(`⚠️ @${accountName} retweet failed: ${err.message}`);
+      }
+    }
+    
+    // Small delay between accounts to avoid rate limits
+    await new Promise(r => setTimeout(r, 1000));
+  }
+  
+  return results;
+}
+
+// ============================================
 // DM Bot Module
 // ============================================
 
@@ -1434,6 +1496,9 @@ async function processDmBoost(senderId, senderUsername, url, keywords) {
     // Post the tweet
     const result = await postTweet(finalContent, 'flywheelsquad');
     console.log(`✅ DM boost posted: ${result.tweetUrl}`);
+    
+    // Cross-engage: other accounts like + retweet
+    crossEngage(result.tweetId, 'flywheelsquad').catch(err => console.log('DM boost cross-engage error:', err.message));
     
     // Create order record
     const orderId = `dm_${Date.now()}`;
@@ -3782,8 +3847,11 @@ app.post('/api/admin/self-boost', async (req, res) => {
     const result = await postTweet(finalContent, account, { mediaIds });
     console.log(`🚀 Self-boost posted to @${result.account}: ${result.tweetUrl}`);
     
-    // Cross-engage from the other account (quote tweet + like + reply)
-    // Also follow blog author and schedule engagement wave
+    // Cross-engage: other accounts like + retweet
+    const crossResults = await crossEngage(result.tweetId, account);
+    console.log(`🔄 Cross-engagement: ${crossResults.likes.length} likes, ${crossResults.retweets.length} retweets`);
+    
+    // Additional engagement (quote tweet, follow author, etc.)
     const engagement = await fullEngagementBlast(result.tweetId, account, {
       blogTitle: blog.title,
       blogUrl: blog.url,
@@ -3997,7 +4065,10 @@ app.post('/api/greentruck/boost', async (req, res) => {
     const result = await postTweet(finalContent, 'greentruck', { mediaIds });
     console.log(`🌿 GreenTruck posted: ${result.tweetUrl}`);
     
-    // Cross-engage from DAUfinder accounts to boost visibility
+    // Cross-engage: other accounts like + retweet
+    crossEngage(result.tweetId, 'greentruck').catch(err => console.error('GreenTruck cross-engage error:', err.message));
+    
+    // Additional engagement from DAUfinder accounts
     fullEngagementBlast(result.tweetId, 'flywheelsquad', {
       blogTitle: blog.title,
       blogUrl: blog.url,
@@ -4696,6 +4767,9 @@ app.post('/api/whatsapp/boost', async (req, res) => {
     
     // Post the tweet
     const result = await postTweet(finalContent, 'flywheelsquad');
+    
+    // Cross-engage: other accounts like + retweet
+    crossEngage(result.tweetId, 'flywheelsquad').catch(err => console.log('WhatsApp boost cross-engage error:', err.message));
     
     // Create order record
     const orderId = `wa_${Date.now()}`;
