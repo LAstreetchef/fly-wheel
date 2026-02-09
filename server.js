@@ -2722,6 +2722,45 @@ app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', service: 'daufinder' });
 });
 
+// OG Image for social sharing
+app.get('/api/og-image', async (req, res) => {
+  try {
+    const width = 1200;
+    const height = 630;
+    
+    const svg = `
+      <svg width="${width}" height="${height}" xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+            <stop offset="0%" style="stop-color:#1a1a2e"/>
+            <stop offset="50%" style="stop-color:#16213e"/>
+            <stop offset="100%" style="stop-color:#0f0f1a"/>
+          </linearGradient>
+          <linearGradient id="accent" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" style="stop-color:#f97316"/>
+            <stop offset="100%" style="stop-color:#eab308"/>
+          </linearGradient>
+        </defs>
+        <rect width="100%" height="100%" fill="url(#bg)"/>
+        <rect x="0" y="580" width="1200" height="50" fill="url(#accent)" opacity="0.9"/>
+        <text x="600" y="200" font-family="system-ui, -apple-system, sans-serif" font-size="72" font-weight="bold" fill="white" text-anchor="middle">DAU<tspan fill="url(#accent)">finder</tspan></text>
+        <text x="600" y="300" font-family="system-ui, sans-serif" font-size="42" fill="#9ca3af" text-anchor="middle">Promote your product or service</text>
+        <text x="600" y="400" font-family="system-ui, sans-serif" font-size="32" fill="#6b7280" text-anchor="middle">We find relevant blogs, craft a promo post,</text>
+        <text x="600" y="450" font-family="system-ui, sans-serif" font-size="32" fill="#6b7280" text-anchor="middle">and publish it to X</text>
+        <text x="600" y="540" font-family="system-ui, sans-serif" font-size="48" font-weight="bold" fill="url(#accent)" text-anchor="middle">Just $1.99 per boost</text>
+      </svg>
+    `;
+    
+    const imageBuffer = await sharp(Buffer.from(svg)).png().toBuffer();
+    res.set('Content-Type', 'image/png');
+    res.set('Cache-Control', 'public, max-age=86400');
+    res.send(imageBuffer);
+  } catch (error) {
+    console.error('OG image error:', error);
+    res.status(500).send('Error generating image');
+  }
+});
+
 app.get('/api/blogs/search', async (req, res) => {
   try {
     const { keywords } = req.query;
