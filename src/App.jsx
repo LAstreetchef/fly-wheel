@@ -1247,7 +1247,6 @@ export default function App() {
               <div className="mt-4 p-4 bg-gradient-to-br from-gray-800/80 to-gray-900/80 rounded-xl border border-gray-700/50 relative overflow-hidden group/stats cursor-pointer">
                 {/* Stats View (default) */}
                 <div className="transition-all duration-500 group-hover/stats:opacity-0 group-hover/stats:scale-95">
-                  <div className="absolute top-2 right-2 text-xs bg-green-500/20 text-green-400 px-2 py-0.5 rounded-full">📊 Sample Stats</div>
                   <div className="grid grid-cols-3 gap-3 text-center">
                     <div>
                       <div className="text-2xl font-black text-orange-400">2.8K</div>
