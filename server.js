@@ -2353,8 +2353,8 @@ function getOtherAccount(accountName) {
   return accountName === 'flywheelsquad' ? 'themessageis4u' : 'flywheelsquad';
 }
 
-// Cross-engage: Have the OTHER account like, retweet, and reply
-async function crossEngage(tweetId, postingAccount = 'flywheelsquad', options = {}) {
+// Cross-engage (single account): Have the OTHER account like, retweet, and reply
+async function crossEngageSingle(tweetId, postingAccount = 'flywheelsquad', options = {}) {
   const {
     doLike = true,
     doQuote = true,  // Quote tweets instead of plain RT
@@ -2425,7 +2425,7 @@ async function fullEngagementBlast(tweetId, postingAccount = 'flywheelsquad', op
   };
   
   // Cross-engage from other account (with quote tweet)
-  results.crossEngage = await crossEngage(tweetId, postingAccount, { blogTitle });
+  results.crossEngage = await crossEngageSingle(tweetId, postingAccount, { blogTitle });
   
   // Follow the blog author if we can find their Twitter
   if (blogUrl) {
