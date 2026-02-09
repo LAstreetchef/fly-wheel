@@ -511,11 +511,11 @@ export default function App() {
       </div>
 
       {/* Header */}
-      <header className="relative z-10 px-6 py-4 border-b border-gray-800/50">
-        <div className="max-w-6xl mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setShowPrime(false); reset(); }}>
-            <img src={`${BASE_PATH}/squad/stella.png`} alt="Stella" className="w-10 h-10 object-contain" />
-            <span className="text-xl font-bold">
+      <header className="relative z-10 px-3 sm:px-6 py-4 border-b border-gray-800/50">
+        <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => { setShowPrime(false); reset(); }}>
+            <img src={`${BASE_PATH}/squad/stella.png`} alt="Stella" className="w-8 sm:w-10 h-8 sm:h-10 object-contain" />
+            <span className="text-lg sm:text-xl font-bold">
               <span className="text-white">DAU</span>
               <span className="text-orange-400">finder</span>
             </span>
