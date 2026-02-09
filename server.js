@@ -652,6 +652,10 @@ if (usePostgres) {
 
 // OAuth state storage (in-memory, short-lived)
 const oauthStates = new Map();
+const shopifyStates = new Map();
+
+// In-memory Shopify connections (TODO: move to database for persistence)
+const shopifyConnections = new Map();
 
 if (usePostgres) {
   const pool = new pg.Pool({
@@ -3124,6 +3128,170 @@ app.get('/api/prime/twitter/callback', async (req, res) => {
     console.error('Twitter callback error:', error);
     res.redirect(`${FRONTEND_URL}?rewards_error=${encodeURIComponent(error.message)}`);
   }
+});
+
+// ============================================
+// Shopify Integration
+// ============================================
+
+const SHOPIFY_CLIENT_ID = process.env.SHOPIFY_CLIENT_ID;
+const SHOPIFY_CLIENT_SECRET = process.env.SHOPIFY_CLIENT_SECRET;
+const SHOPIFY_SCOPES = 'read_products';
+
+// Start Shopify OAuth
+app.get('/api/shopify/auth', (req, res) => {
+  try {
+    const { email, shop } = req.query;
+    
+    if (!email || !shop) {
+      return res.status(400).json({ error: 'Email and shop required' });
+    }
+    
+    if (!SHOPIFY_CLIENT_ID) {
+      return res.status(500).json({ error: 'Shopify not configured' });
+    }
+    
+    // Validate shop domain
+    const shopDomain = shop.replace(/^https?:\/\//, '').replace(/\/$/, '');
+    if (!shopDomain.includes('.myshopify.com') && !shopDomain.includes('.')) {
+      return res.status(400).json({ error: 'Invalid shop domain' });
+    }
+    
+    const state = `${email}:${Date.now()}:${Math.random().toString(36).slice(2)}`;
+    shopifyStates.set(state, { email, shop: shopDomain, expires: Date.now() + 10 * 60 * 1000 });
+    
+    // Clean expired states
+    for (const [s, data] of shopifyStates.entries()) {
+      if (Date.now() > data.expires) shopifyStates.delete(s);
+    }
+    
+    const redirectUri = `${process.env.API_URL || 'https://fly-wheel.onrender.com'}/api/shopify/callback`;
+    const authUrl = `https://${shopDomain}/admin/oauth/authorize?` +
+      `client_id=${SHOPIFY_CLIENT_ID}&` +
+      `scope=${SHOPIFY_SCOPES}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `state=${state}`;
+    
+    res.redirect(authUrl);
+  } catch (error) {
+    console.error('Shopify auth error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Shopify OAuth callback
+app.get('/api/shopify/callback', async (req, res) => {
+  try {
+    const { code, state, shop } = req.query;
+    
+    if (!code || !state || !shop) {
+      return res.redirect(`${FRONTEND_URL}?shopify_error=missing_params`);
+    }
+    
+    const stateData = shopifyStates.get(state);
+    if (!stateData) {
+      return res.redirect(`${FRONTEND_URL}?shopify_error=expired`);
+    }
+    
+    shopifyStates.delete(state);
+    const { email } = stateData;
+    
+    // Exchange code for access token
+    const tokenRes = await fetch(`https://${shop}/admin/oauth/access_token`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        client_id: SHOPIFY_CLIENT_ID,
+        client_secret: SHOPIFY_CLIENT_SECRET,
+        code,
+      }),
+    });
+    
+    if (!tokenRes.ok) {
+      const err = await tokenRes.text();
+      console.error('Shopify token error:', err);
+      return res.redirect(`${FRONTEND_URL}?shopify_error=token_failed`);
+    }
+    
+    const { access_token } = await tokenRes.json();
+    
+    // Store connection
+    shopifyConnections.set(email.toLowerCase(), {
+      shop,
+      accessToken: access_token,
+      connectedAt: new Date().toISOString(),
+    });
+    
+    console.log(`✅ Shopify connected for ${email}: ${shop}`);
+    res.redirect(`${FRONTEND_URL}?shopify_connected=true&shop=${encodeURIComponent(shop)}`);
+  } catch (error) {
+    console.error('Shopify callback error:', error);
+    res.redirect(`${FRONTEND_URL}?shopify_error=${encodeURIComponent(error.message)}`);
+  }
+});
+
+// Get Shopify connection status
+app.get('/api/shopify/status/:email', (req, res) => {
+  const { email } = req.params;
+  const connection = shopifyConnections.get(email.toLowerCase());
+  
+  if (connection) {
+    res.json({ connected: true, shop: connection.shop, connectedAt: connection.connectedAt });
+  } else {
+    res.json({ connected: false });
+  }
+});
+
+// Fetch products from connected Shopify store
+app.get('/api/shopify/products/:email', async (req, res) => {
+  try {
+    const { email } = req.params;
+    const connection = shopifyConnections.get(email.toLowerCase());
+    
+    if (!connection) {
+      return res.status(400).json({ error: 'Shopify not connected' });
+    }
+    
+    const { shop, accessToken } = connection;
+    
+    const productsRes = await fetch(`https://${shop}/admin/api/2024-01/products.json?limit=50`, {
+      headers: {
+        'X-Shopify-Access-Token': accessToken,
+      },
+    });
+    
+    if (!productsRes.ok) {
+      const err = await productsRes.text();
+      console.error('Shopify products error:', err);
+      return res.status(500).json({ error: 'Failed to fetch products' });
+    }
+    
+    const { products } = await productsRes.json();
+    
+    // Return simplified product list
+    const simplified = products.map(p => ({
+      id: p.id,
+      title: p.title,
+      description: p.body_html?.replace(/<[^>]*>/g, '').slice(0, 200) || '',
+      url: `https://${shop}/products/${p.handle}`,
+      image: p.image?.src || p.images?.[0]?.src || null,
+      price: p.variants?.[0]?.price || null,
+    }));
+    
+    res.json({ products: simplified, shop });
+  } catch (error) {
+    console.error('Shopify products error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// Disconnect Shopify
+app.post('/api/shopify/disconnect', (req, res) => {
+  const { email } = req.body;
+  if (email) {
+    shopifyConnections.delete(email.toLowerCase());
+  }
+  res.json({ success: true });
 });
 
 // Sync points - check user's engagements on our tweets
