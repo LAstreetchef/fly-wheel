@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fly-wheel.onrender.com'
+const BASE_PATH = import.meta.env.VITE_BASE_PATH || ''
 const ELEVENLABS_AGENT_ID = 'agent_0501kgsz28fveqbvb5td8k3zpeqb'
 
 export default function App() {
@@ -64,11 +65,11 @@ export default function App() {
       if (primeEmail) {
         loadRewards(primeEmail)
       }
-      window.history.replaceState({}, '', '/fly-wheel/')
+      window.history.replaceState({}, '', BASE_PATH + '/')
     }
     if (params.get('rewards_error')) {
       setError(`Twitter connection failed: ${params.get('rewards_error')}`)
-      window.history.replaceState({}, '', '/fly-wheel/')
+      window.history.replaceState({}, '', BASE_PATH + '/')
     }
   }, [primeEmail])
   
@@ -91,10 +92,10 @@ export default function App() {
             if (data.exists) {
               clearInterval(poll)
               setPrimeAccount(data)
-              window.history.replaceState({}, '', '/fly-wheel/')
+              window.history.replaceState({}, '', BASE_PATH + '/')
             } else if (attempts > 15) {
               clearInterval(poll)
-              window.history.replaceState({}, '', '/fly-wheel/')
+              window.history.replaceState({}, '', BASE_PATH + '/')
             }
           } catch (e) {
             if (attempts > 15) clearInterval(poll)
@@ -104,7 +105,7 @@ export default function App() {
     }
     if (params.get('prime') === 'true') {
       setShowPrime(true)
-      window.history.replaceState({}, '', '/fly-wheel/')
+      window.history.replaceState({}, '', BASE_PATH + '/')
     }
   }, [])
   
@@ -309,12 +310,12 @@ export default function App() {
           clearInterval(poll)
           setResult(data)
           setStep('done')
-          window.history.replaceState({}, '', '/fly-wheel/')
+          window.history.replaceState({}, '', BASE_PATH + '/')
         } else if (data.status === 'failed' || attempts > 30) {
           clearInterval(poll)
           setError(data.error || 'Something went wrong')
           setStep('input')
-          window.history.replaceState({}, '', '/fly-wheel/')
+          window.history.replaceState({}, '', BASE_PATH + '/')
         }
       } catch (e) {
         if (attempts > 30) {
@@ -421,7 +422,7 @@ export default function App() {
       <header className="relative z-10 px-6 py-4 border-b border-gray-800/50">
         <div className="max-w-6xl mx-auto flex items-center justify-between">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => { setShowPrime(false); reset(); }}>
-            <img src="/fly-wheel/squad/stella.png" alt="Stella" className="w-10 h-10 object-contain" />
+            <img src={`${BASE_PATH}/squad/stella.png`} alt="Stella" className="w-10 h-10 object-contain" />
             <span className="text-xl font-bold">
               <span className="text-white">DAU</span>
               <span className="text-orange-400">finder</span>
@@ -1076,10 +1077,10 @@ export default function App() {
             
             <div className="space-y-6">
               {[
-                { img: '/fly-wheel/squad/glasses.png', icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
-                { img: '/fly-wheel/squad/wink.png', icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
-                { img: '/fly-wheel/squad/jimmy.png', icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
-                { img: '/fly-wheel/squad/stella.png', icon: '🚀', title: 'Pay & post', desc: '$1.99 — we post instantly + send you performance stats' },
+                { img: `${BASE_PATH}/squad/glasses.png`, icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
+                { img: `${BASE_PATH}/squad/wink.png`, icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
+                { img: `${BASE_PATH}/squad/jimmy.png`, icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
+                { img: `${BASE_PATH}/squad/stella.png`, icon: '🚀', title: 'Pay & post', desc: '$1.99 — we post instantly + send you performance stats' },
               ].map((s, i) => (
                 <div key={i} className="flex items-start gap-4 group">
                   <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-gray-600 group-hover:border-orange-500 transition-all duration-300">
