@@ -1210,10 +1210,10 @@ async function verifyTwitterCredentials(accountName = 'flywheelsquad') {
 }
 
 // ============================================
-// Gemini Image Generation
+// Gemini Image Generation (AI-generated images)
 // ============================================
 
-async function generateBoostImage(topic, keywords = []) {
+async function generateGeminiImage(topic, keywords = []) {
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     console.warn('⚠️  GEMINI_API_KEY not set, skipping image generation');
@@ -4158,7 +4158,7 @@ app.post('/api/admin/self-boost', async (req, res) => {
     let mediaIds = null;
     if (withImage) {
       console.log(`🎨 Generating image for: ${blog.title}`);
-      const image = await generateBoostImage(blog.title, keywords.split(' '));
+      const image = await generateGeminiImage(blog.title, keywords.split(' '));
       if (image) {
         const mediaId = await uploadTwitterMedia(image.buffer, image.mimeType, account);
         if (mediaId) {
@@ -4376,7 +4376,7 @@ app.post('/api/greentruck/boost', async (req, res) => {
     let mediaIds = null;
     if (withImage) {
       console.log(`🎨 Generating image for: ${blog.title}`);
-      const image = await generateBoostImage(blog.title, keywords.split(' '));
+      const image = await generateGeminiImage(blog.title, keywords.split(' '));
       if (image) {
         const mediaId = await uploadTwitterMedia(image.buffer, image.mimeType, 'greentruck');
         if (mediaId) {
@@ -4854,7 +4854,7 @@ app.post('/api/admin/image/test', async (req, res) => {
     const keywords = req.body.keywords || ['marketing', 'growth', 'startup'];
     
     console.log(`🎨 Testing image generation for: ${topic}`);
-    const image = await generateBoostImage(topic, keywords);
+    const image = await generateGeminiImage(topic, keywords);
     
     if (!image || image.error) {
       return res.status(500).json({ error: image?.error || 'Image generation failed' });
@@ -4902,7 +4902,7 @@ app.post('/api/admin/image/tweet-test', async (req, res) => {
     const dryRun = req.body.dryRun !== false; // default to dry run for safety
     
     console.log(`🎨 Generating test image for: ${topic}`);
-    const image = await generateBoostImage(topic, topic.split(' '));
+    const image = await generateGeminiImage(topic, topic.split(' '));
     
     if (!image) {
       return res.status(500).json({ error: 'Image generation failed' });
