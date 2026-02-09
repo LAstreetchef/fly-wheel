@@ -53,6 +53,6 @@
   },
   "homepage": "https://lastreetchef.github.io/fly-wheel",
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   }
 }
