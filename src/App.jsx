@@ -475,7 +475,7 @@ export default function App() {
               <span className="text-white">Promote your</span>{' '}
               <span className="text-orange-400">product or service</span>
             </h1>
-            <p className="text-gray-400 text-lg">We find relevant blogs, craft a promo post, and publish it to X. Just $1.99.</p>
+            <p className="text-gray-400 text-lg">We find relevant blogs, craft a promo post, and publish it to X</p>
           </div>
         ) : (
           <div className="text-center mb-10">
