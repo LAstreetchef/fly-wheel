@@ -8,7 +8,7 @@ export default function App() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   
-  const [productData, setProductData] = useState({ name: '', description: '', productUrl: '', keywords: '', email: '' })
+  const [productData, setProductData] = useState({ name: '', description: '', productUrl: '', keywords: '', tags: '', email: '' })
   const [blogs, setBlogs] = useState([])
   const [selectedBlog, setSelectedBlog] = useState(null)
   const [content, setContent] = useState(null)
@@ -901,6 +901,15 @@ export default function App() {
                     type="text" required value={productData.keywords}
                     onChange={(e) => setProductData({ ...productData, keywords: e.target.value })}
                     placeholder="e.g., fintech, payments, creators"
+                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm text-gray-400 mb-1">Tags <span className="text-gray-500">(optional @mentions to include)</span></label>
+                  <input 
+                    type="text" value={productData.tags}
+                    onChange={(e) => setProductData({ ...productData, tags: e.target.value })}
+                    placeholder="e.g., @yourproduct, @cofounder"
                     className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
                   />
                 </div>

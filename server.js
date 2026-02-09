@@ -910,13 +910,14 @@ async function searchBlogs(keywords) {
 // ============================================
 
 async function generateBoostContent(productData, blog) {
-  // Parse X handles - normalize to @handle format
-  const xHandles = (productData.xHandles || '')
+  // Parse X handles - normalize to @handle format (support both 'tags' and 'xHandles' fields)
+  const rawTags = productData.tags || productData.xHandles || '';
+  const xHandles = rawTags
     .split(/[,\s]+/)
     .map(h => h.trim())
     .filter(h => h)
     .map(h => h.startsWith('@') ? h : `@${h}`)
-    .slice(0, 3); // Max 3 tags
+    .slice(0, 5); // Max 5 tags
   
   const tagsSection = xHandles.length > 0 
     ? `\nACCOUNTS TO TAG: ${xHandles.join(', ')}` 
