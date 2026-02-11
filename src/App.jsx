@@ -957,57 +957,9 @@ export default function App() {
               <span className="text-2xl">✍️</span> Create a Boost
             </h2>
 
-            {/* Shopify Integration */}
-            {primeEmail && (step === 'input' || step === 'searching') && (
-              <div className="mb-4 p-3 bg-gray-800/50 rounded-xl border border-gray-700">
-                {shopifyConnected ? (
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="text-sm text-gray-400 flex items-center gap-2">
-                        <span className="text-green-400">✓</span> Connected to <span className="text-white font-medium">{shopifyShop}</span>
-                      </span>
-                      <button
-                        type="button"
-                        onClick={() => { setShopifyConnected(false); setShopifyProducts([]) }}
-                        className="text-xs text-gray-500 hover:text-red-400"
-                      >
-                        Disconnect
-                      </button>
-                    </div>
-                    {shopifyLoading ? (
-                      <div className="text-sm text-gray-400">Loading products...</div>
-                    ) : shopifyProducts.length > 0 ? (
-                      <select
-                        onChange={(e) => {
-                          const product = shopifyProducts.find(p => p.id.toString() === e.target.value)
-                          if (product) selectShopifyProduct(product)
-                        }}
-                        className="w-full bg-gray-700 border border-gray-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-orange-500"
-                        defaultValue=""
-                      >
-                        <option value="" disabled>Select a product to boost...</option>
-                        {shopifyProducts.map(p => (
-                          <option key={p.id} value={p.id}>{p.title}</option>
-                        ))}
-                      </select>
-                    ) : (
-                      <div className="text-sm text-gray-500">No products found</div>
-                    )}
-                  </div>
-                ) : (
-                  <button
-                    type="button"
-                    onClick={connectShopify}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2 bg-[#95BF47] hover:bg-[#7aa93b] text-white font-medium rounded-lg transition-colors"
-                  >
-                    <svg className="w-5 h-5" viewBox="0 0 109 124" fill="currentColor">
-                      <path d="M94.784 23.863c-.063-.423-.478-.635-.795-.678-.317-.042-6.765-.508-6.765-.508s-4.496-4.472-4.983-4.983c-.487-.512-1.44-.359-1.81-.253-.008 0-1.117.347-3.036.94-.18-.53-.402-1.16-.677-1.853C74.638 11.14 71.557 8.5 67.31 8.5c-.275 0-.55.013-.836.04-1.32-1.684-2.956-2.433-4.347-2.433-10.73 0-15.877 13.405-17.49 20.22-4.188 1.296-7.168 2.22-7.552 2.338-2.353.74-2.428.813-2.735 3.025-1.058 8.12-9.158 70.5-9.158 70.5l68.04 12.75L112 106.3s-7.89-53.6-7.95-53.98z"/>
-                    </svg>
-                    Connect Shopify Store
-                  </button>
-                )}
-              </div>
-            )}
+            {/* Shopify Integration - TEMPORARILY REMOVED
+            TODO: Re-enable when Shopify OAuth is working
+            */}
             
             {/* Input Step */}
             {(step === 'input' || step === 'searching') && (
