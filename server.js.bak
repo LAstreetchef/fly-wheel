@@ -4,12 +4,6 @@ import cors from 'cors';
 import rateLimit from 'express-rate-limit';
 import { sanitizeBody, sanitizeQuery } from './server/middleware/sanitize.js';
 import { requireAdmin } from './server/middleware/auth.js';
-import { queueBoost, getQueueStats, setOrderStore } from './server/jobs/processBoost.js';
-import { startMetricsSync, setOrderStore as setMetricsOrderStore } from './server/jobs/syncMetrics.js';
-import { startAutoBoostScheduler, setPool as setAutoBoostPool, initAutoBoostsTable } from './server/jobs/autoBoost.js';
-import { blogCache, contentCache } from './server/lib/cache.js';
-import { searchRedditThreads, generateRedditComment } from './server/services/reddit.js';
-import { getOrCreateReferralCode, processReferral, getReferralStats, setPool as setReferralPool, initReferralsTable } from './server/services/referrals.js';
 import Stripe from 'stripe';
 import Anthropic from '@anthropic-ai/sdk';
 import { TwitterApi } from 'twitter-api-v2';
@@ -464,24 +458,6 @@ const orders = {
   get: (id) => orderStore.get(id),
   set: (id, order) => orderStore.set(id, order),
 };
-
-// Inject order store into background jobs
-setOrderStore(orderStore);
-setMetricsOrderStore(orderStore);
-
-// Inject pool into growth services (for referrals and auto-boost)
-if (usePostgres) {
-  const growthPool = new pg.Pool({
-    connectionString: process.env.DATABASE_URL,
-    ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-  });
-  setReferralPool(growthPool);
-  setAutoBoostPool(growthPool);
-  
-  // Initialize growth tables
-  initReferralsTable().catch(err => console.error('Referrals table init failed:', err.message));
-  initAutoBoostsTable().catch(err => console.error('Auto-boosts table init failed:', err.message));
-}
 
 // ============================================
 // Prime Account Store
@@ -2859,114 +2835,6 @@ app.post('/api/generate', generateLimiter, sanitizeBody(['email', 'keywords'], 5
   }
 });
 
-// ============================================
-// Free Preview (3/hour per IP)
-// ============================================
-const previewLimiter = rateLimit({
-  windowMs: 60 * 60 * 1000,
-  max: 3,
-  message: { error: 'Free preview limit reached. Purchase a boost or try again later.' },
-  standardHeaders: true,
-  legacyHeaders: false,
-});
-
-app.post('/api/preview', sanitizeBody(['product', 'keywords'], 500), previewLimiter, async (req, res) => {
-  try {
-    const { product, keywords } = req.body;
-    if (!product || !keywords) {
-      return res.status(400).json({ error: 'product and keywords required' });
-    }
-
-    // Step 1: Find blogs (uses cache)
-    const blogs = await searchBlogs(keywords, 3);
-    if (!blogs.length) {
-      return res.json({ blogs: [], content: null, message: 'No relevant blogs found. Try different keywords.' });
-    }
-
-    // Step 2: Generate content for the top blog (uses cache)
-    const topBlog = blogs[0];
-    const content = await generateBoostContent(
-      { name: product, keywords },
-      { title: topBlog.title, url: topBlog.url, snippet: topBlog.snippet }
-    );
-
-    // Step 3: Return preview (no posting, no payment)
-    res.json({
-      blogs,
-      content,
-      selectedBlog: topBlog,
-      message: 'Preview generated! Pay $1.99 to post this tweet.',
-    });
-  } catch (error) {
-    console.error('Preview error:', error);
-    res.status(500).json({ error: 'Preview generation failed' });
-  }
-});
-
-// ============================================
-// Reddit Integration
-// ============================================
-app.post('/api/reddit/search', sanitizeBody(['keywords'], 200), generateLimiter, async (req, res) => {
-  try {
-    const keywords = req.query.keywords || req.body.keywords;
-    if (!keywords) return res.status(400).json({ error: 'Keywords required' });
-    const threads = await searchRedditThreads(keywords);
-    res.json({ threads });
-  } catch (err) {
-    console.error('Reddit search error:', err.message);
-    res.status(500).json({ error: 'Reddit search failed' });
-  }
-});
-
-app.post('/api/reddit/generate', sanitizeBody(['product', 'keywords'], 500), generateLimiter, async (req, res) => {
-  try {
-    const { product, keywords, threadTitle, threadUrl } = req.body;
-    if (!product || !threadTitle) {
-      return res.status(400).json({ error: 'product and threadTitle required' });
-    }
-    const comment = await generateRedditComment({ product, keywords, threadTitle, threadUrl });
-    res.json({ comment, platform: 'reddit' });
-  } catch (err) {
-    console.error('Reddit generate error:', err.message);
-    res.status(500).json({ error: 'Comment generation failed' });
-  }
-});
-
-// ============================================
-// Referral Program
-// ============================================
-app.get('/api/referral/:email', async (req, res) => {
-  try {
-    const code = await getOrCreateReferralCode(req.params.email);
-    const stats = await getReferralStats(req.params.email);
-    res.json({
-      referralCode: code,
-      referralUrl: `https://daufinder.com?ref=${code}`,
-      stats,
-    });
-  } catch (err) {
-    console.error('Referral code error:', err.message);
-    res.status(500).json({ error: 'Failed to get referral code' });
-  }
-});
-
-app.post('/api/referral/redeem', sanitizeBody(['referralCode', 'email'], 200), async (req, res) => {
-  try {
-    const { referralCode, email } = req.body;
-    if (!referralCode || !email) {
-      return res.status(400).json({ error: 'referralCode and email required' });
-    }
-    const result = await processReferral(referralCode, email);
-    if (!result.success) {
-      return res.status(400).json({ error: result.error });
-    }
-    res.json(result);
-  } catch (err) {
-    console.error('Referral redeem error:', err.message);
-    res.status(500).json({ error: 'Referral processing failed' });
-  }
-});
-
 // Support both old and new endpoint paths
 app.post(['/api/checkout', '/api/boost/checkout'], checkoutLimiter, sanitizeBody(['email'], 500), async (req, res) => {
   try {
@@ -3484,83 +3352,6 @@ app.get('/api/prime/twitter/callback', async (req, res) => {
   } catch (error) {
     console.error('Twitter callback error:', error);
     res.redirect(`${FRONTEND_URL}?rewards_error=${encodeURIComponent(error.message)}`);
-  }
-});
-
-// ============================================
-// Auto-Boost (Prime Feature)
-// ============================================
-
-// Create auto-boost subscription
-app.post('/api/prime/auto-boost', sanitizeBody(['email', 'product', 'keywords', 'frequency'], 500), async (req, res) => {
-  try {
-    const { email, product, keywords, frequency } = req.body;
-
-    // Verify Prime account
-    const account = await primeStore.get(email);
-    if (!account) {
-      return res.status(403).json({ error: 'Prime account required' });
-    }
-
-    const validFreqs = ['daily', 'weekly'];
-    const freq = validFreqs.includes(frequency) ? frequency : 'weekly';
-
-    // Use the growth pool for auto_boosts table
-    const growthPool = new pg.Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    });
-
-    const result = await growthPool.query(
-      `INSERT INTO auto_boosts (email, product, keywords, frequency, next_run_at)
-       VALUES ($1, $2, $3, $4, NOW() + INTERVAL '1 hour')
-       RETURNING *`,
-      [email.toLowerCase(), product, keywords, freq]
-    );
-
-    await growthPool.end();
-    res.json({ autoBoost: result.rows[0], message: `Auto-boost set: ${freq}` });
-  } catch (err) {
-    console.error('Auto-boost create error:', err.message);
-    res.status(500).json({ error: 'Failed to create auto-boost' });
-  }
-});
-
-// List auto-boosts for a user
-app.get('/api/prime/auto-boosts/:email', async (req, res) => {
-  try {
-    const growthPool = new pg.Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    });
-
-    const result = await growthPool.query(
-      'SELECT * FROM auto_boosts WHERE LOWER(email) = LOWER($1) ORDER BY created_at DESC',
-      [req.params.email]
-    );
-
-    await growthPool.end();
-    res.json({ autoBoosts: result.rows });
-  } catch (err) {
-    console.error('Auto-boost list error:', err.message);
-    res.status(500).json({ error: 'Failed to list auto-boosts' });
-  }
-});
-
-// Cancel auto-boost
-app.delete('/api/prime/auto-boost/:id', async (req, res) => {
-  try {
-    const growthPool = new pg.Pool({
-      connectionString: process.env.DATABASE_URL,
-      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false,
-    });
-
-    await growthPool.query('UPDATE auto_boosts SET active = false WHERE id = $1', [req.params.id]);
-    await growthPool.end();
-    res.json({ message: 'Auto-boost cancelled' });
-  } catch (err) {
-    console.error('Auto-boost cancel error:', err.message);
-    res.status(500).json({ error: 'Failed to cancel auto-boost' });
   }
 });
 
@@ -5026,14 +4817,6 @@ app.get('/api/admin/system/health', async (req, res) => {
     errors: health.issues.length,
   };
   
-  // Add cache and queue stats
-  health.cache = {
-    blogs: blogCache.getStats(),
-    content: contentCache.getStats(),
-  };
-  
-  health.queue = getQueueStats();
-  
   res.json(health);
 });
 
@@ -5923,7 +5706,7 @@ app.post('/webhook', async (req, res) => {
       return res.json({ received: true });
     }
     
-    // Regular one-time payment — queue for async processing
+    // Regular one-time payment
     console.log('✅ Payment received:', session.id);
     console.log('   Metadata email:', session.metadata?.email || '(none)');
     
@@ -5934,27 +5717,34 @@ app.post('/webhook', async (req, res) => {
       try {
         const blog = JSON.parse(session.metadata.blog);
         const productData = JSON.parse(session.metadata.productData);
-        const content = session.metadata.content;
+        let content = session.metadata.content;
         
-        // Mark as queued and queue for background processing
-        order.status = 'queued';
+        content = content
+          .replace('[BLOG_LINK]', blog.url)
+          .replace('[PRODUCT_LINK]', productData.productUrl || '');
+        
+        const result = await postTweet(content);
+        
+        // Cross-engage to boost customer's stats (fire-and-forget)
+        fullEngagementBlast(result.tweetId, 'flywheelsquad')
+          .then(eng => console.log('🔥 Customer boost engagement:', eng))
+          .catch(err => console.error('Engagement error:', err.message));
+        
+        order.status = 'published';
+        order.tweetUrl = result.tweetUrl;
+        order.tweetId = result.tweetId;
+        order.publishedAt = new Date().toISOString();
         order.email = session.metadata.email || order.email;
         await orders.set(session.id, order);
         
-        // Queue the heavy lifting (blog search if needed + AI + tweet)
-        queueBoost({
-          sessionId: session.id,
-          email: order.email,
-          productData,
-          blog,
-          content,
-          source: 'paid',
-          priority: 1, // Paid boosts get priority
-        });
+        // Send immediate confirmation email (fire-and-forget, don't block webhook)
+        if (order.email) {
+          sendConfirmationEmail(order).catch(err => console.error('Confirmation email failed:', err.message));
+        }
         
-        console.log('📋 Boost queued for background processing:', session.id);
+        console.log('🚀 Posted:', result.tweetUrl);
       } catch (error) {
-        console.error('❌ Queue failed:', error.message);
+        console.error('❌ Post failed:', error.message);
         order.status = 'failed';
         order.error = error.message;
         await orders.set(session.id, order);
@@ -6032,9 +5822,4 @@ if (process.env.NODE_ENV === 'production') {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 DAUfinder running on http://localhost:${PORT}`);
-  
-  // Start background jobs
-  startMetricsSync();
-  startAutoBoostScheduler();
-  console.log('📊 Background jobs started (metrics sync + auto-boost scheduler)');
 });
