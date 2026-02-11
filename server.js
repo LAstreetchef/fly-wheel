@@ -1011,6 +1011,7 @@ const generateLimiter = rateLimit({
   message: { error: 'Rate limit exceeded. Max 20 generations per hour.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 const checkoutLimiter = rateLimit({
@@ -1023,6 +1024,7 @@ const checkoutLimiter = rateLimit({
   message: { error: 'Too many checkout attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
+  validate: { xForwardedForHeader: false },
 });
 
 // Apply rate limiting to API routes
