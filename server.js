@@ -2023,14 +2023,22 @@ async function searchTweets(query, maxResults = 10, accountName = 'flywheelsquad
   }
   
   try {
-    const result = await client.v2.search(query, {
-      max_results: maxResults,
-      'tweet.fields': ['author_id', 'created_at', 'public_metrics'],
+    // Twitter v2 requires max_results between 10-100
+    const safeMaxResults = Math.max(10, Math.min(100, maxResults));
+    
+    // Add -is:retweet to avoid retweets, ensure query is clean
+    const cleanQuery = query.includes('-is:retweet') ? query : `${query} -is:retweet`;
+    
+    const result = await client.v2.search(cleanQuery, {
+      max_results: safeMaxResults,
+      'tweet.fields': ['author_id', 'created_at', 'public_metrics', 'text'],
       'user.fields': ['username', 'public_metrics'],
       expansions: ['author_id'],
     });
     
-    return result.data?.data || [];
+    // Return only the requested number if less than 10 was requested
+    const tweets = result.data?.data || [];
+    return maxResults < 10 ? tweets.slice(0, maxResults) : tweets;
   } catch (err) {
     console.error('Tweet search error:', err.message, err.data || '');
     return { error: err.message, data: err.data };
