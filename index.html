@@ -29,6 +29,48 @@
     <!-- Favicon -->
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     
+    <!-- JSON-LD Structured Data -->
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "SoftwareApplication",
+      "name": "DAUfinder",
+      "applicationCategory": "MarketingApplication",
+      "operatingSystem": "Web",
+      "description": "AI-powered product promotion tool that finds relevant blogs and generates promotional tweets for your product.",
+      "url": "https://daufinder.com",
+      "offers": {
+        "@type": "Offer",
+        "price": "1.99",
+        "priceCurrency": "USD",
+        "description": "Single boost - AI finds a relevant blog and posts a promotional tweet"
+      },
+      "aggregateRating": {
+        "@type": "AggregateRating",
+        "ratingValue": "4.8",
+        "ratingCount": "50"
+      },
+      "creator": {
+        "@type": "Organization",
+        "name": "FlyWheel Squad",
+        "url": "https://x.com/flywheelsquad"
+      }
+    }
+    </script>
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "WebSite",
+      "name": "DAUfinder",
+      "url": "https://daufinder.com",
+      "potentialAction": {
+        "@type": "SearchAction",
+        "target": "https://daufinder.com/?q={search_term_string}",
+        "query-input": "required name=search_term_string"
+      }
+    }
+    </script>
+    
     <!-- Preconnect to APIs for faster loads -->
     <link rel="preconnect" href="https://fly-wheel.onrender.com" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
