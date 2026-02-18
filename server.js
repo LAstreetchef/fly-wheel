@@ -5116,6 +5116,42 @@ app.get('/api/admin/twitter/status', async (req, res) => {
   });
 });
 
+// Post custom tweet
+app.post('/api/admin/tweet', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { text, account = 'flywheelsquad' } = req.body;
+  
+  if (!text || text.length === 0) {
+    return res.status(400).json({ error: 'text is required' });
+  }
+  
+  if (text.length > 280) {
+    return res.status(400).json({ error: 'Tweet exceeds 280 characters' });
+  }
+  
+  try {
+    const result = await postTweet(text, account, { fallbackToOther: false });
+    res.json({
+      success: true,
+      account,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+    });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      details: parseTwitterError(err, account),
+    });
+  }
+});
+
 // Test posting (dry run or real)
 app.post('/api/admin/twitter/test', async (req, res) => {
   const authHeader = req.headers.authorization;
