@@ -4266,7 +4266,7 @@ app.post('/api/admin/test-email', async (req, res) => {
     return res.status(401).json({ error: 'Unauthorized' });
   }
   
-  const email = req.body.email || 'kammiceli@gmail.com';
+  const email = req.body.email || 'message4u@secretmessage4u.com';
   const type = req.body.type || 'confirmation'; // 'confirmation' or 'followup'
   
   const mockOrder = {
@@ -4302,7 +4302,7 @@ const DAUFINDER_PRODUCT = {
   name: 'DAUfinder',
   description: 'Find daily active users for your product. We match you with relevant blogs, craft a promo post, and publish to X. Just $1.99.',
   productUrl: 'https://lastreetchef.github.io/fly-wheel/',
-  email: 'kammiceli@gmail.com',
+  email: 'message4u@secretmessage4u.com',
 };
 
 // GreenTruck Agent - Health, Environmental, Lifestyle niche
@@ -4310,7 +4310,7 @@ const GREENTRUCK_PRODUCT = {
   name: 'GreenTruck',
   description: 'Healthy food, sustainable living, and eco-friendly lifestyle tips.',
   productUrl: 'https://foodtruckuniversity.com',
-  email: 'kammiceli@gmail.com',
+  email: 'message4u@secretmessage4u.com',
 };
 
 const GREENTRUCK_KEYWORDS = [
