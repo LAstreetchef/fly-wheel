@@ -27,6 +27,7 @@ export default function App() {
   const [showRewards, setShowRewards] = useState(false)
   
   // User boost history
+  const [expandedBoost, setExpandedBoost] = useState(null)
   const [userBoosts, setUserBoosts] = useState(null)
   const [showMyBoosts, setShowMyBoosts] = useState(false)
 
@@ -819,7 +820,7 @@ export default function App() {
                       {!userBoosts || userBoosts.boosts?.length === 0 ? (
                         <p className="text-gray-400 text-sm text-center py-4">No boosts yet. Use your first boost to see stats here!</p>
                       ) : (
-                        <div className="space-y-3 max-h-64 overflow-y-auto">
+                        <div className="space-y-3 max-h-80 overflow-y-auto">
                           {userBoosts.boosts.map((boost, i) => (
                             <div key={i} className="bg-gray-800/50 rounded-lg p-3">
                               <div className="flex justify-between items-start">
@@ -845,11 +846,50 @@ export default function App() {
                                   </div>
                                 )}
                               </div>
-                              {boost.tweetUrl && (
-                                <a href={boost.tweetUrl} target="_blank" rel="noopener noreferrer" 
-                                   className="text-xs text-blue-400 hover:underline mt-2 inline-block">
-                                  View on X →
-                                </a>
+                              
+                              {/* Action buttons */}
+                              <div className="flex gap-3 mt-2">
+                                <button 
+                                  onClick={() => setExpandedBoost(expandedBoost === i ? null : i)}
+                                  className="text-xs text-gray-400 hover:text-white transition-colors"
+                                >
+                                  {expandedBoost === i ? 'Hide Details ↑' : 'View Details ↓'}
+                                </button>
+                                {boost.tweetUrl && (
+                                  <a href={boost.tweetUrl} target="_blank" rel="noopener noreferrer" 
+                                     className="text-xs text-blue-400 hover:underline">
+                                    View on X →
+                                  </a>
+                                )}
+                              </div>
+                              
+                              {/* Expanded details */}
+                              {expandedBoost === i && (
+                                <div className="mt-3 pt-3 border-t border-gray-700 space-y-2">
+                                  {boost.content && (
+                                    <div>
+                                      <div className="text-xs text-gray-500 mb-1">Tweet:</div>
+                                      <div className="text-sm text-gray-300 whitespace-pre-wrap bg-gray-900/50 rounded p-2">
+                                        {boost.content}
+                                      </div>
+                                    </div>
+                                  )}
+                                  {boost.blogUrl && (
+                                    <div>
+                                      <div className="text-xs text-gray-500 mb-1">Blog:</div>
+                                      <a href={boost.blogUrl} target="_blank" rel="noopener noreferrer"
+                                         className="text-xs text-blue-400 hover:underline break-all">
+                                        {boost.blogUrl}
+                                      </a>
+                                    </div>
+                                  )}
+                                  {boost.keywords && (
+                                    <div>
+                                      <div className="text-xs text-gray-500 mb-1">Keywords:</div>
+                                      <div className="text-xs text-gray-400">{boost.keywords}</div>
+                                    </div>
+                                  )}
+                                </div>
                               )}
                             </div>
                           ))}
