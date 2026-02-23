@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import SXSWModal from './components/SXSWModal'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fly-wheel.onrender.com'
 const BASE_PATH = import.meta.env.VITE_BASE_PATH || ''
@@ -1313,6 +1314,9 @@ export default function App() {
           © 2026 DAUfinder
         </div>
       </footer>
+
+      {/* SXSW 2026 Promo Modal */}
+      <SXSWModal />
     </div>
   )
 }
