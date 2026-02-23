@@ -1,5 +1,7 @@
 import { useState, useEffect } from "react";
 
+const API_URL = import.meta.env.VITE_API_URL || 'https://fly-wheel.onrender.com';
+
 const BUNDLE = { price: 7.99, originalPrice: 39.75, boosts: 25,
   perks: ["25 AI-powered boosts over 5 festival days","SXSW keyword targeting (#SXSW2026, Austin)","Priority scheduling during peak festival hours","Real-time performance dashboard","Dedicated festival audience reach"]
 };
@@ -85,10 +87,36 @@ export default function SXSWModal() {
   }, [dismissed]);
 
   const close = () => { setOpen(false); setDismissed(true); };
-  const submit = e => {
+  const [error, setError] = useState("");
+  
+  const submit = async e => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => { setLoading(false); setStep("success"); }, 1800);
+    setError("");
+    
+    try {
+      const res = await fetch(`${API_URL}/api/checkout/sxsw`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: form.email,
+          product: form.product,
+          keywords: form.keywords,
+        }),
+      });
+      
+      const data = await res.json();
+      
+      if (!res.ok) {
+        throw new Error(data.error || 'Checkout failed');
+      }
+      
+      // Redirect to Stripe checkout
+      window.location.href = data.url;
+    } catch (err) {
+      setError(err.message);
+      setLoading(false);
+    }
   };
 
   if (!open) return (
@@ -153,6 +181,9 @@ export default function SXSWModal() {
                     className="w-full bg-gray-900 border border-gray-700 rounded-lg px-4 py-3 text-white text-sm placeholder-gray-600 focus:outline-none focus:border-yellow-400" />
                 </div>
               ))}
+              {error && (
+                <p className="text-red-400 text-sm text-center">{error}</p>
+              )}
               <button type="submit" disabled={loading}
                 className="w-full bg-yellow-400 text-black font-black py-4 rounded-xl text-base hover:bg-yellow-300 transition-colors disabled:opacity-50">
                 {loading ? "Processing..." : `Pay $${BUNDLE.price} & Launch 🚀`}
