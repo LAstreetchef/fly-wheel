@@ -920,6 +920,7 @@ if (usePostgres) {
 
 // Config
 const BOOST_PRICE = 199; // $1.99 in cents
+const SXSW_PACK_PRICE = 799; // $7.99 in cents - SXSW 2026 Festival Pack
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 
@@ -927,6 +928,12 @@ const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 // DAUfinder Prime - Subscription Tiers
 // ============================================
 const PRIME_TIERS = {
+  sxsw: {
+    name: 'SXSW Festival Pack',
+    boosts: 25,
+    price: 799, // $7.99 one-time
+    isOneTime: true,
+  },
   starter: {
     name: 'Starter',
     boosts: 100,
@@ -3048,6 +3055,52 @@ app.get(['/api/status/:sessionId', '/api/boost/status/:sessionId'], async (req, 
   const order = await orders.get(req.params.sessionId);
   if (!order) return res.status(404).json({ status: 'not_found' });
   res.json(order);
+});
+
+// ============================================
+// SXSW 2026 Festival Pack Checkout
+// ============================================
+app.post('/api/checkout/sxsw', checkoutLimiter, async (req, res) => {
+  try {
+    const { email, product, keywords } = req.body;
+    
+    if (!email) {
+      return res.status(400).json({ error: 'Email is required' });
+    }
+    
+    console.log(`🎸 SXSW checkout: ${email}`);
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'SXSW 2026 Festival Pack',
+            description: '25 AI-powered boosts for SXSW week (March 13-17, 2026)',
+          },
+          unit_amount: SXSW_PACK_PRICE,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${FRONTEND_URL}?sxsw_success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: FRONTEND_URL,
+      customer_email: email,
+      metadata: {
+        type: 'sxsw_pack',
+        email: email,
+        product: product || '',
+        keywords: keywords || '',
+      },
+    });
+    
+    console.log(`📝 SXSW order created: ${session.id.substring(0, 20)}...`);
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('SXSW checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
 });
 
 // ============================================
@@ -5965,6 +6018,38 @@ app.post('/webhook', async (req, res) => {
           createdAt: new Date().toISOString(),
         });
         console.log(`✅ Prime account created: ${email} | Tier: ${tier} | Boosts: ${boosts}`);
+      }
+      return res.json({ received: true });
+    }
+    
+    // Check if this is an SXSW Festival Pack purchase
+    if (session.metadata?.type === 'sxsw_pack') {
+      const email = session.metadata.email || session.customer_email;
+      console.log(`🎸 SXSW Pack purchased: ${email}`);
+      
+      if (email) {
+        // Check if user already has an account
+        const existing = await primeStore.get(email);
+        
+        if (existing) {
+          // Add 25 boosts to existing balance
+          const newBalance = existing.boostBalance + 25;
+          await primeStore.set(email, {
+            ...existing,
+            boostBalance: newBalance,
+            updatedAt: new Date().toISOString(),
+          });
+          console.log(`✅ SXSW: Added 25 boosts to existing account ${email} | New balance: ${newBalance}`);
+        } else {
+          // Create new account with SXSW tier
+          await primeStore.set(email, {
+            tier: 'sxsw',
+            boostBalance: 25,
+            stripeCustomerId: session.customer || null,
+            createdAt: new Date().toISOString(),
+          });
+          console.log(`✅ SXSW: New account created for ${email} | 25 boosts`);
+        }
       }
       return res.json({ received: true });
     }
