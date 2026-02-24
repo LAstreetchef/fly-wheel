@@ -2071,8 +2071,18 @@ const GROWTH_TIPS = [
 async function getAppOnlyClient(accountName = 'flywheelsquad') {
   const account = TWITTER_ACCOUNTS[accountName] || TWITTER_ACCOUNTS.flywheelsquad;
   
-  const apiKey = account.apiKey();
-  const apiSecret = account.apiSecret();
+  let apiKey = account.apiKey();
+  let apiSecret = account.apiSecret();
+  
+  // Fall back to flywheelsquad's API keys if this account doesn't have its own
+  if (!apiKey || !apiSecret) {
+    const fallback = TWITTER_ACCOUNTS.flywheelsquad;
+    apiKey = fallback.apiKey();
+    apiSecret = fallback.apiSecret();
+    if (apiKey && apiSecret) {
+      console.log(`📎 Using flywheelsquad API keys for ${accountName} app-only auth`);
+    }
+  }
   
   if (!apiKey || !apiSecret) {
     return null;
