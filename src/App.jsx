@@ -1151,23 +1151,23 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setArtistMode(false)}
-                    className={`relative overflow-hidden rounded-xl transition-all ${!artistMode 
-                      ? 'ring-2 ring-orange-500 ring-offset-2 ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
-                      : 'opacity-60 hover:opacity-80'
+                    className={`relative overflow-hidden rounded-xl transition-all duration-300 ease-out transform ${!artistMode 
+                      ? 'ring-2 ring-orange-500 ring-offset-2 scale-[1.02] ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
+                      : 'opacity-50 hover:opacity-75 hover:scale-[1.01]'
                     }`}
                   >
                     <div className="relative h-24">
                       <img 
                         src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=75" 
                         alt="Products & Business"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                      <div className={`absolute inset-0 transition-all duration-300 ${!artistMode ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'}`} />
                       <div className="absolute bottom-2 left-3 right-3">
                         <div className="text-white font-bold text-sm">📦 Products</div>
                         <div className="text-gray-300 text-xs">Apps, SaaS, Business</div>
                       </div>
-                      <div className="absolute top-2 right-2 bg-orange-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                      <div className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full transition-all duration-300 ${!artistMode ? 'bg-orange-500 text-black scale-110' : 'bg-orange-500/70 text-black/80'}`}>
                         $1.99
                       </div>
                     </div>
@@ -1177,53 +1177,52 @@ export default function App() {
                   <button
                     type="button"
                     onClick={() => setArtistMode(true)}
-                    className={`relative overflow-hidden rounded-xl transition-all ${artistMode 
-                      ? 'ring-2 ring-purple-500 ring-offset-2 ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
-                      : 'opacity-60 hover:opacity-80'
+                    className={`relative overflow-hidden rounded-xl transition-all duration-300 ease-out transform ${artistMode 
+                      ? 'ring-2 ring-purple-500 ring-offset-2 scale-[1.02] ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
+                      : 'opacity-50 hover:opacity-75 hover:scale-[1.01]'
                     }`}
                   >
                     <div className="relative h-24">
                       <img 
                         src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&q=75" 
                         alt="Artists & Musicians"
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover transition-transform duration-300"
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                      <div className={`absolute inset-0 transition-all duration-300 ${artistMode ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'}`} />
                       <div className="absolute bottom-2 left-3 right-3">
                         <div className="text-white font-bold text-sm">🎵 Music</div>
                         <div className="text-gray-300 text-xs">Artists & Producers</div>
                       </div>
-                      <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                      <div className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full transition-all duration-300 ${artistMode ? 'bg-purple-500 text-white scale-110' : 'bg-purple-500/70 text-white/80'}`}>
                         $4.40
                       </div>
                     </div>
                   </button>
                 </div>
                 
-                {artistMode && (
-                  <div className={`overflow-hidden rounded-xl ${darkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30' : 'bg-purple-50 border border-purple-200'}`}>
-                    {/* Artist Image */}
-                    <div className="relative h-32 overflow-hidden">
-                      <img 
-                        src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80" 
-                        alt="Artist performing"
-                        className="w-full h-full object-cover"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                      <div className="absolute bottom-3 left-4 right-4">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <div className="text-white font-black text-lg">Concert Pitch</div>
-                            <div className="text-purple-300 text-xs">A440 Hz — the universal tuning standard</div>
-                          </div>
-                          <div className="text-right">
-                            <div className="text-white font-black text-2xl">$4.40</div>
-                          </div>
+                {/* Concert Pitch Banner - Animated */}
+                <div className={`overflow-hidden rounded-xl transition-all duration-500 ease-out ${artistMode ? 'max-h-40 opacity-100 mb-0' : 'max-h-0 opacity-0 -mb-4'} ${darkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30' : 'bg-purple-50 border border-purple-200'}`}>
+                  {/* Artist Image */}
+                  <div className="relative h-32 overflow-hidden">
+                    <img 
+                      src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80" 
+                      alt="Artist performing"
+                      className="w-full h-full object-cover"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                    <div className="absolute bottom-3 left-4 right-4">
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="text-white font-black text-lg">Concert Pitch</div>
+                          <div className="text-purple-300 text-xs">A440 Hz — the universal tuning standard</div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white font-black text-2xl">$4.40</div>
                         </div>
                       </div>
                     </div>
                   </div>
-                )}
+                </div>
 
                 {!artistMode ? (
                   <>
