@@ -5457,6 +5457,32 @@ app.post('/api/admin/twitter/test', async (req, res) => {
   }
 });
 
+// Post custom tweet (admin only)
+app.post('/api/admin/twitter/post', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  const { text, account = 'flywheelsquad' } = req.body;
+  if (!text) {
+    return res.status(400).json({ error: 'Missing text' });
+  }
+  
+  try {
+    const result = await postTweet(text, account, { fallbackToOther: false, retries: 0 });
+    res.json({ success: true, ...result });
+  } catch (err) {
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      details: parseTwitterError(err, account),
+    });
+  }
+});
+
 // Test image generation
 app.post('/api/admin/image/test', async (req, res) => {
   const authHeader = req.headers.authorization;
