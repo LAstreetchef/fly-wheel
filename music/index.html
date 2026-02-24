@@ -63,8 +63,10 @@
       </div>
     </noscript>
     <script>
-      // Redirect to main app with music mode
-      window.location.href = '/?mode=music' + window.location.hash;
+      // Set localStorage flag before redirect so the app knows to enable music mode
+      localStorage.setItem('artistMode', 'true');
+      // Redirect to main app
+      window.location.replace('/');
     </script>
   </body>
 </html>
