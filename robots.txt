@@ -1,0 +1,10 @@
+# DAUfinder robots.txt
+User-agent: *
+Allow: /
+
+# Sitemaps
+Sitemap: https://daufinder.com/sitemap.xml
+
+# Block admin areas
+Disallow: /admin
+Disallow: /api/
