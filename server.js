@@ -920,6 +920,7 @@ if (usePostgres) {
 
 // Config
 const BOOST_PRICE = 199; // $1.99 in cents
+const CONCERT_PITCH_PRICE = 440; // $4.40 in cents - A440 Hz for artists
 const SXSW_PACK_PRICE = 799; // $7.99 in cents - SXSW 2026 Festival Pack
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
@@ -1079,8 +1080,12 @@ async function searchBlogs(keywords) {
   if (!res.ok) throw new Error(`Search failed: ${res.status}`);
   const data = await res.json();
   
+  // Blocklist: avoid competitor/confusingly-similar domains
+  const BLOCKED_DOMAINS = ['doofinder.com', 'doofinder.io'];
+  
   const results = (data.web?.results || [])
     .filter(r => /blog|post|article|\/20/.test(r.url.toLowerCase()))
+    .filter(r => !BLOCKED_DOMAINS.some(blocked => r.url.toLowerCase().includes(blocked)))
     .slice(0, 6)
     .map(r => ({
       title: r.title,
@@ -1163,6 +1168,72 @@ Check out ${productData.name} if you're into this!
   });
 
   return message.content[0].text.trim();
+}
+
+// Generate music-specific content for Concert Pitch
+async function generateMusicBoostContent(productData, musicData, blog) {
+  // Parse X handles
+  const rawTags = productData.tags || '';
+  const xHandles = rawTags
+    .split(/[,\s]+/)
+    .map(h => h.trim())
+    .filter(h => h)
+    .map(h => h.startsWith('@') ? h : `@${h}`)
+    .slice(0, 5);
+  
+  const tagsSection = xHandles.length > 0 
+    ? `\nARTIST/PRODUCER TAGS: ${xHandles.join(', ')}` 
+    : '';
+  
+  const tagsInstruction = xHandles.length > 0
+    ? `8. Naturally incorporate these tags: ${xHandles.join(', ')}`
+    : '';
+
+  const prompt = `You are a music promotion expert creating an engaging X (Twitter) post to promote a track/artist.
+
+ARTIST/TRACK:
+- Name: ${productData.name}
+- Track URL: ${musicData.trackUrl}
+- Genre: ${musicData.genre}
+- Vibe: ${musicData.vibe || 'N/A'}
+- Similar Artists: ${musicData.similarArtists || 'N/A'}${tagsSection}
+
+MUSIC BLOG/PLAYLIST TO REFERENCE:
+- Title: ${blog.title}
+- URL: ${blog.url}
+- Snippet: ${blog.snippet || 'N/A'}
+
+Create an authentic, engaging X post (max 280 chars) that:
+1. Captures the energy/vibe of the music
+2. References the blog/playlist as a great source for this genre
+3. Promotes the track as a fresh find or must-listen
+4. Includes [BLOG_LINK] placeholder for the blog URL
+5. Includes [TRACK_LINK] placeholder for the track URL
+6. Uses 2-3 relevant hashtags for the genre/vibe (e.g. #NewMusic #${musicData.genre.replace(/[^a-zA-Z]/g, '')} etc.)
+7. Feels like a genuine music discovery, not an ad
+${tagsInstruction}
+
+Return ONLY the tweet text, nothing else. Make it feel like a music lover sharing a find.`;
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    const tagsStr = xHandles.length > 0 ? `\n\n${xHandles.join(' ')}` : '';
+    return `🎵 If you're into ${musicData.genre}, check out ${productData.name}
+
+Found some fire new music vibes on this playlist:
+[BLOG_LINK]
+
+Listen now: [TRACK_LINK]
+
+#NewMusic #${musicData.genre.replace(/[^a-zA-Z]/g, '')}${tagsStr}`;
+  }
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 300,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return message.content[0].text.trim().replace('[PRODUCT_LINK]', '[TRACK_LINK]');
 }
 
 // ============================================
@@ -2864,11 +2935,15 @@ app.get('/api/blogs/search', sanitizeQuery(['keywords'], 200), async (req, res) 
 
 app.post('/api/generate', generateLimiter, sanitizeBody(['email', 'keywords'], 500), async (req, res) => {
   try {
-    const { productData, blog } = req.body;
+    const { productData, blog, musicData, artistMode } = req.body;
     if (!productData?.name || !blog?.url) {
       return res.status(400).json({ error: 'Product data and blog required' });
     }
-    const content = await generateBoostContent(productData, blog);
+    
+    // Use music-specific generation for Concert Pitch
+    const content = artistMode 
+      ? await generateMusicBoostContent(productData, musicData, blog)
+      : await generateBoostContent(productData, blog);
     res.json({ content });
   } catch (error) {
     console.error('Generate error:', error);
@@ -3099,6 +3174,86 @@ app.post('/api/checkout/sxsw', checkoutLimiter, async (req, res) => {
     res.json({ url: session.url, sessionId: session.id });
   } catch (error) {
     console.error('SXSW checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// Concert Pitch - Music Artist Boost ($4.40 = A440 Hz)
+// ============================================
+app.post('/api/checkout/concert-pitch', checkoutLimiter, sanitizeBody(['email'], 500), async (req, res) => {
+  try {
+    const { productData, musicData, blog, content } = req.body;
+    
+    console.log('🎵 Concert Pitch checkout:');
+    console.log('   artist/track:', productData?.name);
+    console.log('   genre:', musicData?.genre);
+    console.log('   trackUrl:', musicData?.trackUrl);
+    
+    if (!productData?.name || !musicData?.trackUrl || !musicData?.genre || !blog?.url || !content) {
+      return res.status(400).json({ error: 'Missing required data (artist name, track URL, genre, blog, content)' });
+    }
+    
+    // Truncate metadata to fit Stripe's 500 char limit per value
+    const truncate = (str, max) => str && str.length > max ? str.substring(0, max - 3) + '...' : str;
+    const blogMeta = JSON.stringify({
+      url: blog.url,
+      title: truncate(blog.title, 100),
+    });
+    const productMeta = JSON.stringify({
+      name: productData.name,
+      productUrl: musicData.trackUrl,
+      email: productData.email || '',
+    });
+    const musicMeta = JSON.stringify({
+      trackUrl: musicData.trackUrl,
+      genre: musicData.genre,
+      vibe: musicData.vibe || '',
+      similarArtists: musicData.similarArtists || '',
+    });
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Concert Pitch',
+            description: `Promote "${productData.name}" • ${musicData.genre} • A440 Hz`,
+          },
+          unit_amount: CONCERT_PITCH_PRICE,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${FRONTEND_URL}?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: FRONTEND_URL,
+      metadata: {
+        type: 'concert_pitch',
+        productData: productMeta,
+        musicData: musicMeta,
+        blog: blogMeta,
+        content: truncate(content, 500),
+        email: productData.email || '',
+      },
+    });
+    
+    await orders.set(session.id, {
+      status: 'pending',
+      type: 'concert_pitch',
+      productData,
+      musicData,
+      blog,
+      content,
+      email: productData.email || '',
+      createdAt: new Date().toISOString(),
+      followUpSent: false,
+    });
+    
+    console.log(`🎵 Concert Pitch order created: ${session.id.substring(0, 20)}... | ${productData.name} | ${musicData.genre}`);
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('Concert Pitch checkout error:', error);
     res.status(500).json({ error: error.message });
   }
 });

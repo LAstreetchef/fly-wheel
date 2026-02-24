@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import SXSWModal from './components/SXSWModal'
+import HeroCarousel from './components/HeroCarousel'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fly-wheel.onrender.com'
 const BASE_PATH = import.meta.env.VITE_BASE_PATH || ''
@@ -37,6 +38,39 @@ export default function App() {
   const [shopifyShop, setShopifyShop] = useState(null)
   const [shopifyProducts, setShopifyProducts] = useState([])
   const [shopifyLoading, setShopifyLoading] = useState(false)
+
+  // Theme
+  const [darkMode, setDarkMode] = useState(() => {
+    const saved = localStorage.getItem('darkMode')
+    return saved !== null ? JSON.parse(saved) : true // default dark
+  })
+  
+  useEffect(() => {
+    localStorage.setItem('darkMode', JSON.stringify(darkMode))
+  }, [darkMode])
+
+  // Artist Mode (Concert Pitch - $4.40)
+  // Check URL, localStorage, or param to auto-enable
+  const [artistMode, setArtistMode] = useState(() => {
+    const path = window.location.pathname
+    const params = new URLSearchParams(window.location.search)
+    const stored = localStorage.getItem('artistMode')
+    // Clear the localStorage flag after reading (one-time use from /music redirect)
+    if (stored === 'true') {
+      localStorage.removeItem('artistMode')
+      return true
+    }
+    return path.includes('/music') || params.get('mode') === 'music'
+  })
+  const [musicData, setMusicData] = useState({
+    trackUrl: '',
+    genre: '',
+    vibe: '',
+    similarArtists: ''
+  })
+  
+  const GENRES = ['Hip-Hop', 'R&B', 'Pop', 'Rock', 'Indie', 'Electronic', 'EDM', 'Jazz', 'Soul', 'Country', 'Latin', 'Afrobeats', 'K-Pop', 'Metal', 'Punk', 'Folk', 'Classical', 'Other']
+  const VIBES = ['Chill', 'Hype', 'Late Night', 'Workout', 'Party', 'Sad', 'Romantic', 'Focus', 'Road Trip', 'Summer']
 
   // Load ElevenLabs widget
   useEffect(() => {
@@ -422,16 +456,29 @@ export default function App() {
   }
 
   const searchBlogs = async () => {
-    if (!productData.name?.trim() || !productData.keywords?.trim()) {
-      setError('Please fill in product name and keywords')
-      return
+    // Validate based on mode
+    if (artistMode) {
+      if (!productData.name?.trim() || !musicData.trackUrl?.trim() || !musicData.genre) {
+        setError('Please fill in artist/track name, track URL, and genre')
+        return
+      }
+    } else {
+      if (!productData.name?.trim() || !productData.keywords?.trim()) {
+        setError('Please fill in product name and keywords')
+        return
+      }
     }
     setError(null)
     setLoading(true)
     setStep('searching')
     
+    // Build keywords based on mode
+    const keywords = artistMode 
+      ? `${musicData.genre} music blog ${musicData.vibe || ''} ${musicData.similarArtists || ''} new music`.trim()
+      : productData.keywords
+    
     try {
-      const res = await fetch(`${API_URL}/api/blogs/search?keywords=${encodeURIComponent(productData.keywords)}`)
+      const res = await fetch(`${API_URL}/api/blogs/search?keywords=${encodeURIComponent(keywords)}`)
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
       
@@ -456,10 +503,15 @@ export default function App() {
     setStep('generating')
     
     try {
+      // Include musicData for artist mode
+      const payload = artistMode 
+        ? { productData: { ...productData, productUrl: musicData.trackUrl }, musicData, blog, artistMode: true }
+        : { productData, blog }
+      
       const res = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productData, blog })
+        body: JSON.stringify(payload)
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -477,10 +529,16 @@ export default function App() {
   const checkout = async () => {
     setLoading(true)
     try {
-      const res = await fetch(`${API_URL}/api/checkout`, {
+      // Use concert-pitch endpoint for artist mode
+      const endpoint = artistMode ? `${API_URL}/api/checkout/concert-pitch` : `${API_URL}/api/checkout`
+      const payload = artistMode 
+        ? { productData: { ...productData, productUrl: musicData.trackUrl }, musicData, blog: selectedBlog, content }
+        : { productData, blog: selectedBlog, content }
+      
+      const res = await fetch(endpoint, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ productData, blog: selectedBlog, content })
+        body: JSON.stringify(payload)
       })
       const data = await res.json()
       if (!res.ok) throw new Error(data.error)
@@ -496,7 +554,8 @@ export default function App() {
 
   const reset = () => {
     setStep('input')
-    setProductData({ name: '', description: '', productUrl: '', keywords: '', email: '' })
+    setProductData({ name: '', description: '', productUrl: '', keywords: '', tags: '', email: '' })
+    setMusicData({ trackUrl: '', genre: '', vibe: '', similarArtists: '' })
     setBlogs([])
     setSelectedBlog(null)
     setContent(null)
@@ -505,33 +564,52 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-black text-white">
+    <div className={`min-h-screen transition-colors duration-300 ${darkMode ? 'bg-black text-white' : 'bg-gray-50 text-gray-900'}`}>
       {/* Background */}
       <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute inset-0 bg-gradient-to-b from-orange-950/30 via-gray-950 to-black" />
-        <div className="absolute top-0 left-1/4 w-96 h-96 bg-orange-500/20 rounded-full blur-3xl" />
+        {darkMode ? (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-yellow-950/20 via-gray-950 to-black" />
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-yellow-500/10 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-orange-500/10 rounded-full blur-3xl" />
+          </>
+        ) : (
+          <>
+            <div className="absolute inset-0 bg-gradient-to-b from-yellow-50 via-white to-gray-50" />
+            <div className="absolute top-0 left-1/4 w-96 h-96 bg-yellow-200/30 rounded-full blur-3xl" />
+            <div className="absolute bottom-0 right-1/4 w-64 h-64 bg-orange-200/30 rounded-full blur-3xl" />
+          </>
+        )}
       </div>
 
       {/* Header */}
-      <header className="relative z-10 px-3 sm:px-6 py-4 border-b border-gray-800/50">
+      <header className={`relative z-10 px-3 sm:px-6 py-4 border-b ${darkMode ? 'border-gray-800/50' : 'border-gray-200'}`}>
         <div className="max-w-6xl mx-auto flex items-center justify-between gap-2">
           <div className="flex items-center gap-2 cursor-pointer flex-shrink-0" onClick={() => { setShowPrime(false); reset(); }}>
             <img src={`${BASE_PATH}/squad/stella.png`} alt="Stella" className="w-8 sm:w-10 h-8 sm:h-10 object-contain" />
             <span className="text-lg sm:text-xl font-bold">
-              <span className="text-white">DAU</span>
-              <span className="text-orange-400">finder</span>
+              <span className={darkMode ? 'text-white' : 'text-gray-900'}>DAU</span>
+              <span className="text-orange-500">finder</span>
             </span>
           </div>
           <div className="flex items-center gap-2 sm:gap-3">
+            {/* Theme Toggle */}
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className={`p-2 rounded-full transition-all ${darkMode ? 'bg-gray-800 hover:bg-gray-700 text-yellow-400' : 'bg-gray-200 hover:bg-gray-300 text-gray-700'}`}
+              title={darkMode ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {darkMode ? '☀️' : '🌙'}
+            </button>
             {primeAccount && (
               <div className="hidden sm:flex items-center gap-2 text-sm">
-                <span className="text-yellow-400">⚡ {primeAccount.boostBalance}</span>
-                <span className="text-gray-500">boosts</span>
+                <span className="text-yellow-500">⚡ {primeAccount.boostBalance}</span>
+                <span className={darkMode ? 'text-gray-500' : 'text-gray-600'}>boosts</span>
                 {rewards && rewards.pointsBalance > 0 && (
                   <>
-                    <span className="text-gray-600">|</span>
-                    <span className="text-purple-400">🎁 {rewards.pointsBalance}</span>
-                    <span className="text-gray-500">pts</span>
+                    <span className={darkMode ? 'text-gray-600' : 'text-gray-400'}>|</span>
+                    <span className="text-purple-500">🎁 {rewards.pointsBalance}</span>
+                    <span className={darkMode ? 'text-gray-500' : 'text-gray-600'}>pts</span>
                   </>
                 )}
               </div>
@@ -541,14 +619,16 @@ export default function App() {
               className={`px-3 sm:px-4 py-2 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap ${
                 showPrime || primeAccount
                   ? 'bg-gradient-to-r from-yellow-400 to-orange-500 text-black'
-                  : 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
+                  : darkMode 
+                    ? 'bg-gray-800 hover:bg-gray-700 text-white border border-gray-600'
+                    : 'bg-white hover:bg-gray-100 text-gray-900 border border-gray-300'
               }`}
             >
               {primeAccount ? '⚡ Prime' : 'Go Prime'}
             </button>
             {!showPrime && (
-              <div className="hidden sm:block bg-gradient-to-r from-orange-500 to-yellow-500 text-black px-3 py-1 rounded-full text-sm font-black whitespace-nowrap">
-                $1.99/post
+              <div className="hidden sm:block bg-yellow-400 text-black px-3 py-1 rounded-full text-sm font-black whitespace-nowrap">
+                $1.99/boost
               </div>
             )}
           </div>
@@ -562,14 +642,73 @@ export default function App() {
           </div>
         )}
 
-        {/* Hero - changes based on Prime mode */}
+        {/* Hero - changes based on Prime mode and Artist mode */}
         {!showPrime ? (
-          <div className="text-center mb-10">
-            <h1 className="text-4xl md:text-5xl font-black mb-4">
-              <span className="text-white">Promote your</span>{' '}
-              <span className="text-orange-400">product or service</span>
-            </h1>
-            <p className="text-gray-400 text-lg">We find relevant blogs, craft a promo post, and publish it to X</p>
+          <div className="mb-10">
+            {/* Hero Carousel */}
+            <div className="mb-8">
+              <HeroCarousel artistMode={artistMode} />
+            </div>
+            
+            {/* Hero Text - Dynamic based on mode */}
+            <div className="text-center">
+              <h1 className="text-4xl md:text-5xl font-black mb-4 leading-tight">
+                {artistMode ? (
+                  <>
+                    <span className={darkMode ? 'text-white' : 'text-gray-900'}>Showcase your music</span><br />
+                    <span className="bg-gradient-to-r from-purple-500 to-pink-500 bg-clip-text text-transparent">and promote your song</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={darkMode ? 'text-white' : 'text-gray-900'}>Promote your product</span><br />
+                    <span className="bg-gradient-to-r from-yellow-500 to-orange-500 bg-clip-text text-transparent">with AI-powered boosts</span>
+                  </>
+                )}
+              </h1>
+              <p className={`text-lg mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                {artistMode 
+                  ? "We find music blogs, playlist curators, and genre communities to get your track heard"
+                  : "We find relevant blogs, craft engaging posts, and publish to X"
+                }
+              </p>
+              
+              {/* Pricing highlight */}
+              <div className={`inline-flex items-center gap-3 rounded-full px-6 py-3 ${darkMode ? 'bg-gray-900/80 border border-gray-700' : 'bg-white border border-gray-200 shadow-lg'}`}>
+                {artistMode ? (
+                  <>
+                    <span className="text-purple-400 text-xs font-bold">CONCERT PITCH</span>
+                    <span className="text-purple-400 text-2xl font-black">$4.40</span>
+                    <span className={darkMode ? 'text-gray-500' : 'text-gray-500'}>A440 Hz</span>
+                  </>
+                ) : (
+                  <>
+                    <span className={darkMode ? 'text-gray-500' : 'text-gray-400'} style={{textDecoration: 'line-through'}}>$5.00</span>
+                    <span className="text-yellow-500 text-2xl font-black">$1.99</span>
+                    <span className={darkMode ? 'text-gray-500' : 'text-gray-500'}>per boost</span>
+                  </>
+                )}
+              </div>
+              
+              {/* How it works - condensed */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-8 text-left">
+                {(artistMode ? [
+                  { icon: '🎵', text: 'Drop your track link' },
+                  { icon: '🎵', text: 'Pick your genre & vibe' },
+                  { icon: '🎵', text: 'AI finds music blogs' },
+                  { icon: '🎵', text: 'Get heard instantly' },
+                ] : [
+                  { icon: '✦', text: 'Enter your product & keywords' },
+                  { icon: '✦', text: 'AI finds relevant blog posts' },
+                  { icon: '✦', text: 'We craft an engaging tweet' },
+                  { icon: '✦', text: 'Posted to our network instantly' },
+                ]).map((step, i) => (
+                  <div key={i} className={`flex gap-2 items-start p-3 rounded-xl border ${darkMode ? 'bg-gray-900/50 border-gray-800' : 'bg-white border-gray-200 shadow-sm'}`}>
+                    <span className={artistMode ? 'text-purple-400' : 'text-yellow-500'} style={{marginTop: '0.125rem'}}>{step.icon}</span>
+                    <span className={darkMode ? 'text-gray-400' : 'text-gray-600'} style={{fontSize: '0.875rem'}}>{step.text}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
           </div>
         ) : (
           <div className="text-center mb-10">
@@ -993,9 +1132,10 @@ export default function App() {
         <div className={`grid lg:grid-cols-2 gap-8 ${showPrime && !primeAccount ? 'hidden' : ''}`}>
           
           {/* Left: Form */}
-          <div className="bg-gray-900/80 backdrop-blur border border-gray-700 rounded-2xl p-6">
-            <h2 className="text-xl font-bold mb-6 flex items-center gap-2">
-              <span className="text-2xl">✍️</span> Create a Boost
+          <div className={`backdrop-blur rounded-2xl p-6 ${darkMode ? 'bg-gray-900/80 border border-gray-700' : 'bg-white border border-gray-200 shadow-xl'}`}>
+            <h2 className={`text-xl font-bold mb-6 flex items-center gap-2 ${darkMode ? '' : 'text-gray-900'}`}>
+              <span className="text-2xl">{artistMode ? '🎵' : '✍️'}</span> 
+              {artistMode ? 'Promote Your Track' : 'Create a Boost'}
             </h2>
 
             {/* Shopify Integration - TEMPORARILY REMOVED
@@ -1005,69 +1145,211 @@ export default function App() {
             {/* Input Step */}
             {(step === 'input' || step === 'searching') && (
               <form onSubmit={(e) => { e.preventDefault(); searchBlogs() }} className="space-y-4">
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Product Name *</label>
-                  <input 
-                    type="text" required value={productData.name}
-                    onChange={(e) => setProductData({ ...productData, name: e.target.value })}
-                    placeholder="e.g., SwordPay"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
-                  />
+                {/* Mode Selector - Side by Side Thumbnails */}
+                <div className="grid grid-cols-2 gap-3 mb-4">
+                  {/* Product Option */}
+                  <button
+                    type="button"
+                    onClick={() => setArtistMode(false)}
+                    className={`relative overflow-hidden rounded-xl transition-all ${!artistMode 
+                      ? 'ring-2 ring-orange-500 ring-offset-2 ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
+                      : 'opacity-60 hover:opacity-80'
+                    }`}
+                  >
+                    <div className="relative h-24">
+                      <img 
+                        src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=75" 
+                        alt="Products & Business"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                      <div className="absolute bottom-2 left-3 right-3">
+                        <div className="text-white font-bold text-sm">📦 Products</div>
+                        <div className="text-gray-300 text-xs">Apps, SaaS, Business</div>
+                      </div>
+                      <div className="absolute top-2 right-2 bg-orange-500 text-black text-xs font-bold px-2 py-0.5 rounded-full">
+                        $1.99
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Artist Option */}
+                  <button
+                    type="button"
+                    onClick={() => setArtistMode(true)}
+                    className={`relative overflow-hidden rounded-xl transition-all ${artistMode 
+                      ? 'ring-2 ring-purple-500 ring-offset-2 ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
+                      : 'opacity-60 hover:opacity-80'
+                    }`}
+                  >
+                    <div className="relative h-24">
+                      <img 
+                        src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&q=75" 
+                        alt="Artists & Musicians"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                      <div className="absolute bottom-2 left-3 right-3">
+                        <div className="text-white font-bold text-sm">🎵 Music</div>
+                        <div className="text-gray-300 text-xs">Artists & Producers</div>
+                      </div>
+                      <div className="absolute top-2 right-2 bg-purple-500 text-white text-xs font-bold px-2 py-0.5 rounded-full">
+                        $4.40
+                      </div>
+                    </div>
+                  </button>
                 </div>
+                
+                {artistMode && (
+                  <div className={`overflow-hidden rounded-xl ${darkMode ? 'bg-gradient-to-r from-purple-500/20 to-pink-500/20 border border-purple-500/30' : 'bg-purple-50 border border-purple-200'}`}>
+                    {/* Artist Image */}
+                    <div className="relative h-32 overflow-hidden">
+                      <img 
+                        src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80" 
+                        alt="Artist performing"
+                        className="w-full h-full object-cover"
+                      />
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                      <div className="absolute bottom-3 left-4 right-4">
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-white font-black text-lg">Concert Pitch</div>
+                            <div className="text-purple-300 text-xs">A440 Hz — the universal tuning standard</div>
+                          </div>
+                          <div className="text-right">
+                            <div className="text-white font-black text-2xl">$4.40</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {!artistMode ? (
+                  <>
+                    {/* Product Mode Fields */}
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Product Name *</label>
+                      <input 
+                        type="text" required value={productData.name}
+                        onChange={(e) => setProductData({ ...productData, name: e.target.value })}
+                        placeholder="e.g., SwordPay"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Product URL</label>
+                      <input 
+                        type="url" value={productData.productUrl}
+                        onChange={(e) => setProductData({ ...productData, productUrl: e.target.value })}
+                        placeholder="https://..."
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Description</label>
+                      <textarea 
+                        value={productData.description}
+                        onChange={(e) => setProductData({ ...productData, description: e.target.value })}
+                        placeholder="What does your product do?"
+                        rows={2}
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Keywords * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(we'll find blogs about this)</span></label>
+                      <input 
+                        type="text" required value={productData.keywords}
+                        onChange={(e) => setProductData({ ...productData, keywords: e.target.value })}
+                        placeholder="e.g., fintech, payments, creators"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <>
+                    {/* Artist Mode Fields */}
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Artist / Track Name *</label>
+                      <input 
+                        type="text" required value={productData.name}
+                        onChange={(e) => setProductData({ ...productData, name: e.target.value })}
+                        placeholder="e.g., Your Name - Track Title"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Track URL * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(Spotify, SoundCloud, YouTube, etc.)</span></label>
+                      <input 
+                        type="url" required value={musicData.trackUrl}
+                        onChange={(e) => setMusicData({ ...musicData, trackUrl: e.target.value })}
+                        placeholder="https://open.spotify.com/track/..."
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Genre *</label>
+                        <select
+                          required value={musicData.genre}
+                          onChange={(e) => setMusicData({ ...musicData, genre: e.target.value })}
+                          className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white" : "bg-gray-50 border border-gray-300 text-gray-900"}`}
+                        >
+                          <option value="">Select genre</option>
+                          {GENRES.map(g => <option key={g} value={g}>{g}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Vibe</label>
+                        <select
+                          value={musicData.vibe}
+                          onChange={(e) => setMusicData({ ...musicData, vibe: e.target.value })}
+                          className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white" : "bg-gray-50 border border-gray-300 text-gray-900"}`}
+                        >
+                          <option value="">Select vibe</option>
+                          {VIBES.map(v => <option key={v} value={v}>{v}</option>)}
+                        </select>
+                      </div>
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Sounds Like <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(similar artists)</span></label>
+                      <input 
+                        type="text" value={musicData.similarArtists}
+                        onChange={(e) => setMusicData({ ...musicData, similarArtists: e.target.value })}
+                        placeholder="e.g., Drake, The Weeknd"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                  </>
+                )}
+
+                {/* Common Fields */}
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">Product URL</label>
-                  <input 
-                    type="url" value={productData.productUrl}
-                    onChange={(e) => setProductData({ ...productData, productUrl: e.target.value })}
-                    placeholder="https://..."
-                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Description</label>
-                  <textarea 
-                    value={productData.description}
-                    onChange={(e) => setProductData({ ...productData, description: e.target.value })}
-                    placeholder="What does your product do?"
-                    rows={2}
-                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Keywords * <span className="text-gray-500">(we'll find blogs about this)</span></label>
-                  <input 
-                    type="text" required value={productData.keywords}
-                    onChange={(e) => setProductData({ ...productData, keywords: e.target.value })}
-                    placeholder="e.g., fintech, payments, creators"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm text-gray-400 mb-1">Tags <span className="text-gray-500">(optional @mentions to include)</span></label>
+                  <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tags <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(optional @mentions)</span></label>
                   <input 
                     type="text" value={productData.tags}
                     onChange={(e) => setProductData({ ...productData, tags: e.target.value })}
-                    placeholder="e.g., @yourproduct, @cofounder"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                    placeholder={artistMode ? "e.g., @youraccount, @producer" : "e.g., @yourproduct, @cofounder"}
+                    className={`w-full rounded-xl px-4 py-3 focus:outline-none ${artistMode ? 'focus:border-purple-500' : 'focus:border-orange-500'} ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
                   />
                 </div>
                 <div>
-                  <label className="block text-sm text-gray-400 mb-1">
-                    Your Email * <span className="text-gray-500">(for performance stats)</span>
+                  <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                    Your Email * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(for performance stats)</span>
                     {primeAccount && <span className="text-yellow-400 ml-2">⚡ Prime</span>}
                   </label>
                   <input 
                     type="email" required value={productData.email || primeEmail}
                     onChange={(e) => setProductData({ ...productData, email: e.target.value })}
                     placeholder="you@example.com"
-                    className="w-full bg-gray-800 border border-gray-600 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-orange-500"
+                    className={`w-full rounded-xl px-4 py-3 focus:outline-none ${artistMode ? 'focus:border-purple-500' : 'focus:border-orange-500'} ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
                   />
                 </div>
                 <button 
                   type="submit" disabled={loading}
-                  className="w-full bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-4 rounded-xl font-bold text-lg disabled:opacity-50"
+                  className={`w-full py-4 rounded-xl font-bold text-lg disabled:opacity-50 ${artistMode ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-black'}`}
                 >
-                  {loading ? 'Searching...' : 'Find Relevant Blogs →'}
+                  {loading ? 'Searching...' : artistMode ? 'Find Music Blogs →' : 'Find Relevant Blogs →'}
                 </button>
               </form>
             )}
@@ -1156,16 +1438,16 @@ export default function App() {
                 )}
                 
                 <div className="flex gap-3">
-                  <button onClick={() => setStep('blogs')} className="flex-1 bg-gray-700 hover:bg-gray-600 text-white py-3 rounded-xl font-bold">
+                  <button onClick={() => setStep('blogs')} className={`flex-1 py-3 rounded-xl font-bold ${darkMode ? 'bg-gray-700 hover:bg-gray-600 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}>
                     ← Back
                   </button>
                   {!primeAccount ? (
-                    <button onClick={checkout} disabled={loading} className="flex-[2] bg-gradient-to-r from-orange-500 to-yellow-500 text-black py-3 rounded-xl font-bold text-lg disabled:opacity-50">
-                      {loading ? 'Loading...' : 'Pay $1.99 & Post →'}
+                    <button onClick={checkout} disabled={loading} className={`flex-[2] py-3 rounded-xl font-bold text-lg disabled:opacity-50 ${artistMode ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-black'}`}>
+                      {loading ? 'Loading...' : artistMode ? 'Pay $4.40 & Post →' : 'Pay $1.99 & Post →'}
                     </button>
                   ) : (
-                    <button onClick={checkout} disabled={loading} className="flex-[2] bg-gray-600 hover:bg-gray-500 text-white py-3 rounded-xl font-bold text-lg disabled:opacity-50">
-                      {loading ? 'Loading...' : 'Or Pay $1.99 →'}
+                    <button onClick={checkout} disabled={loading} className={`flex-[2] py-3 rounded-xl font-bold text-lg disabled:opacity-50 ${darkMode ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}>
+                      {loading ? 'Loading...' : artistMode ? 'Or Pay $4.40 →' : 'Or Pay $1.99 →'}
                     </button>
                   )}
                 </div>
