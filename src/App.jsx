@@ -14,6 +14,16 @@ export default function App() {
   const [error, setError] = useState(null)
   
   const [productData, setProductData] = useState({ name: '', description: '', productUrl: '', keywords: '', tags: '', email: '' })
+  
+  // Helper to normalize URLs (auto-prepend https:// if missing)
+  const normalizeUrl = (url) => {
+    if (!url) return url
+    url = url.trim()
+    if (url && !url.match(/^https?:\/\//i)) {
+      return 'https://' + url
+    }
+    return url
+  }
   const [blogs, setBlogs] = useState([])
   const [selectedBlog, setSelectedBlog] = useState(null)
   const [content, setContent] = useState(null)
@@ -1241,9 +1251,10 @@ export default function App() {
                     <div>
                       <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Product URL</label>
                       <input 
-                        type="url" value={productData.productUrl}
+                        type="text" value={productData.productUrl}
                         onChange={(e) => setProductData({ ...productData, productUrl: e.target.value })}
-                        placeholder="https://..."
+                        onBlur={(e) => e.target.value && setProductData({ ...productData, productUrl: normalizeUrl(e.target.value) })}
+                        placeholder="yoursite.com or paste link"
                         className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
                       />
                     </div>
@@ -1282,9 +1293,10 @@ export default function App() {
                     <div>
                       <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Track URL * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(Spotify, SoundCloud, YouTube, etc.)</span></label>
                       <input 
-                        type="url" required value={musicData.trackUrl}
+                        type="text" required value={musicData.trackUrl}
                         onChange={(e) => setMusicData({ ...musicData, trackUrl: e.target.value })}
-                        placeholder="https://open.spotify.com/track/..."
+                        onBlur={(e) => e.target.value && setMusicData({ ...musicData, trackUrl: normalizeUrl(e.target.value) })}
+                        placeholder="open.spotify.com/track/... or paste link"
                         className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-purple-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
                       />
                     </div>
