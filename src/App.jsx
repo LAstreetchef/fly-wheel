@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import SXSWModal from './components/SXSWModal'
 import SXSWArtistModal from './components/SXSWArtistModal'
 import HeroCarousel from './components/HeroCarousel'
+import TweetCarousel from './components/TweetCarousel'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fly-wheel.onrender.com'
 const BASE_PATH = import.meta.env.VITE_BASE_PATH || ''
@@ -1591,8 +1592,13 @@ export default function App() {
         </div>
       </main>
 
-      <footer className="relative z-10 border-t border-gray-800 px-6 py-6 mt-16">
-        <div className="max-w-6xl mx-auto text-center text-gray-500 text-sm">
+      {/* Tweet Examples Carousel */}
+      <div className="relative z-10 max-w-6xl mx-auto px-4">
+        <TweetCarousel darkMode={darkMode} />
+      </div>
+
+      <footer className={`relative z-10 border-t px-6 py-6 mt-8 ${darkMode ? 'border-gray-800' : 'border-gray-200'}`}>
+        <div className={`max-w-6xl mx-auto text-center text-sm ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>
           © 2026 DAUfinder
         </div>
       </footer>
