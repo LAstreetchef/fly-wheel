@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import SXSWModal from './components/SXSWModal'
+import SXSWArtistModal from './components/SXSWArtistModal'
 import HeroCarousel from './components/HeroCarousel'
 
 const API_URL = import.meta.env.VITE_API_URL || 'https://fly-wheel.onrender.com'
@@ -1596,8 +1597,8 @@ export default function App() {
         </div>
       </footer>
 
-      {/* SXSW 2026 Promo Modal */}
-      <SXSWModal />
+      {/* SXSW 2026 Promo Modals */}
+      {artistMode ? <SXSWArtistModal /> : <SXSWModal />}
     </div>
   )
 }

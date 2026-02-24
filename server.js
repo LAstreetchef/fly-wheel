@@ -922,6 +922,7 @@ if (usePostgres) {
 const BOOST_PRICE = 199; // $1.99 in cents
 const CONCERT_PITCH_PRICE = 440; // $4.40 in cents - A440 Hz for artists
 const SXSW_PACK_PRICE = 799; // $7.99 in cents - SXSW 2026 Festival Pack
+const SXSW_ARTIST_PACK_PRICE = 4400; // $44.00 in cents - SXSW Artist Pack (25 Concert Pitch boosts)
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 
@@ -3174,6 +3175,53 @@ app.post('/api/checkout/sxsw', checkoutLimiter, async (req, res) => {
     res.json({ url: session.url, sessionId: session.id });
   } catch (error) {
     console.error('SXSW checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// SXSW 2026 Artist Pack - $44 for 25 Concert Pitch boosts
+// ============================================
+app.post('/api/checkout/sxsw-artist', checkoutLimiter, async (req, res) => {
+  try {
+    const { email, artist, trackUrl, genre } = req.body;
+    
+    if (!email || !artist || !trackUrl || !genre) {
+      return res.status(400).json({ error: 'Email, artist name, track URL, and genre are required' });
+    }
+    
+    console.log(`🎵 SXSW Artist Pack checkout: ${email} | ${artist} | ${genre}`);
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'SXSW 2026 Artist Pack',
+            description: '25 Concert Pitch boosts for SXSW week - Music blogs & playlist curators',
+          },
+          unit_amount: SXSW_ARTIST_PACK_PRICE,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${FRONTEND_URL}?sxsw_artist_success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: `${FRONTEND_URL}?mode=music`,
+      customer_email: email,
+      metadata: {
+        type: 'sxsw_artist_pack',
+        email: email,
+        artist: artist,
+        trackUrl: trackUrl,
+        genre: genre,
+      },
+    });
+    
+    console.log(`🎵 SXSW Artist Pack order created: ${session.id.substring(0, 20)}...`);
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('SXSW Artist checkout error:', error);
     res.status(500).json({ error: error.message });
   }
 });
