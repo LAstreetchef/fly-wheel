@@ -5787,6 +5787,7 @@ app.get('/api/admin/system/health', async (req, res) => {
   const twitterChecks = await Promise.all([
     verifyTwitterCredentials('flywheelsquad'),
     verifyTwitterCredentials('themessageis4u'),
+    verifyTwitterCredentials('greentruck'),
   ]);
   
   health.services.twitter = {
@@ -5802,6 +5803,12 @@ app.get('/api/admin/system/health', async (req, res) => {
       error: twitterChecks[1].error?.diagnosis || null,
       lastSuccess: twitterHealth.themessageis4u?.lastSuccess,
     },
+    greentruck: {
+      status: twitterChecks[2].valid ? 'healthy' : 'error',
+      username: twitterChecks[2].user?.username || null,
+      error: twitterChecks[2].error?.diagnosis || null,
+      lastSuccess: twitterHealth.greentruck?.lastSuccess,
+    },
   };
   
   if (!twitterChecks[0].valid) {
@@ -5809,6 +5816,9 @@ app.get('/api/admin/system/health', async (req, res) => {
   }
   if (!twitterChecks[1].valid) {
     health.issues.push({ service: 'twitter', account: 'themessageis4u', error: twitterChecks[1].error?.diagnosis });
+  }
+  if (!twitterChecks[2].valid) {
+    health.issues.push({ service: 'twitter', account: 'greentruck', error: twitterChecks[2].error?.diagnosis });
   }
   
   // Check Email (Resend)
