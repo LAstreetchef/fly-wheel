@@ -5575,6 +5575,30 @@ app.post('/api/greentruck/boost', async (req, res) => {
       keywords,
     }).catch(err => console.error('GreenTruck engagement error:', err.message));
     
+    // Track boost in orders (counts toward dashboard stats)
+    orders.push({
+      id: `greentruck_${Date.now()}`,
+      sessionId: `greentruck_${Date.now()}`,
+      status: 'published',
+      productData: GREENTRUCK_PRODUCT,
+      blog,
+      content: finalContent,
+      email: GREENTRUCK_PRODUCT.email,
+      tweetUrl: result.tweetUrl,
+      tweetId: result.tweetId,
+      twitterAccount: result.account,
+      publishedAt: new Date().toISOString(),
+      createdAt: new Date().toISOString(),
+      source: 'self-promo',
+      agent: 'greentruck',
+      keywords,
+      followUpSent: false,
+    });
+    
+    // Update stats
+    selfPromoStats.totalBoosts++;
+    selfPromoStats.dailyBoosts++;
+    
     res.json({
       success: true,
       agent: 'greentruck',
