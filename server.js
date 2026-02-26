@@ -3346,6 +3346,51 @@ app.post('/api/checkout/sxsw-artist', checkoutLimiter, async (req, res) => {
   }
 });
 
+// SXSW 2026 Podcast Pack - $29.99 for 25 Podcast Boosts
+const SXSW_PODCAST_PACK_PRICE = 2999; // $29.99 in cents
+app.post('/api/checkout/sxsw-podcast', checkoutLimiter, sanitizeBody(['email'], 500), async (req, res) => {
+  try {
+    const { email, showName, episodeUrl, category } = req.body;
+    
+    console.log(`🎙️ SXSW Podcast checkout: ${email} | ${showName} | ${category}`);
+    
+    if (!email || !showName || !episodeUrl || !category) {
+      return res.status(400).json({ error: 'Email, show name, episode URL, and category required' });
+    }
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'SXSW 2026 Podcast Pack',
+            description: '25 Podcast Boosts for SXSW week (March 13-17, 2026)',
+          },
+          unit_amount: SXSW_PODCAST_PACK_PRICE,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${FRONTEND_URL}?sxsw_podcast_success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: FRONTEND_URL,
+      customer_email: email,
+      metadata: {
+        type: 'sxsw_podcast_pack',
+        showName: showName,
+        episodeUrl: episodeUrl,
+        category: category,
+      },
+    });
+    
+    console.log(`🎙️ SXSW Podcast Pack order created: ${session.id.substring(0, 20)}...`);
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('SXSW Podcast checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // ============================================
 // Concert Pitch - Music Artist Boost ($4.40 = A440 Hz)
 // ============================================

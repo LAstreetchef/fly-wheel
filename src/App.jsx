@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react'
-import SXSWModal from './components/SXSWModal'
-import SXSWArtistModal from './components/SXSWArtistModal'
+import SXSWUnifiedModal from './components/SXSWUnifiedModal'
 import HeroCarousel from './components/HeroCarousel'
 import TweetCarousel from './components/TweetCarousel'
 
@@ -1834,8 +1833,8 @@ export default function App() {
         </div>
       </footer>
 
-      {/* SXSW 2026 Promo Modals */}
-      {artistMode ? <SXSWArtistModal /> : <SXSWModal />}
+      {/* SXSW 2026 Promo Modal - Unified with rotating packs */}
+      <SXSWUnifiedModal />
     </div>
   )
 }
