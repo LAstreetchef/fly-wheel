@@ -1479,6 +1479,13 @@ const TWITTER_ACCOUNTS = {
     accessToken: () => process.env.GREENTRUCK_ACCESS_TOKEN,
     accessSecret: () => process.env.GREENTRUCK_ACCESS_SECRET,
   },
+  dogedoctortips: {
+    handle: 'dogedoctortips',
+    apiKey: () => process.env.DOGEDOCTOR_API_KEY,
+    apiSecret: () => process.env.DOGEDOCTOR_API_SECRET,
+    accessToken: () => process.env.DOGEDOCTOR_ACCESS_TOKEN,
+    accessSecret: () => process.env.DOGEDOCTOR_ACCESS_SECRET,
+  },
 };
 
 // Track Twitter health status per account
@@ -1486,6 +1493,7 @@ const twitterHealth = {
   flywheelsquad: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
   greentruck: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
   themessageis4u: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
+  dogedoctortips: { lastSuccess: null, lastError: null, errorCount: 0, rateLimitReset: null },
 };
 
 // Parse Twitter API errors for better debugging
@@ -1782,7 +1790,7 @@ async function postTweet(text, accountName = 'flywheelsquad', options = {}) {
 // Cross-Engagement Between Accounts
 // ============================================
 
-const ALL_ACCOUNTS = ['flywheelsquad', 'themessageis4u', 'greentruck'];
+const ALL_ACCOUNTS = ['flywheelsquad', 'themessageis4u', 'greentruck', 'dogedoctortips'];
 
 // Have other accounts like and retweet a post
 async function crossEngage(tweetId, postingAccount) {
@@ -5812,6 +5820,7 @@ app.get('/api/admin/system/health', async (req, res) => {
     verifyTwitterCredentials('flywheelsquad'),
     verifyTwitterCredentials('themessageis4u'),
     verifyTwitterCredentials('greentruck'),
+    verifyTwitterCredentials('dogedoctortips'),
   ]);
   
   health.services.twitter = {
@@ -5833,6 +5842,12 @@ app.get('/api/admin/system/health', async (req, res) => {
       error: twitterChecks[2].error?.diagnosis || null,
       lastSuccess: twitterHealth.greentruck?.lastSuccess,
     },
+    dogedoctortips: {
+      status: twitterChecks[3].valid ? 'healthy' : 'error',
+      username: twitterChecks[3].user?.username || null,
+      error: twitterChecks[3].error?.diagnosis || null,
+      lastSuccess: twitterHealth.dogedoctortips?.lastSuccess,
+    },
   };
   
   if (!twitterChecks[0].valid) {
@@ -5843,6 +5858,9 @@ app.get('/api/admin/system/health', async (req, res) => {
   }
   if (!twitterChecks[2].valid) {
     health.issues.push({ service: 'twitter', account: 'greentruck', error: twitterChecks[2].error?.diagnosis });
+  }
+  if (!twitterChecks[3].valid) {
+    health.issues.push({ service: 'twitter', account: 'dogedoctortips', error: twitterChecks[3].error?.diagnosis });
   }
   
   // Check Email (Resend)
