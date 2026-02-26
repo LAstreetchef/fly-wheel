@@ -1722,18 +1722,28 @@ export default function App() {
           </div>
 
           {/* Right: How It Works + Stella */}
-          <div className="bg-gray-900/80 backdrop-blur border border-gray-700 rounded-2xl p-6">
+          <div className={`bg-gray-900/80 backdrop-blur border rounded-2xl p-6 ${podcastMode ? 'border-emerald-500/30' : artistMode ? 'border-purple-500/30' : 'border-gray-700'}`}>
             <h2 className="text-xl font-bold mb-6">How It Works</h2>
             
             <div className="space-y-6">
-              {[
+              {(podcastMode ? [
+                { img: `${BASE_PATH}/squad/glasses.png`, icon: '🎙️', title: 'Enter your podcast', desc: 'Show name, episode title, and URL' },
+                { img: `${BASE_PATH}/squad/wink.png`, icon: '🔍', title: 'Pick a blog', desc: 'We find podcast blogs & newsletters' },
+                { img: `${BASE_PATH}/squad/jimmy.png`, icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo + guest tagging' },
+                { img: `${BASE_PATH}/squad/stella.png`, icon: '🚀', title: 'Pay & post', desc: '$4.99 — posted to Twitter + LinkedIn' },
+              ] : artistMode ? [
+                { img: `${BASE_PATH}/squad/glasses.png`, icon: '🎵', title: 'Enter your track', desc: 'Artist name, track URL, and genre' },
+                { img: `${BASE_PATH}/squad/wink.png`, icon: '🔍', title: 'Pick a blog', desc: 'We find music blogs & playlists' },
+                { img: `${BASE_PATH}/squad/jimmy.png`, icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo with genre hashtags' },
+                { img: `${BASE_PATH}/squad/stella.png`, icon: '🚀', title: 'Pay & post', desc: '$4.40 — Concert Pitch to Twitter + LinkedIn' },
+              ] : [
                 { img: `${BASE_PATH}/squad/glasses.png`, icon: '📝', title: 'Enter your product', desc: 'Name, URL, description, and keywords' },
                 { img: `${BASE_PATH}/squad/wink.png`, icon: '🔍', title: 'Pick a blog', desc: 'We find relevant content your audience reads' },
                 { img: `${BASE_PATH}/squad/jimmy.png`, icon: '✨', title: 'AI crafts your boost', desc: 'Natural promo linking blog + your product' },
-                { img: `${BASE_PATH}/squad/stella.png`, icon: '🚀', title: 'Pay & post', desc: '$1.99 — we post instantly + send you performance stats' },
-              ].map((s, i) => (
+                { img: `${BASE_PATH}/squad/stella.png`, icon: '🚀', title: 'Pay & post', desc: '$1.99 — posted to Twitter + LinkedIn' },
+              ]).map((s, i) => (
                 <div key={i} className="flex items-start gap-4 group">
-                  <div className="flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-gray-600 group-hover:border-orange-500 transition-all duration-300">
+                  <div className={`flex-shrink-0 w-12 h-12 rounded-full overflow-hidden border-2 border-gray-600 transition-all duration-300 ${podcastMode ? 'group-hover:border-emerald-500' : artistMode ? 'group-hover:border-purple-500' : 'group-hover:border-orange-500'}`}>
                     <img 
                       src={s.img} 
                       alt="" 
@@ -1741,7 +1751,7 @@ export default function App() {
                     />
                   </div>
                   <div>
-                    <h3 className="font-bold text-white flex items-center gap-2 group-hover:text-orange-400 transition-colors">
+                    <h3 className={`font-bold text-white flex items-center gap-2 transition-colors ${podcastMode ? 'group-hover:text-emerald-400' : artistMode ? 'group-hover:text-purple-400' : 'group-hover:text-orange-400'}`}>
                       <span>{s.icon}</span> {s.title}
                     </h3>
                     <p className="text-gray-400 text-sm">{s.desc}</p>
