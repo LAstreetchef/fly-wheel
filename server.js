@@ -962,6 +962,7 @@ const allowedOrigins = [
   'https://daufinder.com',
   'https://www.daufinder.com',
   'https://lastreetchef.github.io',
+  'https://fly-wheel.onrender.com',
 ];
 
 // Add localhost in development only
