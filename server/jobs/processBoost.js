@@ -71,21 +71,52 @@ boostQueue.process('publish', async (data, job) => {
     console.log(`[Boost ${sessionId}] Posting tweet...`);
     const tweet = await postTweet(finalContent);
 
-    // Step 5: Mark as published
+    // Step 5: Post to LinkedIn (Kam's account - dual platform boost)
+    let linkedinPostId = null;
+    try {
+      console.log(`[Boost ${sessionId}] Posting to LinkedIn...`);
+      
+      // Generate LinkedIn-specific content
+      const linkedinText = `🚀 ${productData.name}\n\n${productData.description || `Check out ${productData.name} - ${productData.keywords || 'a great product'}.`}\n\nLearn more: ${productData.productUrl || 'daufinder.com'}\n\n#${(productData.keywords || 'startup').split(/[,\s]+/)[0].replace(/[^a-zA-Z]/g, '')} #Innovation #DAUfinder`;
+      
+      const linkedinRes = await fetch(`${process.env.API_URL || 'https://fly-wheel.onrender.com'}/api/linkedin/post`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: 'message4u@secretmessage4u.com',
+          text: linkedinText.slice(0, 700), // LinkedIn has limits
+          episodeUrl: productData.productUrl || 'https://daufinder.com'
+        })
+      });
+      
+      if (linkedinRes.ok) {
+        const linkedinData = await linkedinRes.json();
+        linkedinPostId = linkedinData.postId;
+        console.log(`[Boost ${sessionId}] 💼 LinkedIn posted: ${linkedinPostId}`);
+      } else {
+        console.warn(`[Boost ${sessionId}] LinkedIn post failed: ${linkedinRes.status}`);
+      }
+    } catch (linkedinErr) {
+      console.error(`[Boost ${sessionId}] LinkedIn error:`, linkedinErr.message);
+      // Don't fail the whole boost if LinkedIn fails
+    }
+
+    // Step 6: Mark as published
     if (orderStore && sessionId) {
       const order = await orderStore.get(sessionId);
       if (order) {
         order.status = 'published';
         order.tweetUrl = tweet.tweetUrl;
         order.tweetId = tweet.tweetId;
+        order.linkedinPostId = linkedinPostId;
         order.publishedAt = new Date().toISOString();
         await orderStore.set(sessionId, order);
       }
     }
 
-    console.log(`[Boost ${sessionId}] ✅ Published: ${tweet.tweetUrl}`);
+    console.log(`[Boost ${sessionId}] ✅ Published: ${tweet.tweetUrl}${linkedinPostId ? ' + LinkedIn' : ''}`);
 
-    // Step 6: Cross-engage from other accounts (fire-and-forget)
+    // Step 7: Cross-engage from other accounts (fire-and-forget)
     crossEngage(tweet.tweetId, tweet.account)
       .then(eng => console.log(`[Boost ${sessionId}] 🔥 Cross-engagement:`, eng))
       .catch(err => console.error(`[Boost ${sessionId}] Cross-engage error:`, err.message));

@@ -1109,6 +1109,117 @@ async function searchBlogs(keywords) {
 }
 
 // ============================================
+// LinkedIn Content Search
+// ============================================
+
+async function searchLinkedIn(keywords) {
+  if (!BRAVE_API_KEY) {
+    console.warn('⚠️  BRAVE_API_KEY not set, using mock');
+    return [{
+      title: 'Sample LinkedIn Post About ' + keywords,
+      url: 'https://linkedin.com/pulse/sample',
+      snippet: 'This is a sample LinkedIn post matching your keywords...',
+      author: 'LinkedIn User',
+    }];
+  }
+
+  // Check cache first
+  const cacheKey = `linkedin:${keywords.toLowerCase().trim()}`;
+  const cached = getCached(cacheKey);
+  if (cached) {
+    console.log(`📦 LinkedIn search cache hit: "${keywords}"`);
+    return cached;
+  }
+
+  // Search LinkedIn specifically
+  const url = `https://api.search.brave.com/res/v1/web/search?q=${encodeURIComponent('site:linkedin.com ' + keywords)}&count=10`;
+  const res = await fetch(url, {
+    headers: { 'Accept': 'application/json', 'X-Subscription-Token': BRAVE_API_KEY }
+  });
+  
+  if (!res.ok) throw new Error(`LinkedIn search failed: ${res.status}`);
+  const data = await res.json();
+  
+  const results = (data.web?.results || [])
+    .filter(r => r.url.includes('linkedin.com'))
+    .filter(r => r.url.includes('/pulse/') || r.url.includes('/posts/') || r.url.includes('/in/'))
+    .slice(0, 5)
+    .map(r => {
+      // Try to extract author name from URL or title
+      let author = 'LinkedIn';
+      const urlMatch = r.url.match(/linkedin\.com\/in\/([^\/]+)/);
+      if (urlMatch) {
+        author = urlMatch[1].replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+      }
+      const titleMatch = r.title.match(/^(.+?)\s*[-|–]/);
+      if (titleMatch) {
+        author = titleMatch[1].trim();
+      }
+      
+      return {
+        title: r.title,
+        url: r.url,
+        snippet: r.description,
+        author: author,
+        type: r.url.includes('/pulse/') ? 'article' : r.url.includes('/posts/') ? 'post' : 'profile',
+      };
+    });
+
+  // Cache for 1 hour
+  setCache(cacheKey, results);
+  console.log(`📦 LinkedIn search cached: "${keywords}" (${results.length} results)`);
+  
+  return results;
+}
+
+// Generate LinkedIn-specific boost content (references LinkedIn content)
+async function generateLinkedInBoostContent(productData, linkedinPost, blog) {
+  const prompt = `You are a LinkedIn content expert creating an engaging post to promote a product while referencing relevant LinkedIn content.
+
+PRODUCT:
+- Name: ${productData.name}
+- URL: ${productData.productUrl || 'N/A'}
+- Description: ${productData.description || 'N/A'}
+- Keywords: ${productData.keywords || 'N/A'}
+
+LINKEDIN CONTENT TO REFERENCE:
+- Title: ${linkedinPost?.title || 'N/A'}
+- Author: ${linkedinPost?.author || 'N/A'}
+- Snippet: ${linkedinPost?.snippet || 'N/A'}
+- URL: ${linkedinPost?.url || 'N/A'}
+
+${blog ? `BLOG REFERENCE (optional):
+- Title: ${blog.title}
+- URL: ${blog.url}` : ''}
+
+Create a professional LinkedIn post (200-350 chars) that:
+1. References or builds on the LinkedIn content naturally
+2. Introduces the product as a relevant solution or tool
+3. Feels like genuine professional insight, not an ad
+4. Uses 2-3 relevant hashtags
+5. Has a clear call to action
+
+Do NOT include URLs in your text - they will be added separately.
+Return ONLY the post text, nothing else.`;
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return `Great insights on ${productData.keywords || 'this topic'} 👆
+
+If you're working in this space, check out ${productData.name} — it might be exactly what you need.
+
+#${(productData.keywords || 'business').split(/[,\s]+/)[0].replace(/[^a-zA-Z]/g, '')} #Innovation #Startup`;
+  }
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 400,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return message.content[0].text.trim();
+}
+
+// ============================================
 // Content Generation
 // ============================================
 
@@ -3045,6 +3156,19 @@ app.get('/api/blogs/search', sanitizeQuery(['keywords'], 200), async (req, res) 
     res.json({ results });
   } catch (error) {
     console.error('Search error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// LinkedIn content search
+app.get('/api/linkedin/search', sanitizeQuery(['keywords'], 200), async (req, res) => {
+  try {
+    const { keywords } = req.query;
+    if (!keywords) return res.status(400).json({ error: 'Keywords required' });
+    const results = await searchLinkedIn(keywords);
+    res.json({ results });
+  } catch (error) {
+    console.error('LinkedIn search error:', error);
     res.status(500).json({ error: error.message });
   }
 });
