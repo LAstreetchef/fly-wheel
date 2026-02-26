@@ -3688,65 +3688,81 @@ const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
 const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
 const LINKEDIN_REDIRECT_URI = `${process.env.API_URL || 'https://fly-wheel.onrender.com'}/api/linkedin/callback`;
 
-// Initialize LinkedIn tokens table in SQLite
-ordersDb.exec(`
-  CREATE TABLE IF NOT EXISTS linkedin_tokens (
-    email TEXT PRIMARY KEY,
-    access_token TEXT NOT NULL,
-    refresh_token TEXT,
-    expires_at INTEGER NOT NULL,
-    profile_sub TEXT,
-    profile_name TEXT,
-    profile_email TEXT,
-    profile_picture TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    updated_at TEXT DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+// Initialize LinkedIn tokens table (PostgreSQL for production, in-memory fallback for local)
+const linkedinPool = process.env.DATABASE_URL ? new pg.Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } }) : null;
 
-// LinkedIn token helpers (SQLite-backed)
-function getLinkedInTokens(email) {
-  const row = ordersDb.prepare('SELECT * FROM linkedin_tokens WHERE email = ?').get(email);
-  if (!row) return null;
-  return {
-    accessToken: row.access_token,
-    refreshToken: row.refresh_token,
-    expiresAt: row.expires_at,
-    profile: {
-      sub: row.profile_sub,
-      name: row.profile_name,
-      email: row.profile_email,
-      picture: row.profile_picture,
-    }
-  };
+// Create table in PostgreSQL
+if (linkedinPool) {
+  linkedinPool.query(`
+    CREATE TABLE IF NOT EXISTS linkedin_tokens (
+      email TEXT PRIMARY KEY,
+      access_token TEXT NOT NULL,
+      refresh_token TEXT,
+      expires_at BIGINT NOT NULL,
+      profile_sub TEXT,
+      profile_name TEXT,
+      profile_email TEXT,
+      profile_picture TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    )
+  `).then(() => console.log('💼 LinkedIn tokens database: PostgreSQL initialized'))
+    .catch(err => console.error('LinkedIn table init error:', err.message));
 }
 
-function setLinkedInTokens(email, data) {
-  ordersDb.prepare(`
-    INSERT INTO linkedin_tokens (email, access_token, refresh_token, expires_at, profile_sub, profile_name, profile_email, profile_picture, updated_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
-    ON CONFLICT(email) DO UPDATE SET
-      access_token = excluded.access_token,
-      refresh_token = excluded.refresh_token,
-      expires_at = excluded.expires_at,
-      profile_sub = excluded.profile_sub,
-      profile_name = excluded.profile_name,
-      profile_email = excluded.profile_email,
-      profile_picture = excluded.profile_picture,
-      updated_at = CURRENT_TIMESTAMP
-  `).run(
-    email,
-    data.accessToken,
-    data.refreshToken || null,
-    data.expiresAt,
-    data.profile?.sub || null,
-    data.profile?.name || null,
-    data.profile?.email || null,
-    data.profile?.picture || null
-  );
+// Fallback in-memory store for local dev
+const linkedinTokensMemory = new Map();
+
+// LinkedIn token helpers (PostgreSQL or memory-backed)
+async function getLinkedInTokens(email) {
+  if (linkedinPool) {
+    const result = await linkedinPool.query('SELECT * FROM linkedin_tokens WHERE email = $1', [email]);
+    const row = result.rows[0];
+    if (!row) return null;
+    return {
+      accessToken: row.access_token,
+      refreshToken: row.refresh_token,
+      expiresAt: parseInt(row.expires_at),
+      profile: {
+        sub: row.profile_sub,
+        name: row.profile_name,
+        email: row.profile_email,
+        picture: row.profile_picture,
+      }
+    };
+  } else {
+    return linkedinTokensMemory.get(email) || null;
+  }
 }
 
-console.log('💼 LinkedIn tokens database: SQLite initialized');
+async function setLinkedInTokens(email, data) {
+  if (linkedinPool) {
+    await linkedinPool.query(`
+      INSERT INTO linkedin_tokens (email, access_token, refresh_token, expires_at, profile_sub, profile_name, profile_email, profile_picture, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, CURRENT_TIMESTAMP)
+      ON CONFLICT(email) DO UPDATE SET
+        access_token = EXCLUDED.access_token,
+        refresh_token = EXCLUDED.refresh_token,
+        expires_at = EXCLUDED.expires_at,
+        profile_sub = EXCLUDED.profile_sub,
+        profile_name = EXCLUDED.profile_name,
+        profile_email = EXCLUDED.profile_email,
+        profile_picture = EXCLUDED.profile_picture,
+        updated_at = CURRENT_TIMESTAMP
+    `, [
+      email,
+      data.accessToken,
+      data.refreshToken || null,
+      data.expiresAt,
+      data.profile?.sub || null,
+      data.profile?.name || null,
+      data.profile?.email || null,
+      data.profile?.picture || null
+    ]);
+  } else {
+    linkedinTokensMemory.set(email, data);
+  }
+}
 
 app.get('/api/linkedin/auth', (req, res) => {
   const { email } = req.query;
@@ -3812,7 +3828,7 @@ app.get('/api/linkedin/callback', async (req, res) => {
     }
     
     // Store tokens in database (persists across restarts)
-    setLinkedInTokens(stateData.email, {
+    await setLinkedInTokens(stateData.email, {
       accessToken: tokens.access_token,
       refreshToken: tokens.refresh_token,
       expiresAt: Date.now() + (tokens.expires_in * 1000),
@@ -3833,9 +3849,9 @@ app.get('/api/linkedin/callback', async (req, res) => {
 });
 
 // Check LinkedIn connection status
-app.get('/api/linkedin/status/:email', (req, res) => {
+app.get('/api/linkedin/status/:email', async (req, res) => {
   const { email } = req.params;
-  const tokens = getLinkedInTokens(email);
+  const tokens = await getLinkedInTokens(email);
   
   if (!tokens || Date.now() > tokens.expiresAt) {
     return res.json({ connected: false });
@@ -3852,7 +3868,7 @@ app.post('/api/linkedin/post', sanitizeBody(['email', 'text'], 2000), async (req
   try {
     const { email, text, episodeUrl } = req.body;
     
-    const tokens = getLinkedInTokens(email);
+    const tokens = await getLinkedInTokens(email);
     if (!tokens || Date.now() > tokens.expiresAt) {
       return res.status(401).json({ error: 'LinkedIn not connected or token expired' });
     }
