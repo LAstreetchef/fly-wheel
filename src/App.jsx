@@ -84,6 +84,30 @@ export default function App() {
   const GENRES = ['Hip-Hop', 'R&B', 'Pop', 'Rock', 'Indie', 'Electronic', 'EDM', 'Jazz', 'Soul', 'Country', 'Latin', 'Afrobeats', 'K-Pop', 'Metal', 'Punk', 'Folk', 'Classical', 'Other']
   const VIBES = ['Chill', 'Hype', 'Late Night', 'Workout', 'Party', 'Sad', 'Romantic', 'Focus', 'Road Trip', 'Summer']
 
+  // Podcast Mode
+  const [podcastMode, setPodcastMode] = useState(() => {
+    const path = window.location.pathname
+    const params = new URLSearchParams(window.location.search)
+    return path.includes('/podcast') || params.get('mode') === 'podcast'
+  })
+  const [podcastData, setPodcastData] = useState({
+    showName: '',
+    episodeTitle: '',
+    episodeUrl: '',
+    category: '',
+    hostName: '',
+    guestName: '',
+    guestTwitter: ''
+  })
+  
+  // LinkedIn OAuth state
+  const [linkedinConnected, setLinkedinConnected] = useState(false)
+  const [linkedinProfile, setLinkedinProfile] = useState(null)
+  const [showLinkedinPreview, setShowLinkedinPreview] = useState(false)
+  const [linkedinDraft, setLinkedinDraft] = useState('')
+  
+  const PODCAST_CATEGORIES = ['True Crime', 'Comedy', 'News & Politics', 'Business', 'Technology', 'Health & Wellness', 'Sports', 'Music', 'Society & Culture', 'Education', 'Science', 'History', 'Arts', 'Religion', 'Kids & Family', 'Fiction', 'Other']
+
   // Load ElevenLabs widget
   useEffect(() => {
     const script = document.createElement('script')
@@ -212,6 +236,34 @@ export default function App() {
       window.history.replaceState({}, '', BASE_PATH + '/')
     }
   }, [primeEmail])
+  
+  // Check for LinkedIn connection callback
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('linkedin_connected') === 'true') {
+      setLinkedinConnected(true)
+      setPodcastMode(true)
+      window.history.replaceState({}, '', BASE_PATH + '/')
+    }
+    if (params.get('linkedin_error')) {
+      setError(`LinkedIn connection failed: ${params.get('linkedin_error')}`)
+      window.history.replaceState({}, '', BASE_PATH + '/')
+    }
+  }, [])
+  
+  // Check LinkedIn status when email changes (in podcast mode)
+  useEffect(() => {
+    const email = productData.email || primeEmail
+    if (!email || !email.includes('@') || !podcastMode) return
+    
+    fetch(`${API_URL}/api/linkedin/status/${encodeURIComponent(email)}`)
+      .then(res => res.json())
+      .then(data => {
+        setLinkedinConnected(data.connected)
+        if (data.profile) setLinkedinProfile(data.profile)
+      })
+      .catch(() => setLinkedinConnected(false))
+  }, [productData.email, primeEmail, podcastMode])
   
   // Check for Prime subscription success
   useEffect(() => {
@@ -469,7 +521,12 @@ export default function App() {
 
   const searchBlogs = async () => {
     // Validate based on mode
-    if (artistMode) {
+    if (podcastMode) {
+      if (!podcastData.showName?.trim() || !podcastData.episodeTitle?.trim() || !podcastData.episodeUrl?.trim() || !podcastData.category) {
+        setError('Please fill in show name, episode title, episode URL, and category')
+        return
+      }
+    } else if (artistMode) {
       if (!productData.name?.trim() || !musicData.trackUrl?.trim() || !musicData.genre) {
         setError('Please fill in artist/track name, track URL, and genre')
         return
@@ -485,9 +542,11 @@ export default function App() {
     setStep('searching')
     
     // Build keywords based on mode
-    const keywords = artistMode 
-      ? `${musicData.genre} music blog ${musicData.vibe || ''} ${musicData.similarArtists || ''} new music`.trim()
-      : productData.keywords
+    const keywords = podcastMode
+      ? `${podcastData.category} podcast blog ${podcastData.showName} podcast review`.trim()
+      : artistMode 
+        ? `${musicData.genre} music blog ${musicData.vibe || ''} ${musicData.similarArtists || ''} new music`.trim()
+        : productData.keywords
     
     try {
       const res = await fetch(`${API_URL}/api/blogs/search?keywords=${encodeURIComponent(keywords)}`)
@@ -515,10 +574,25 @@ export default function App() {
     setStep('generating')
     
     try {
-      // Include musicData for artist mode
-      const payload = artistMode 
-        ? { productData: { ...productData, productUrl: musicData.trackUrl }, musicData, blog, artistMode: true }
-        : { productData, blog }
+      // Include mode-specific data
+      let payload
+      if (podcastMode) {
+        payload = { 
+          productData: { ...productData, name: podcastData.showName, productUrl: podcastData.episodeUrl }, 
+          podcastData, 
+          blog, 
+          podcastMode: true 
+        }
+      } else if (artistMode) {
+        payload = { 
+          productData: { ...productData, productUrl: musicData.trackUrl }, 
+          musicData, 
+          blog, 
+          artistMode: true 
+        }
+      } else {
+        payload = { productData, blog }
+      }
       
       const res = await fetch(`${API_URL}/api/generate`, {
         method: 'POST',
@@ -541,11 +615,29 @@ export default function App() {
   const checkout = async () => {
     setLoading(true)
     try {
-      // Use concert-pitch endpoint for artist mode
-      const endpoint = artistMode ? `${API_URL}/api/checkout/concert-pitch` : `${API_URL}/api/checkout`
-      const payload = artistMode 
-        ? { productData: { ...productData, productUrl: musicData.trackUrl }, musicData, blog: selectedBlog, content }
-        : { productData, blog: selectedBlog, content }
+      // Use mode-specific endpoints
+      let endpoint, payload
+      if (podcastMode) {
+        endpoint = `${API_URL}/api/checkout/podcast-boost`
+        payload = { 
+          productData: { ...productData, name: podcastData.showName, productUrl: podcastData.episodeUrl }, 
+          podcastData, 
+          blog: selectedBlog, 
+          content,
+          linkedinConnected 
+        }
+      } else if (artistMode) {
+        endpoint = `${API_URL}/api/checkout/concert-pitch`
+        payload = { 
+          productData: { ...productData, productUrl: musicData.trackUrl }, 
+          musicData, 
+          blog: selectedBlog, 
+          content 
+        }
+      } else {
+        endpoint = `${API_URL}/api/checkout`
+        payload = { productData, blog: selectedBlog, content }
+      }
       
       const res = await fetch(endpoint, {
         method: 'POST',
@@ -568,6 +660,7 @@ export default function App() {
     setStep('input')
     setProductData({ name: '', description: '', productUrl: '', keywords: '', tags: '', email: '' })
     setMusicData({ trackUrl: '', genre: '', vibe: '', similarArtists: '' })
+    setPodcastData({ showName: '', episodeTitle: '', episodeUrl: '', category: '', hostName: '', guestName: '', guestTwitter: '' })
     setBlogs([])
     setSelectedBlog(null)
     setContent(null)
@@ -1146,8 +1239,8 @@ export default function App() {
           {/* Left: Form */}
           <div className={`backdrop-blur rounded-2xl p-6 ${darkMode ? 'bg-gray-900/80 border border-gray-700' : 'bg-white border border-gray-200 shadow-xl'}`}>
             <h2 className={`text-xl font-bold mb-6 flex items-center gap-2 ${darkMode ? '' : 'text-gray-900'}`}>
-              <span className="text-2xl">{artistMode ? '🎵' : '✍️'}</span> 
-              {artistMode ? 'Promote Your Track' : 'Create a Boost'}
+              <span className="text-2xl">{podcastMode ? '🎙️' : artistMode ? '🎵' : '✍️'}</span> 
+              {podcastMode ? 'Promote Your Podcast' : artistMode ? 'Promote Your Track' : 'Create a Boost'}
             </h2>
 
             {/* Shopify Integration - TEMPORARILY REMOVED
@@ -1157,29 +1250,29 @@ export default function App() {
             {/* Input Step */}
             {(step === 'input' || step === 'searching') && (
               <form onSubmit={(e) => { e.preventDefault(); searchBlogs() }} className="space-y-4">
-                {/* Mode Selector - Side by Side Thumbnails */}
-                <div className="grid grid-cols-2 gap-3 mb-4">
+                {/* Mode Selector - Three Options */}
+                <div className="grid grid-cols-3 gap-2 mb-4">
                   {/* Product Option */}
                   <button
                     type="button"
-                    onClick={() => setArtistMode(false)}
-                    className={`relative overflow-hidden rounded-xl transition-all duration-300 ease-out transform ${!artistMode 
+                    onClick={() => { setArtistMode(false); setPodcastMode(false); }}
+                    className={`relative overflow-hidden rounded-xl transition-all duration-300 ease-out transform ${!artistMode && !podcastMode
                       ? 'ring-2 ring-orange-500 ring-offset-2 scale-[1.02] ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
                       : 'opacity-50 hover:opacity-75 hover:scale-[1.01]'
                     }`}
                   >
-                    <div className="relative h-24">
+                    <div className="relative h-20">
                       <img 
                         src="https://images.unsplash.com/photo-1460925895917-afdab827c52f?w=400&q=75" 
                         alt="Products & Business"
                         className="w-full h-full object-cover transition-transform duration-300"
                       />
-                      <div className={`absolute inset-0 transition-all duration-300 ${!artistMode ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'}`} />
-                      <div className="absolute bottom-2 left-3 right-3">
-                        <div className="text-white font-bold text-sm">📦 Products</div>
-                        <div className="text-gray-300 text-xs">Apps, SaaS, Business</div>
+                      <div className={`absolute inset-0 transition-all duration-300 ${!artistMode && !podcastMode ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'}`} />
+                      <div className="absolute bottom-1 left-2 right-2">
+                        <div className="text-white font-bold text-xs">📦 Products</div>
+                        <div className="text-gray-300 text-[10px]">Apps, SaaS</div>
                       </div>
-                      <div className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full transition-all duration-300 ${!artistMode ? 'bg-orange-500 text-black scale-110' : 'bg-orange-500/70 text-black/80'}`}>
+                      <div className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-all duration-300 ${!artistMode && !podcastMode ? 'bg-orange-500 text-black scale-110' : 'bg-orange-500/70 text-black/80'}`}>
                         $1.99
                       </div>
                     </div>
@@ -1188,25 +1281,51 @@ export default function App() {
                   {/* Artist Option */}
                   <button
                     type="button"
-                    onClick={() => setArtistMode(true)}
-                    className={`relative overflow-hidden rounded-xl transition-all duration-300 ease-out transform ${artistMode 
+                    onClick={() => { setArtistMode(true); setPodcastMode(false); }}
+                    className={`relative overflow-hidden rounded-xl transition-all duration-300 ease-out transform ${artistMode && !podcastMode
                       ? 'ring-2 ring-purple-500 ring-offset-2 scale-[1.02] ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
                       : 'opacity-50 hover:opacity-75 hover:scale-[1.01]'
                     }`}
                   >
-                    <div className="relative h-24">
+                    <div className="relative h-20">
                       <img 
                         src="https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=400&q=75" 
                         alt="Artists & Musicians"
                         className="w-full h-full object-cover transition-transform duration-300"
                       />
                       <div className={`absolute inset-0 transition-all duration-300 ${artistMode ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'}`} />
-                      <div className="absolute bottom-2 left-3 right-3">
-                        <div className="text-white font-bold text-sm">🎵 Music</div>
-                        <div className="text-gray-300 text-xs">Artists & Producers</div>
+                      <div className="absolute bottom-1 left-2 right-2">
+                        <div className="text-white font-bold text-xs">🎵 Music</div>
+                        <div className="text-gray-300 text-[10px]">Artists</div>
                       </div>
-                      <div className={`absolute top-2 right-2 text-xs font-bold px-2 py-0.5 rounded-full transition-all duration-300 ${artistMode ? 'bg-purple-500 text-white scale-110' : 'bg-purple-500/70 text-white/80'}`}>
+                      <div className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-all duration-300 ${artistMode ? 'bg-purple-500 text-white scale-110' : 'bg-purple-500/70 text-white/80'}`}>
                         $4.40
+                      </div>
+                    </div>
+                  </button>
+                  
+                  {/* Podcast Option */}
+                  <button
+                    type="button"
+                    onClick={() => { setArtistMode(false); setPodcastMode(true); }}
+                    className={`relative overflow-hidden rounded-xl transition-all duration-300 ease-out transform ${podcastMode
+                      ? 'ring-2 ring-emerald-500 ring-offset-2 scale-[1.02] ' + (darkMode ? 'ring-offset-gray-900' : 'ring-offset-white')
+                      : 'opacity-50 hover:opacity-75 hover:scale-[1.01]'
+                    }`}
+                  >
+                    <div className="relative h-20">
+                      <img 
+                        src="https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=400&q=75" 
+                        alt="Podcasts"
+                        className="w-full h-full object-cover transition-transform duration-300"
+                      />
+                      <div className={`absolute inset-0 transition-all duration-300 ${podcastMode ? 'bg-gradient-to-t from-black/80 via-black/30 to-transparent' : 'bg-gradient-to-t from-black/90 via-black/50 to-black/20'}`} />
+                      <div className="absolute bottom-1 left-2 right-2">
+                        <div className="text-white font-bold text-xs">🎙️ Podcasts</div>
+                        <div className="text-gray-300 text-[10px]">Shows</div>
+                      </div>
+                      <div className={`absolute top-1 right-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full transition-all duration-300 ${podcastMode ? 'bg-emerald-500 text-white scale-110' : 'bg-emerald-500/70 text-white/80'}`}>
+                        $4.99
                       </div>
                     </div>
                   </button>
@@ -1236,49 +1355,105 @@ export default function App() {
                   </div>
                 </div>
 
-                {!artistMode ? (
+                {podcastMode ? (
                   <>
-                    {/* Product Mode Fields */}
+                    {/* Podcast Mode Fields */}
                     <div>
-                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Product Name *</label>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Show Name *</label>
                       <input 
-                        type="text" required value={productData.name}
-                        onChange={(e) => setProductData({ ...productData, name: e.target.value })}
-                        placeholder="e.g., SwordPay"
-                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                        type="text" required value={podcastData.showName}
+                        onChange={(e) => setPodcastData({ ...podcastData, showName: e.target.value })}
+                        placeholder="e.g., The Joe Rogan Experience"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
                       />
                     </div>
                     <div>
-                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Product URL</label>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Episode Title *</label>
                       <input 
-                        type="text" value={productData.productUrl}
-                        onChange={(e) => setProductData({ ...productData, productUrl: e.target.value })}
-                        onBlur={(e) => e.target.value && setProductData({ ...productData, productUrl: normalizeUrl(e.target.value) })}
-                        placeholder="yoursite.com or paste link"
-                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                        type="text" required value={podcastData.episodeTitle}
+                        onChange={(e) => setPodcastData({ ...podcastData, episodeTitle: e.target.value })}
+                        placeholder="e.g., #2045 - Elon Musk"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
                       />
                     </div>
                     <div>
-                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Description</label>
-                      <textarea 
-                        value={productData.description}
-                        onChange={(e) => setProductData({ ...productData, description: e.target.value })}
-                        placeholder="What does your product do?"
-                        rows={2}
-                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Episode URL * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(Spotify, Apple, YouTube, etc.)</span></label>
+                      <input 
+                        type="text" required value={podcastData.episodeUrl}
+                        onChange={(e) => setPodcastData({ ...podcastData, episodeUrl: e.target.value })}
+                        onBlur={(e) => e.target.value && setPodcastData({ ...podcastData, episodeUrl: normalizeUrl(e.target.value) })}
+                        placeholder="open.spotify.com/episode/... or paste link"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
                       />
                     </div>
-                    <div>
-                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Keywords * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(we'll find blogs about this)</span></label>
-                      <input 
-                        type="text" required value={productData.keywords}
-                        onChange={(e) => setProductData({ ...productData, keywords: e.target.value })}
-                        placeholder="e.g., fintech, payments, creators"
-                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
-                      />
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Category *</label>
+                        <select
+                          required value={podcastData.category}
+                          onChange={(e) => setPodcastData({ ...podcastData, category: e.target.value })}
+                          className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white" : "bg-gray-50 border border-gray-300 text-gray-900"}`}
+                        >
+                          <option value="">Select category</option>
+                          {PODCAST_CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Host Name</label>
+                        <input 
+                          type="text" value={podcastData.hostName}
+                          onChange={(e) => setPodcastData({ ...podcastData, hostName: e.target.value })}
+                          placeholder="e.g., Joe Rogan"
+                          className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Guest Name <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(if any)</span></label>
+                        <input 
+                          type="text" value={podcastData.guestName}
+                          onChange={(e) => setPodcastData({ ...podcastData, guestName: e.target.value })}
+                          placeholder="e.g., Elon Musk"
+                          className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                        />
+                      </div>
+                      <div>
+                        <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Guest Twitter</label>
+                        <input 
+                          type="text" value={podcastData.guestTwitter}
+                          onChange={(e) => setPodcastData({ ...podcastData, guestTwitter: e.target.value })}
+                          placeholder="@elonmusk"
+                          className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-emerald-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* LinkedIn Connect Option */}
+                    <div className={`p-3 rounded-xl border ${darkMode ? 'bg-blue-500/10 border-blue-500/30' : 'bg-blue-50 border-blue-200'}`}>
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xl">💼</span>
+                          <div>
+                            <div className={`font-bold text-sm ${darkMode ? 'text-white' : 'text-gray-900'}`}>Post to LinkedIn</div>
+                            <div className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>Preview & approve before posting</div>
+                          </div>
+                        </div>
+                        {linkedinConnected ? (
+                          <span className="text-green-400 text-sm font-bold">✓ Connected</span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => window.location.href = `${API_URL}/api/linkedin/auth?email=${encodeURIComponent(productData.email || primeEmail)}`}
+                            className="bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-3 py-1.5 rounded-lg"
+                          >
+                            Connect
+                          </button>
+                        )}
+                      </div>
                     </div>
                   </>
-                ) : (
+                ) : artistMode ? (
                   <>
                     {/* Artist Mode Fields */}
                     <div>
@@ -1334,18 +1509,62 @@ export default function App() {
                       />
                     </div>
                   </>
+                ) : (
+                  <>
+                    {/* Product Mode Fields */}
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Product Name *</label>
+                      <input 
+                        type="text" required value={productData.name}
+                        onChange={(e) => setProductData({ ...productData, name: e.target.value })}
+                        placeholder="e.g., SwordPay"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Product URL</label>
+                      <input 
+                        type="text" value={productData.productUrl}
+                        onChange={(e) => setProductData({ ...productData, productUrl: e.target.value })}
+                        onBlur={(e) => e.target.value && setProductData({ ...productData, productUrl: normalizeUrl(e.target.value) })}
+                        placeholder="yoursite.com or paste link"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Description</label>
+                      <textarea 
+                        value={productData.description}
+                        onChange={(e) => setProductData({ ...productData, description: e.target.value })}
+                        placeholder="What does your product do?"
+                        rows={2}
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                    <div>
+                      <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Keywords * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(we'll find blogs about this)</span></label>
+                      <input 
+                        type="text" required value={productData.keywords}
+                        onChange={(e) => setProductData({ ...productData, keywords: e.target.value })}
+                        placeholder="e.g., fintech, payments, creators"
+                        className={`w-full rounded-xl px-4 py-3 focus:outline-none focus:border-orange-500 ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                      />
+                    </div>
+                  </>
                 )}
 
                 {/* Common Fields */}
-                <div>
-                  <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tags <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(optional @mentions)</span></label>
-                  <input 
-                    type="text" value={productData.tags}
-                    onChange={(e) => setProductData({ ...productData, tags: e.target.value })}
-                    placeholder={artistMode ? "e.g., @youraccount, @producer" : "e.g., @yourproduct, @cofounder"}
-                    className={`w-full rounded-xl px-4 py-3 focus:outline-none ${artistMode ? 'focus:border-purple-500' : 'focus:border-orange-500'} ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
-                  />
-                </div>
+                {!podcastMode && (
+                  <div>
+                    <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Tags <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(optional @mentions)</span></label>
+                    <input 
+                      type="text" value={productData.tags}
+                      onChange={(e) => setProductData({ ...productData, tags: e.target.value })}
+                      placeholder={artistMode ? "e.g., @youraccount, @producer" : "e.g., @yourproduct, @cofounder"}
+                      className={`w-full rounded-xl px-4 py-3 focus:outline-none ${artistMode ? 'focus:border-purple-500' : 'focus:border-orange-500'} ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                    />
+                  </div>
+                )}
                 <div>
                   <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     Your Email * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(for performance stats)</span>
@@ -1355,14 +1574,14 @@ export default function App() {
                     type="email" required value={productData.email || primeEmail}
                     onChange={(e) => setProductData({ ...productData, email: e.target.value })}
                     placeholder="you@example.com"
-                    className={`w-full rounded-xl px-4 py-3 focus:outline-none ${artistMode ? 'focus:border-purple-500' : 'focus:border-orange-500'} ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
+                    className={`w-full rounded-xl px-4 py-3 focus:outline-none ${podcastMode ? 'focus:border-emerald-500' : artistMode ? 'focus:border-purple-500' : 'focus:border-orange-500'} ${darkMode ? "bg-gray-800 border border-gray-600 text-white placeholder-gray-500" : "bg-gray-50 border border-gray-300 text-gray-900 placeholder-gray-400"}`}
                   />
                 </div>
                 <button 
                   type="submit" disabled={loading}
-                  className={`w-full py-4 rounded-xl font-bold text-lg disabled:opacity-50 ${artistMode ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-black'}`}
+                  className={`w-full py-4 rounded-xl font-bold text-lg disabled:opacity-50 ${podcastMode ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : artistMode ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-black'}`}
                 >
-                  {loading ? 'Searching...' : artistMode ? 'Find Music Blogs →' : 'Find Relevant Blogs →'}
+                  {loading ? 'Searching...' : podcastMode ? 'Find Podcast Blogs →' : artistMode ? 'Find Music Blogs →' : 'Find Relevant Blogs →'}
                 </button>
               </form>
             )}
@@ -1455,12 +1674,12 @@ export default function App() {
                     ← Back
                   </button>
                   {!primeAccount ? (
-                    <button onClick={checkout} disabled={loading} className={`flex-[2] py-3 rounded-xl font-bold text-lg disabled:opacity-50 ${artistMode ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-black'}`}>
-                      {loading ? 'Loading...' : artistMode ? 'Pay $4.40 & Post →' : 'Pay $1.99 & Post →'}
+                    <button onClick={checkout} disabled={loading} className={`flex-[2] py-3 rounded-xl font-bold text-lg disabled:opacity-50 ${podcastMode ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : artistMode ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-black'}`}>
+                      {loading ? 'Loading...' : podcastMode ? 'Pay $4.99 & Post →' : artistMode ? 'Pay $4.40 & Post →' : 'Pay $1.99 & Post →'}
                     </button>
                   ) : (
                     <button onClick={checkout} disabled={loading} className={`flex-[2] py-3 rounded-xl font-bold text-lg disabled:opacity-50 ${darkMode ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}>
-                      {loading ? 'Loading...' : artistMode ? 'Or Pay $4.40 →' : 'Or Pay $1.99 →'}
+                      {loading ? 'Loading...' : podcastMode ? 'Or Pay $4.99 →' : artistMode ? 'Or Pay $4.40 →' : 'Or Pay $1.99 →'}
                     </button>
                   )}
                 </div>

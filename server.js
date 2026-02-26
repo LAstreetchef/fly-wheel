@@ -922,6 +922,7 @@ if (usePostgres) {
 const BOOST_PRICE = 199; // $1.99 in cents
 const CONCERT_PITCH_PRICE = 440; // $4.40 in cents - A440 Hz for artists
 const SXSW_PACK_PRICE = 799; // $7.99 in cents - SXSW 2026 Festival Pack
+const PODCAST_BOOST_PRICE = 499; // $4.99 in cents - Podcast episode boost
 const SXSW_ARTIST_PACK_PRICE = 4400; // $44.00 in cents - SXSW Artist Pack (25 Concert Pitch boosts)
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:5173';
 const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
@@ -1235,6 +1236,110 @@ Listen now: [TRACK_LINK]
   });
 
   return message.content[0].text.trim().replace('[PRODUCT_LINK]', '[TRACK_LINK]');
+}
+
+// Generate podcast-specific content for Podcast Boost
+async function generatePodcastBoostContent(productData, podcastData, blog) {
+  const guestMention = podcastData.guestTwitter 
+    ? `\nGUEST TWITTER: ${podcastData.guestTwitter.startsWith('@') ? podcastData.guestTwitter : '@' + podcastData.guestTwitter}` 
+    : '';
+  
+  const guestInstruction = podcastData.guestTwitter
+    ? `8. Tag the guest (${podcastData.guestTwitter}) to boost engagement`
+    : '';
+
+  const prompt = `You are a podcast promotion expert creating an engaging X (Twitter) post to promote a podcast episode.
+
+PODCAST INFO:
+- Show Name: ${podcastData.showName}
+- Episode Title: ${podcastData.episodeTitle}
+- Episode URL: ${podcastData.episodeUrl}
+- Category: ${podcastData.category}
+- Host: ${podcastData.hostName || 'N/A'}
+- Guest: ${podcastData.guestName || 'N/A'}${guestMention}
+
+PODCAST BLOG/ARTICLE TO REFERENCE:
+- Title: ${blog.title}
+- URL: ${blog.url}
+- Snippet: ${blog.snippet || 'N/A'}
+
+Create an authentic, engaging X post (max 280 chars) that:
+1. Makes people want to listen to this episode
+2. References the blog/article as relevant context
+3. Highlights what makes this episode interesting
+4. Includes [BLOG_LINK] placeholder for the blog URL
+5. Includes [EPISODE_LINK] placeholder for the episode URL
+6. Uses 2-3 relevant hashtags (e.g. #Podcast #${podcastData.category.replace(/[^a-zA-Z]/g, '')} etc.)
+7. Feels like a genuine podcast recommendation, not an ad
+${guestInstruction}
+
+Return ONLY the tweet text, nothing else. Make it compelling.`;
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    const guestTag = podcastData.guestTwitter ? ` featuring ${podcastData.guestTwitter}` : '';
+    return `🎙️ Just discovered this ${podcastData.category} podcast episode${guestTag}
+
+"${podcastData.episodeTitle}" from ${podcastData.showName}
+
+Great context here: [BLOG_LINK]
+
+Listen now: [EPISODE_LINK]
+
+#Podcast #${podcastData.category.replace(/[^a-zA-Z]/g, '')}`;
+  }
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 300,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return message.content[0].text.trim().replace('[PRODUCT_LINK]', '[EPISODE_LINK]');
+}
+
+// Generate LinkedIn post for podcast
+async function generateLinkedInPost(podcastData, blog) {
+  const prompt = `You are a LinkedIn content expert creating a professional post to promote a podcast episode.
+
+PODCAST INFO:
+- Show Name: ${podcastData.showName}
+- Episode Title: ${podcastData.episodeTitle}
+- Episode URL: ${podcastData.episodeUrl}
+- Category: ${podcastData.category}
+- Host: ${podcastData.hostName || 'N/A'}
+- Guest: ${podcastData.guestName || 'N/A'}
+
+RELATED ARTICLE:
+- Title: ${blog.title}
+- URL: ${blog.url}
+
+Create a professional LinkedIn post (200-400 chars) that:
+1. Hooks the reader with an insight or question
+2. Mentions why this episode is valuable for professionals
+3. Is conversational but professional
+4. Includes 2-3 relevant hashtags
+5. Ends with a call to listen
+
+Do NOT include the URLs in your text - they will be added separately.
+Return ONLY the post text, nothing else.`;
+
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return `🎙️ Just listened to "${podcastData.episodeTitle}" from ${podcastData.showName} and had to share.
+
+${podcastData.guestName ? `Great insights from ${podcastData.guestName} on ` : 'Fascinating discussion about '}${podcastData.category.toLowerCase()}.
+
+Worth your commute time. 👇
+
+#Podcast #${podcastData.category.replace(/[^a-zA-Z]/g, '')} #ProfessionalDevelopment`;
+  }
+
+  const message = await anthropic.messages.create({
+    model: 'claude-sonnet-4-20250514',
+    max_tokens: 400,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  return message.content[0].text.trim();
 }
 
 // ============================================
@@ -2946,15 +3051,20 @@ app.get('/api/blogs/search', sanitizeQuery(['keywords'], 200), async (req, res) 
 
 app.post('/api/generate', generateLimiter, sanitizeBody(['email', 'keywords'], 500), async (req, res) => {
   try {
-    const { productData, blog, musicData, artistMode } = req.body;
+    const { productData, blog, musicData, artistMode, podcastData, podcastMode } = req.body;
     if (!productData?.name || !blog?.url) {
       return res.status(400).json({ error: 'Product data and blog required' });
     }
     
-    // Use music-specific generation for Concert Pitch
-    const content = artistMode 
-      ? await generateMusicBoostContent(productData, musicData, blog)
-      : await generateBoostContent(productData, blog);
+    // Use mode-specific generation
+    let content;
+    if (podcastMode) {
+      content = await generatePodcastBoostContent(productData, podcastData, blog);
+    } else if (artistMode) {
+      content = await generateMusicBoostContent(productData, musicData, blog);
+    } else {
+      content = await generateBoostContent(productData, blog);
+    }
     res.json({ content });
   } catch (error) {
     console.error('Generate error:', error);
@@ -3312,6 +3422,256 @@ app.post('/api/checkout/concert-pitch', checkoutLimiter, sanitizeBody(['email'],
     res.json({ url: session.url, sessionId: session.id });
   } catch (error) {
     console.error('Concert Pitch checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// Podcast Boost - Episode Promotion ($4.99)
+// ============================================
+app.post('/api/checkout/podcast-boost', checkoutLimiter, sanitizeBody(['email'], 500), async (req, res) => {
+  try {
+    const { productData, podcastData, blog, content, linkedinConnected } = req.body;
+    
+    console.log('🎙️ Podcast Boost checkout:');
+    console.log('   show:', podcastData?.showName);
+    console.log('   episode:', podcastData?.episodeTitle);
+    console.log('   category:', podcastData?.category);
+    console.log('   linkedin:', linkedinConnected ? 'yes' : 'no');
+    
+    if (!podcastData?.showName || !podcastData?.episodeTitle || !podcastData?.episodeUrl || !podcastData?.category || !blog?.url || !content) {
+      return res.status(400).json({ error: 'Missing required data (show name, episode title, URL, category, blog, content)' });
+    }
+    
+    // Truncate metadata to fit Stripe's 500 char limit per value
+    const truncate = (str, max) => str && str.length > max ? str.substring(0, max - 3) + '...' : str;
+    const blogMeta = JSON.stringify({
+      url: blog.url,
+      title: truncate(blog.title, 100),
+    });
+    const productMeta = JSON.stringify({
+      name: podcastData.showName,
+      productUrl: podcastData.episodeUrl,
+      email: productData?.email || '',
+    });
+    const podcastMeta = JSON.stringify({
+      showName: podcastData.showName,
+      episodeTitle: truncate(podcastData.episodeTitle, 100),
+      episodeUrl: podcastData.episodeUrl,
+      category: podcastData.category,
+      hostName: podcastData.hostName || '',
+      guestName: podcastData.guestName || '',
+      guestTwitter: podcastData.guestTwitter || '',
+    });
+    
+    const session = await stripe.checkout.sessions.create({
+      payment_method_types: ['card'],
+      line_items: [{
+        price_data: {
+          currency: 'usd',
+          product_data: {
+            name: 'Podcast Boost',
+            description: `Promote "${truncate(podcastData.episodeTitle, 50)}" • ${podcastData.showName} • ${podcastData.category}`,
+          },
+          unit_amount: PODCAST_BOOST_PRICE,
+        },
+        quantity: 1,
+      }],
+      mode: 'payment',
+      success_url: `${FRONTEND_URL}?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: FRONTEND_URL,
+      metadata: {
+        type: 'podcast_boost',
+        productData: productMeta,
+        podcastData: podcastMeta,
+        blog: blogMeta,
+        content: truncate(content, 500),
+        email: productData?.email || '',
+        linkedinConnected: linkedinConnected ? 'true' : 'false',
+      },
+    });
+    
+    await orders.set(session.id, {
+      status: 'pending',
+      type: 'podcast_boost',
+      productData,
+      podcastData,
+      blog,
+      content,
+      email: productData?.email || '',
+      linkedinConnected: linkedinConnected || false,
+      createdAt: new Date().toISOString(),
+      followUpSent: false,
+    });
+    
+    console.log(`🎙️ Podcast Boost order created: ${session.id.substring(0, 20)}... | ${podcastData.showName} | ${podcastData.category}`);
+    res.json({ url: session.url, sessionId: session.id });
+  } catch (error) {
+    console.error('Podcast Boost checkout error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// ============================================
+// LinkedIn OAuth Integration
+// ============================================
+const LINKEDIN_CLIENT_ID = process.env.LINKEDIN_CLIENT_ID;
+const LINKEDIN_CLIENT_SECRET = process.env.LINKEDIN_CLIENT_SECRET;
+const LINKEDIN_REDIRECT_URI = `${process.env.API_URL || 'https://fly-wheel.onrender.com'}/api/linkedin/callback`;
+
+// Store LinkedIn tokens (in production, use database)
+const linkedinTokens = new Map();
+
+app.get('/api/linkedin/auth', (req, res) => {
+  const { email } = req.query;
+  if (!email) {
+    return res.status(400).json({ error: 'Email required' });
+  }
+  
+  const state = Buffer.from(JSON.stringify({ email, ts: Date.now() })).toString('base64');
+  const scope = 'openid profile email w_member_social';
+  
+  const authUrl = `https://www.linkedin.com/oauth/v2/authorization?` +
+    `response_type=code&` +
+    `client_id=${LINKEDIN_CLIENT_ID}&` +
+    `redirect_uri=${encodeURIComponent(LINKEDIN_REDIRECT_URI)}&` +
+    `state=${state}&` +
+    `scope=${encodeURIComponent(scope)}`;
+  
+  res.redirect(authUrl);
+});
+
+app.get('/api/linkedin/callback', async (req, res) => {
+  try {
+    const { code, state } = req.query;
+    if (!code || !state) {
+      return res.redirect(`${FRONTEND_URL}?linkedin_error=missing_code`);
+    }
+    
+    let stateData;
+    try {
+      stateData = JSON.parse(Buffer.from(state, 'base64').toString());
+    } catch (e) {
+      return res.redirect(`${FRONTEND_URL}?linkedin_error=invalid_state`);
+    }
+    
+    // Exchange code for tokens
+    const tokenRes = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: new URLSearchParams({
+        grant_type: 'authorization_code',
+        code,
+        redirect_uri: LINKEDIN_REDIRECT_URI,
+        client_id: LINKEDIN_CLIENT_ID,
+        client_secret: LINKEDIN_CLIENT_SECRET,
+      }),
+    });
+    
+    if (!tokenRes.ok) {
+      console.error('LinkedIn token error:', await tokenRes.text());
+      return res.redirect(`${FRONTEND_URL}?linkedin_error=token_failed`);
+    }
+    
+    const tokens = await tokenRes.json();
+    
+    // Get user profile
+    const profileRes = await fetch('https://api.linkedin.com/v2/userinfo', {
+      headers: { Authorization: `Bearer ${tokens.access_token}` },
+    });
+    
+    let profile = {};
+    if (profileRes.ok) {
+      profile = await profileRes.json();
+    }
+    
+    // Store tokens
+    linkedinTokens.set(stateData.email, {
+      accessToken: tokens.access_token,
+      refreshToken: tokens.refresh_token,
+      expiresAt: Date.now() + (tokens.expires_in * 1000),
+      profile: {
+        sub: profile.sub,
+        name: profile.name,
+        email: profile.email,
+        picture: profile.picture,
+      },
+    });
+    
+    console.log(`💼 LinkedIn connected for ${stateData.email}: ${profile.name || 'Unknown'}`);
+    res.redirect(`${FRONTEND_URL}?linkedin_connected=true&mode=podcast`);
+  } catch (error) {
+    console.error('LinkedIn callback error:', error);
+    res.redirect(`${FRONTEND_URL}?linkedin_error=callback_failed`);
+  }
+});
+
+// Check LinkedIn connection status
+app.get('/api/linkedin/status/:email', (req, res) => {
+  const { email } = req.params;
+  const tokens = linkedinTokens.get(email);
+  
+  if (!tokens || Date.now() > tokens.expiresAt) {
+    return res.json({ connected: false });
+  }
+  
+  res.json({
+    connected: true,
+    profile: tokens.profile,
+  });
+});
+
+// Post to LinkedIn
+app.post('/api/linkedin/post', sanitizeBody(['email', 'text'], 2000), async (req, res) => {
+  try {
+    const { email, text, episodeUrl } = req.body;
+    
+    const tokens = linkedinTokens.get(email);
+    if (!tokens || Date.now() > tokens.expiresAt) {
+      return res.status(401).json({ error: 'LinkedIn not connected or token expired' });
+    }
+    
+    // Create LinkedIn share
+    const postRes = await fetch('https://api.linkedin.com/v2/ugcPosts', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${tokens.accessToken}`,
+        'Content-Type': 'application/json',
+        'X-Restli-Protocol-Version': '2.0.0',
+      },
+      body: JSON.stringify({
+        author: `urn:li:person:${tokens.profile.sub}`,
+        lifecycleState: 'PUBLISHED',
+        specificContent: {
+          'com.linkedin.ugc.ShareContent': {
+            shareCommentary: { text },
+            shareMediaCategory: episodeUrl ? 'ARTICLE' : 'NONE',
+            ...(episodeUrl && {
+              media: [{
+                status: 'READY',
+                originalUrl: episodeUrl,
+              }],
+            }),
+          },
+        },
+        visibility: {
+          'com.linkedin.ugc.MemberNetworkVisibility': 'PUBLIC',
+        },
+      }),
+    });
+    
+    if (!postRes.ok) {
+      const error = await postRes.text();
+      console.error('LinkedIn post error:', error);
+      return res.status(500).json({ error: 'Failed to post to LinkedIn' });
+    }
+    
+    const result = await postRes.json();
+    console.log(`💼 LinkedIn post created for ${email}: ${result.id}`);
+    
+    res.json({ success: true, postId: result.id });
+  } catch (error) {
+    console.error('LinkedIn post error:', error);
     res.status(500).json({ error: error.message });
   }
 });
