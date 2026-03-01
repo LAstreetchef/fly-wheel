@@ -1062,6 +1062,14 @@ app.get(/^\/influencers\/.+/, (req, res) => {
   res.sendFile(filePath);
 });
 
+// Serve earn widget (3-click flow)
+app.get('/earn', (req, res) => {
+  const filePath = process.env.NODE_ENV === 'production' 
+    ? join(__dirname, 'dist', 'earn.html')
+    : join(__dirname, 'public', 'earn.html');
+  res.sendFile(filePath);
+});
+
 // Serve admin dashboard
 app.use('/public', express.static(join(__dirname, 'public')));
 app.get('/admin', (req, res) => {
