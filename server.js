@@ -1026,7 +1026,7 @@ const generateLimiter = rateLimit({
   message: { error: 'Rate limit exceeded. Max 20 generations per hour.' },
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
+  validate: { xForwardedForHeader: false, keyGeneratorIpFallback: false },
 });
 
 const checkoutLimiter = rateLimit({
@@ -1039,7 +1039,7 @@ const checkoutLimiter = rateLimit({
   message: { error: 'Too many checkout attempts, please try again later.' },
   standardHeaders: true,
   legacyHeaders: false,
-  validate: { xForwardedForHeader: false },
+  validate: { xForwardedForHeader: false, keyGeneratorIpFallback: false },
 });
 
 // Apply rate limiting to API routes
@@ -1055,7 +1055,7 @@ app.get('/creators', (req, res) => {
     : join(__dirname, 'public', 'creators.html');
   res.sendFile(filePath);
 });
-app.get('/creators/*', (req, res) => {
+app.get('/creators/:path(*)', (req, res) => {
   const filePath = process.env.NODE_ENV === 'production' 
     ? join(__dirname, 'dist', 'creators.html')
     : join(__dirname, 'public', 'creators.html');
