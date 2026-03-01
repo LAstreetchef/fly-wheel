@@ -1045,10 +1045,16 @@ const checkoutLimiter = rateLimit({
 // Apply rate limiting to API routes
 app.use('/api/', apiLimiter);
 
-// Serve static files in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static('dist'));
-}
+// DAUcreators routes (must be before static middleware)
+app.use('/api/creators', creatorRoutes);
+
+// Serve creator dashboard (must be before catch-all)
+app.get('/creators', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'creators.html'));
+});
+app.get('/creators/*', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'creators.html'));
+});
 
 // Serve admin dashboard
 app.use('/public', express.static(join(__dirname, 'public')));
@@ -1056,16 +1062,10 @@ app.get('/admin', (req, res) => {
   res.sendFile(join(__dirname, 'public', 'admin.html'));
 });
 
-// DAUcreators routes
-app.use('/api/creators', creatorRoutes);
-
-// Serve creator dashboard
-app.get('/creators', (req, res) => {
-  res.sendFile(join(__dirname, 'public', 'creators.html'));
-});
-app.get('/creators/*', (req, res) => {
-  res.sendFile(join(__dirname, 'public', 'creators.html'));
-});
+// Serve static files in production (after specific routes)
+if (process.env.NODE_ENV === 'production') {
+  app.use(express.static('dist'));
+}
 
 // ============================================
 // Blog Search
