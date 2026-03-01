@@ -1055,7 +1055,7 @@ app.get('/creators', (req, res) => {
     : join(__dirname, 'public', 'creators.html');
   res.sendFile(filePath);
 });
-app.get('/creators/:path(*)', (req, res) => {
+app.get(/^\/creators\/.+/, (req, res) => {
   const filePath = process.env.NODE_ENV === 'production' 
     ? join(__dirname, 'dist', 'creators.html')
     : join(__dirname, 'public', 'creators.html');
