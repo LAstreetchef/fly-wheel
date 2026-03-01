@@ -5585,9 +5585,10 @@ app.post('/api/greentruck/boost', async (req, res) => {
     }).catch(err => console.error('GreenTruck engagement error:', err.message));
     
     // Track boost in orders (counts toward dashboard stats)
-    orders.push({
-      id: `greentruck_${Date.now()}`,
-      sessionId: `greentruck_${Date.now()}`,
+    const orderId = `greentruck_${Date.now()}`;
+    await orders.set(orderId, {
+      id: orderId,
+      sessionId: orderId,
       status: 'published',
       productData: GREENTRUCK_PRODUCT,
       blog,
