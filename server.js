@@ -10,8 +10,8 @@ import { startAutoBoostScheduler, setPool as setAutoBoostPool, initAutoBoostsTab
 import { blogCache, contentCache } from './server/lib/cache.js';
 import { searchRedditThreads, generateRedditComment } from './server/services/reddit.js';
 import { getOrCreateReferralCode, processReferral, getReferralStats, setPool as setReferralPool, initReferralsTable } from './server/services/referrals.js';
-import creatorRoutes from './server/routes/creators.js';
-import { setCreatorPool, initCreatorTables, createMission } from './server/db/creators.js';
+import influencerRoutes from './server/routes/influencers.js';
+import { setCreatorPool, initCreatorTables, createMission } from './server/db/influencers.js';
 import Stripe from 'stripe';
 import Anthropic from '@anthropic-ai/sdk';
 import { TwitterApi } from 'twitter-api-v2';
@@ -1045,20 +1045,20 @@ const checkoutLimiter = rateLimit({
 // Apply rate limiting to API routes
 app.use('/api/', apiLimiter);
 
-// DAUcreators routes (must be before static middleware)
-app.use('/api/creators', creatorRoutes);
+// DAUinfluencers routes (must be before static middleware)
+app.use('/api/influencers', influencerRoutes);
 
-// Serve creator dashboard (must be before catch-all)
-app.get('/creators', (req, res) => {
+// Serve influencer dashboard (must be before catch-all)
+app.get('/influencers', (req, res) => {
   const filePath = process.env.NODE_ENV === 'production' 
-    ? join(__dirname, 'dist', 'creators.html')
-    : join(__dirname, 'public', 'creators.html');
+    ? join(__dirname, 'dist', 'influencers.html')
+    : join(__dirname, 'public', 'influencers.html');
   res.sendFile(filePath);
 });
-app.get(/^\/creators\/.+/, (req, res) => {
+app.get(/^\/influencers\/.+/, (req, res) => {
   const filePath = process.env.NODE_ENV === 'production' 
-    ? join(__dirname, 'dist', 'creators.html')
-    : join(__dirname, 'public', 'creators.html');
+    ? join(__dirname, 'dist', 'influencers.html')
+    : join(__dirname, 'public', 'influencers.html');
   res.sendFile(filePath);
 });
 
@@ -5283,7 +5283,7 @@ const KEYWORD_ROTATION = [
   ['startup marketing', 'product launch strategy', 'indie hackers growth'],
   ['bootstrapped startup', 'micro SaaS marketing', 'solo founder tips'],
   // Week 2: Creator/SaaS
-  ['creator economy tools', 'newsletter growth hacks', 'content creator monetization'],
+  ['influencer economy tools', 'newsletter growth hacks', 'content influencer monetization'],
   ['SaaS growth strategies', 'B2B marketing tactics', 'product-led growth'],
   // Week 3: Tech/AI
   ['AI tools for marketers', 'automation for startups', 'no-code marketing'],
@@ -7001,7 +7001,7 @@ app.post('/webhook', async (req, res) => {
         
         console.log('📋 Boost queued for background processing:', session.id);
         
-        // Also create a mission for DAUcreators (human distribution)
+        // Also create a mission for DAUinfluencers (human distribution)
         try {
           const payoutCents = Math.floor(199 * 0.40); // 40% of $1.99 = ~$0.80
           await createMission({
@@ -7014,7 +7014,7 @@ app.post('/webhook', async (req, res) => {
             payoutCents,
             expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
           });
-          console.log('👥 Mission created for creators:', session.id);
+          console.log('👥 Mission created for influencers:', session.id);
         } catch (missionErr) {
           console.error('Mission creation failed (non-blocking):', missionErr.message);
         }

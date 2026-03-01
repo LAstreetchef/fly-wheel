@@ -1,42 +1,42 @@
-// server/routes/creators.js
-// API routes for DAUcreators
+// server/routes/influencers.js
+// API routes for DAUinfluencers
 
 import express from 'express';
 import jwt from 'jsonwebtoken';
 import {
-  createCreator,
-  getCreatorById,
-  getCreatorByEmail,
-  verifyCreatorPassword,
-  getCreatorAccounts,
-  getCreatorAccountWithToken,
-  addCreatorAccount,
+  createInfluencer,
+  getInfluencerById,
+  getInfluencerByEmail,
+  verifyInfluencerPassword,
+  getInfluencerAccounts,
+  getInfluencerAccountWithToken,
+  addInfluencerAccount,
   removeCreatorAccount,
   getAvailableMissions,
   getMissionById,
   claimMission,
   completeMission,
   unclaimMission,
-  getCreatorMissionHistory,
-  updateCreatorBalance,
-  incrementMissionsCompleted,
+  getInfluencerMissionHistory,
+  updateInfluencerBalance,
+  incrementInfluencerMissions,
   requestPayout,
-  getCreatorPayouts,
-  getCreatorStats,
-  getAllCreatorsAdmin,
+  getInfluencerPayouts,
+  getInfluencerStats,
+  getAllInfluencersAdmin,
   getPendingPayouts,
   completePayout,
-} from '../db/creators.js';
+} from '../db/influencers.js';
 
 const router = express.Router();
 
-const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_API_KEY || 'daucreators-secret-change-me';
+const JWT_SECRET = process.env.JWT_SECRET || process.env.ADMIN_API_KEY || 'dauinfluencers-secret-change-me';
 
 // ============================================
 // Auth Middleware
 // ============================================
 
-function creatorAuth(req, res, next) {
+function influencerAuth(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
     return res.status(401).json({ error: 'Missing authorization token' });
@@ -45,7 +45,7 @@ function creatorAuth(req, res, next) {
   const token = authHeader.substring(7);
   try {
     const decoded = jwt.verify(token, JWT_SECRET);
-    req.creatorId = decoded.creatorId;
+    req.influencerId = decoded.influencerId;
     next();
   } catch (err) {
     return res.status(401).json({ error: 'Invalid token' });
@@ -56,7 +56,7 @@ function creatorAuth(req, res, next) {
 // Auth Routes
 // ============================================
 
-// POST /api/creators/signup
+// POST /api/influencers/signup
 router.post('/signup', async (req, res) => {
   try {
     const { email, password, name } = req.body;
@@ -66,22 +66,22 @@ router.post('/signup', async (req, res) => {
     }
     
     // Check if exists
-    const existing = await getCreatorByEmail(email);
+    const existing = await getInfluencerByEmail(email);
     if (existing) {
       return res.status(400).json({ error: 'Email already registered' });
     }
     
-    const creator = await createCreator({ email, password, name: name || email.split('@')[0] });
+    const influencer = await createInfluencer({ email, password, name: name || email.split('@')[0] });
     
-    const token = jwt.sign({ creatorId: creator.id }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ influencerId: influencer.id }, JWT_SECRET, { expiresIn: '30d' });
     
     res.json({
       success: true,
       token,
-      creator: {
-        id: creator.id,
-        email: creator.email,
-        name: creator.name,
+      influencer: {
+        id: influencer.id,
+        email: influencer.email,
+        name: influencer.name,
       }
     });
   } catch (err) {
@@ -90,7 +90,7 @@ router.post('/signup', async (req, res) => {
   }
 });
 
-// POST /api/creators/login
+// POST /api/influencers/login
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
@@ -99,24 +99,24 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Email and password required' });
     }
     
-    const creator = await verifyCreatorPassword(email, password);
-    if (!creator) {
+    const influencer = await verifyInfluencerPassword(email, password);
+    if (!influencer) {
       return res.status(401).json({ error: 'Invalid email or password' });
     }
     
-    if (creator.status !== 'active') {
+    if (influencer.status !== 'active') {
       return res.status(403).json({ error: 'Account suspended' });
     }
     
-    const token = jwt.sign({ creatorId: creator.id }, JWT_SECRET, { expiresIn: '30d' });
+    const token = jwt.sign({ influencerId: influencer.id }, JWT_SECRET, { expiresIn: '30d' });
     
     res.json({
       success: true,
       token,
-      creator: {
-        id: creator.id,
-        email: creator.email,
-        name: creator.name,
+      influencer: {
+        id: influencer.id,
+        email: influencer.email,
+        name: influencer.name,
       }
     });
   } catch (err) {
@@ -125,25 +125,25 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// GET /api/creators/me
-router.get('/me', creatorAuth, async (req, res) => {
+// GET /api/influencers/me
+router.get('/me', influencerAuth, async (req, res) => {
   try {
-    const creator = await getCreatorById(req.creatorId);
-    if (!creator) {
+    const influencer = await getInfluencerById(req.influencerId);
+    if (!influencer) {
       return res.status(404).json({ error: 'Creator not found' });
     }
     
-    const accounts = await getCreatorAccounts(req.creatorId);
-    const stats = await getCreatorStats(req.creatorId);
+    const accounts = await getInfluencerAccounts(req.influencerId);
+    const stats = await getInfluencerStats(req.influencerId);
     
     res.json({
-      creator,
+      influencer,
       accounts,
       stats
     });
   } catch (err) {
-    console.error('Get creator error:', err);
-    res.status(500).json({ error: 'Failed to get creator info' });
+    console.error('Get influencer error:', err);
+    res.status(500).json({ error: 'Failed to get influencer info' });
   }
 });
 
@@ -151,10 +151,10 @@ router.get('/me', creatorAuth, async (req, res) => {
 // Social Account Routes
 // ============================================
 
-// GET /api/creators/accounts
-router.get('/accounts', creatorAuth, async (req, res) => {
+// GET /api/influencers/accounts
+router.get('/accounts', influencerAuth, async (req, res) => {
   try {
-    const accounts = await getCreatorAccounts(req.creatorId);
+    const accounts = await getInfluencerAccounts(req.influencerId);
     res.json({ accounts });
   } catch (err) {
     console.error('Get accounts error:', err);
@@ -162,10 +162,10 @@ router.get('/accounts', creatorAuth, async (req, res) => {
   }
 });
 
-// DELETE /api/creators/accounts/:platform
-router.delete('/accounts/:platform', creatorAuth, async (req, res) => {
+// DELETE /api/influencers/accounts/:platform
+router.delete('/accounts/:platform', influencerAuth, async (req, res) => {
   try {
-    await removeCreatorAccount(req.creatorId, req.params.platform);
+    await removeCreatorAccount(req.influencerId, req.params.platform);
     res.json({ success: true });
   } catch (err) {
     console.error('Remove account error:', err);
@@ -177,11 +177,11 @@ router.delete('/accounts/:platform', creatorAuth, async (req, res) => {
 // Mission Routes
 // ============================================
 
-// GET /api/creators/missions
-router.get('/missions', creatorAuth, async (req, res) => {
+// GET /api/influencers/missions
+router.get('/missions', influencerAuth, async (req, res) => {
   try {
     const { platform } = req.query;
-    const missions = await getAvailableMissions(req.creatorId, platform);
+    const missions = await getAvailableMissions(req.influencerId, platform);
     res.json({ missions });
   } catch (err) {
     console.error('Get missions error:', err);
@@ -189,10 +189,10 @@ router.get('/missions', creatorAuth, async (req, res) => {
   }
 });
 
-// GET /api/creators/missions/history
-router.get('/missions/history', creatorAuth, async (req, res) => {
+// GET /api/influencers/missions/history
+router.get('/missions/history', influencerAuth, async (req, res) => {
   try {
-    const history = await getCreatorMissionHistory(req.creatorId);
+    const history = await getInfluencerMissionHistory(req.influencerId);
     res.json({ missions: history });
   } catch (err) {
     console.error('Get mission history error:', err);
@@ -200,8 +200,8 @@ router.get('/missions/history', creatorAuth, async (req, res) => {
   }
 });
 
-// GET /api/creators/missions/:id
-router.get('/missions/:id', creatorAuth, async (req, res) => {
+// GET /api/influencers/missions/:id
+router.get('/missions/:id', influencerAuth, async (req, res) => {
   try {
     const mission = await getMissionById(req.params.id);
     if (!mission) {
@@ -214,10 +214,10 @@ router.get('/missions/:id', creatorAuth, async (req, res) => {
   }
 });
 
-// POST /api/creators/missions/:id/claim
-router.post('/missions/:id/claim', creatorAuth, async (req, res) => {
+// POST /api/influencers/missions/:id/claim
+router.post('/missions/:id/claim', influencerAuth, async (req, res) => {
   try {
-    const mission = await claimMission(req.params.id, req.creatorId);
+    const mission = await claimMission(req.params.id, req.influencerId);
     if (!mission) {
       return res.status(400).json({ error: 'Mission not available' });
     }
@@ -228,10 +228,10 @@ router.post('/missions/:id/claim', creatorAuth, async (req, res) => {
   }
 });
 
-// POST /api/creators/missions/:id/skip
-router.post('/missions/:id/skip', creatorAuth, async (req, res) => {
+// POST /api/influencers/missions/:id/skip
+router.post('/missions/:id/skip', influencerAuth, async (req, res) => {
   try {
-    const mission = await unclaimMission(req.params.id, req.creatorId);
+    const mission = await unclaimMission(req.params.id, req.influencerId);
     if (!mission) {
       return res.status(400).json({ error: 'Cannot skip this mission' });
     }
@@ -242,13 +242,13 @@ router.post('/missions/:id/skip', creatorAuth, async (req, res) => {
   }
 });
 
-// POST /api/creators/missions/:id/complete
-router.post('/missions/:id/complete', creatorAuth, async (req, res) => {
+// POST /api/influencers/missions/:id/complete
+router.post('/missions/:id/complete', influencerAuth, async (req, res) => {
   try {
     const { postUrl, postId } = req.body;
     
     const mission = await getMissionById(req.params.id);
-    if (!mission || mission.claimed_by !== req.creatorId) {
+    if (!mission || mission.claimed_by !== req.influencerId) {
       return res.status(400).json({ error: 'Mission not claimed by you' });
     }
     
@@ -257,11 +257,11 @@ router.post('/missions/:id/complete', creatorAuth, async (req, res) => {
     }
     
     // Complete the mission
-    const completed = await completeMission(req.params.id, req.creatorId, postUrl, postId);
+    const completed = await completeMission(req.params.id, req.influencerId, postUrl, postId);
     
-    // Pay the creator
-    await updateCreatorBalance(req.creatorId, mission.payout_cents);
-    await incrementMissionsCompleted(req.creatorId);
+    // Pay the influencer
+    await updateInfluencerBalance(req.influencerId, mission.payout_cents);
+    await incrementInfluencerMissions(req.influencerId);
     
     res.json({ 
       success: true, 
@@ -278,16 +278,16 @@ router.post('/missions/:id/complete', creatorAuth, async (req, res) => {
 // Earnings/Payout Routes
 // ============================================
 
-// GET /api/creators/earnings
-router.get('/earnings', creatorAuth, async (req, res) => {
+// GET /api/influencers/earnings
+router.get('/earnings', influencerAuth, async (req, res) => {
   try {
-    const creator = await getCreatorById(req.creatorId);
-    const payouts = await getCreatorPayouts(req.creatorId);
-    const history = await getCreatorMissionHistory(req.creatorId, 20);
+    const influencer = await getInfluencerById(req.influencerId);
+    const payouts = await getInfluencerPayouts(req.influencerId);
+    const history = await getInfluencerMissionHistory(req.influencerId, 20);
     
     res.json({
-      balance_cents: creator.balance_cents,
-      lifetime_earned_cents: creator.lifetime_earned_cents,
+      balance_cents: influencer.balance_cents,
+      lifetime_earned_cents: influencer.lifetime_earned_cents,
       payouts,
       recent_earnings: history.map(m => ({
         id: m.id,
@@ -303,8 +303,8 @@ router.get('/earnings', creatorAuth, async (req, res) => {
   }
 });
 
-// POST /api/creators/payout
-router.post('/payout', creatorAuth, async (req, res) => {
+// POST /api/influencers/payout
+router.post('/payout', influencerAuth, async (req, res) => {
   try {
     const { amount_cents, method } = req.body;
     
@@ -313,7 +313,7 @@ router.post('/payout', creatorAuth, async (req, res) => {
       return res.status(400).json({ error: `Minimum payout is $${MIN_PAYOUT / 100}` });
     }
     
-    const payout = await requestPayout(req.creatorId, amount_cents, method || 'paypal');
+    const payout = await requestPayout(req.influencerId, amount_cents, method || 'paypal');
     
     res.json({ success: true, payout });
   } catch (err) {
@@ -326,7 +326,7 @@ router.post('/payout', creatorAuth, async (req, res) => {
 // Admin Routes
 // ============================================
 
-// GET /api/creators/admin/all (requires admin key)
+// GET /api/influencers/admin/all (requires admin key)
 router.get('/admin/all', async (req, res) => {
   const adminKey = req.headers['x-admin-key'];
   if (adminKey !== process.env.ADMIN_API_KEY) {
@@ -334,15 +334,15 @@ router.get('/admin/all', async (req, res) => {
   }
   
   try {
-    const creators = await getAllCreatorsAdmin();
-    res.json({ creators });
+    const influencers = await getAllInfluencersAdmin();
+    res.json({ influencers });
   } catch (err) {
-    console.error('Admin get creators error:', err);
-    res.status(500).json({ error: 'Failed to get creators' });
+    console.error('Admin get influencers error:', err);
+    res.status(500).json({ error: 'Failed to get influencers' });
   }
 });
 
-// GET /api/creators/admin/payouts (requires admin key)
+// GET /api/influencers/admin/payouts (requires admin key)
 router.get('/admin/payouts', async (req, res) => {
   const adminKey = req.headers['x-admin-key'];
   if (adminKey !== process.env.ADMIN_API_KEY) {
@@ -358,7 +358,7 @@ router.get('/admin/payouts', async (req, res) => {
   }
 });
 
-// POST /api/creators/admin/payouts/:id/complete (requires admin key)
+// POST /api/influencers/admin/payouts/:id/complete (requires admin key)
 router.post('/admin/payouts/:id/complete', async (req, res) => {
   const adminKey = req.headers['x-admin-key'];
   if (adminKey !== process.env.ADMIN_API_KEY) {
