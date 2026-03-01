@@ -10,6 +10,8 @@ import { startAutoBoostScheduler, setPool as setAutoBoostPool, initAutoBoostsTab
 import { blogCache, contentCache } from './server/lib/cache.js';
 import { searchRedditThreads, generateRedditComment } from './server/services/reddit.js';
 import { getOrCreateReferralCode, processReferral, getReferralStats, setPool as setReferralPool, initReferralsTable } from './server/services/referrals.js';
+import creatorRoutes from './server/routes/creators.js';
+import { setCreatorPool, initCreatorTables, createMission } from './server/db/creators.js';
 import Stripe from 'stripe';
 import Anthropic from '@anthropic-ai/sdk';
 import { TwitterApi } from 'twitter-api-v2';
@@ -477,10 +479,12 @@ if (usePostgres) {
   });
   setReferralPool(growthPool);
   setAutoBoostPool(growthPool);
+  setCreatorPool(growthPool);
   
   // Initialize growth tables
   initReferralsTable().catch(err => console.error('Referrals table init failed:', err.message));
   initAutoBoostsTable().catch(err => console.error('Auto-boosts table init failed:', err.message));
+  initCreatorTables().catch(err => console.error('Creator tables init failed:', err.message));
 }
 
 // ============================================
@@ -1050,6 +1054,17 @@ if (process.env.NODE_ENV === 'production') {
 app.use('/public', express.static(join(__dirname, 'public')));
 app.get('/admin', (req, res) => {
   res.sendFile(join(__dirname, 'public', 'admin.html'));
+});
+
+// DAUcreators routes
+app.use('/api/creators', creatorRoutes);
+
+// Serve creator dashboard
+app.get('/creators', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'creators.html'));
+});
+app.get('/creators/*', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'creators.html'));
 });
 
 // ============================================
@@ -6979,6 +6994,24 @@ app.post('/webhook', async (req, res) => {
         });
         
         console.log('📋 Boost queued for background processing:', session.id);
+        
+        // Also create a mission for DAUcreators (human distribution)
+        try {
+          const payoutCents = Math.floor(199 * 0.40); // 40% of $1.99 = ~$0.80
+          await createMission({
+            orderId: session.id,
+            platform: 'twitter',
+            content: content || `Check out ${productData?.name || 'this product'}`,
+            blogUrl: blog?.url,
+            blogTitle: blog?.title,
+            productName: productData?.name,
+            payoutCents,
+            expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24h
+          });
+          console.log('👥 Mission created for creators:', session.id);
+        } catch (missionErr) {
+          console.error('Mission creation failed (non-blocking):', missionErr.message);
+        }
       } catch (error) {
         console.error('❌ Queue failed:', error.message);
         order.status = 'failed';
