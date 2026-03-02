@@ -689,6 +689,27 @@
       document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
       event.currentTarget.classList.add('selected');
       
+      // Check if already connected via OAuth callback
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('platform') === platform && params.get('connected') === 'true') {
+        // Already connected, go to share
+        state.token = params.get('token');
+        state.username = params.get('username');
+        showLoading('Generating content...');
+        await generateContent();
+        hideLoading();
+        goToStep(2);
+        return;
+      }
+      
+      // Redirect to OAuth for Twitter (others coming soon)
+      if (platform === 'twitter') {
+        showLoading('Connecting to X...');
+        window.location.href = '/api/oauth/twitter?return_url=/influencers';
+        return;
+      }
+      
+      // Demo mode for other platforms (not yet implemented)
       showLoading('Connecting to ' + platform + '...');
       await new Promise(r => setTimeout(r, 800));
       
@@ -722,19 +743,75 @@
     
     async function share() {
       showLoading('Posting to ' + state.platform + '...');
-      await new Promise(r => setTimeout(r, 1500));
-      hideLoading();
       
+      // Get plain text from content (strip HTML tags)
+      const plainText = state.content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
+      
+      // Real post for Twitter if we have a token
+      if (state.platform === 'twitter' && state.token) {
+        try {
+          const res = await fetch('/api/oauth/twitter/tweet', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ token: state.token, text: plainText })
+          });
+          const data = await res.json();
+          
+          if (data.error) {
+            hideLoading();
+            alert('Failed to post: ' + data.error);
+            return;
+          }
+          
+          state.tweetUrl = data.url;
+        } catch (err) {
+          hideLoading();
+          alert('Failed to post. Please try again.');
+          return;
+        }
+      } else {
+        // Demo mode for other platforms
+        await new Promise(r => setTimeout(r, 1500));
+      }
+      
+      hideLoading();
       document.getElementById('successAmount').textContent = '+$' + state.payout.toFixed(2);
       goToStep(3);
     }
     
     function reset() {
+      // Clear URL params
+      window.history.replaceState({}, '', '/influencers');
+      state.token = null;
+      state.username = null;
       document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
       goToStep(1);
     }
     
-    // Widget is the main CTA - no login needed
+    // Check for OAuth callback on page load
+    (function init() {
+      const params = new URLSearchParams(window.location.search);
+      
+      if (params.get('error')) {
+        alert('Connection failed: ' + params.get('error').replace(/_/g, ' '));
+        window.history.replaceState({}, '', '/influencers');
+        return;
+      }
+      
+      if (params.get('connected') === 'true') {
+        const platform = params.get('platform');
+        state.platform = platform;
+        state.payout = payouts[platform];
+        state.token = params.get('token');
+        state.username = params.get('username');
+        
+        // Show connected state and go to step 2
+        const btn = document.querySelector(`.platform-btn[onclick*="${platform}"]`);
+        if (btn) btn.classList.add('selected');
+        
+        generateContent().then(() => goToStep(2));
+      }
+    })();
   </script>
 </body>
 </html>

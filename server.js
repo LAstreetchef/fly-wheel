@@ -12,6 +12,7 @@ import { searchRedditThreads, generateRedditComment } from './server/services/re
 import { getOrCreateReferralCode, processReferral, getReferralStats, setPool as setReferralPool, initReferralsTable } from './server/services/referrals.js';
 import influencerRoutes from './server/routes/influencers.js';
 import campaignRoutes from './server/routes/campaigns.js';
+import oauthRoutes from './server/routes/oauth.js';
 import { setCreatorPool, initCreatorTables, createMission } from './server/db/influencers.js';
 import { initCampaignTables } from './server/db/campaigns.js';
 import Stripe from 'stripe';
@@ -1051,6 +1052,7 @@ app.use('/api/', apiLimiter);
 // DAUinfluencers routes (must be before static middleware)
 app.use('/api/influencers', influencerRoutes);
 app.use('/api/campaigns', campaignRoutes);
+app.use('/api/oauth', oauthRoutes);
 
 // Serve influencer dashboard (must be before catch-all)
 app.get('/influencers', (req, res) => {
