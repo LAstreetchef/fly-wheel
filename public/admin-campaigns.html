@@ -1,0 +1,954 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Campaigns | DAUinfluencers Admin</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #0a0a0a;
+      --card: #141414;
+      --card-hover: #1a1a1a;
+      --border: #2a2a2a;
+      --text: #ffffff;
+      --text-dim: #888;
+      --accent: #ff4d00;
+      --green: #00d26a;
+      --red: #ff4757;
+      --blue: #1d9bf0;
+      --yellow: #ffc107;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    
+    /* Layout */
+    .layout {
+      display: flex;
+      min-height: 100vh;
+    }
+    
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: var(--card);
+      border-right: 1px solid var(--border);
+      padding: 20px;
+      position: fixed;
+      height: 100vh;
+      overflow-y: auto;
+    }
+    
+    .sidebar-logo {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 8px;
+    }
+    
+    .sidebar-logo span { color: var(--accent); }
+    
+    .sidebar-tagline {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 32px;
+    }
+    
+    .nav-section {
+      margin-bottom: 24px;
+    }
+    
+    .nav-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 4px;
+      font-size: 14px;
+      color: var(--text-dim);
+    }
+    
+    .nav-item:hover { background: var(--card-hover); color: var(--text); }
+    .nav-item.active { background: rgba(255,77,0,0.15); color: var(--accent); }
+    
+    .nav-item svg { width: 18px; height: 18px; }
+    
+    /* Main content */
+    .main {
+      flex: 1;
+      margin-left: 240px;
+      padding: 32px;
+    }
+    
+    /* Header */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 32px;
+    }
+    
+    .header-title {
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    
+    .header-actions {
+      display: flex;
+      gap: 12px;
+    }
+    
+    /* Buttons */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 20px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: none;
+    }
+    
+    .btn-primary {
+      background: var(--accent);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(255,77,0,0.3);
+    }
+    
+    .btn-secondary {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    
+    .btn-secondary:hover { background: var(--card-hover); }
+    
+    .btn-success { background: var(--green); color: white; }
+    .btn-danger { background: var(--red); color: white; }
+    
+    .btn svg { width: 18px; height: 18px; }
+    
+    /* Stats grid */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    
+    .stat-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 20px;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 8px;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    
+    .stat-value.green { color: var(--green); }
+    .stat-value.accent { color: var(--accent); }
+    
+    .stat-change {
+      font-size: 12px;
+      margin-top: 8px;
+    }
+    
+    .stat-change.up { color: var(--green); }
+    .stat-change.down { color: var(--red); }
+    
+    /* Campaign cards */
+    .campaigns-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+      gap: 20px;
+    }
+    
+    .campaign-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 24px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .campaign-card:hover {
+      border-color: var(--accent);
+      transform: translateY(-4px);
+    }
+    
+    .campaign-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 16px;
+    }
+    
+    .campaign-brand {
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .campaign-name {
+      font-size: 20px;
+      font-weight: 700;
+      margin-top: 4px;
+    }
+    
+    .campaign-status {
+      padding: 6px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .campaign-status.active { background: rgba(0,210,106,0.15); color: var(--green); }
+    .campaign-status.draft { background: rgba(255,193,7,0.15); color: var(--yellow); }
+    .campaign-status.paused { background: rgba(255,71,87,0.15); color: var(--red); }
+    
+    .campaign-desc {
+      font-size: 14px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      margin-bottom: 20px;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .campaign-stats {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .campaign-stat {
+      text-align: center;
+    }
+    
+    .campaign-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .campaign-stat-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    
+    .campaign-platforms {
+      display: flex;
+      gap: 8px;
+      margin-top: 16px;
+    }
+    
+    .platform-tag {
+      padding: 4px 10px;
+      background: var(--bg);
+      border-radius: 6px;
+      font-size: 11px;
+      font-weight: 500;
+    }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.8);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      padding: 20px;
+    }
+    
+    .modal-overlay.active { display: flex; }
+    
+    .modal {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      max-width: 600px;
+      width: 100%;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    
+    .modal-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .modal-title {
+      font-size: 20px;
+      font-weight: 700;
+    }
+    
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      background: var(--bg);
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-dim);
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover { background: var(--border); color: var(--text); }
+    
+    .modal-body {
+      padding: 24px;
+    }
+    
+    .modal-footer {
+      display: flex;
+      gap: 12px;
+      justify-content: flex-end;
+      padding: 24px;
+      border-top: 1px solid var(--border);
+    }
+    
+    /* Form */
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-label {
+      display: block;
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+    }
+    
+    .form-input, .form-textarea, .form-select {
+      width: 100%;
+      padding: 12px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      font-size: 14px;
+      color: var(--text);
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    
+    .form-input:focus, .form-textarea:focus, .form-select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    
+    .form-textarea {
+      min-height: 100px;
+      resize: vertical;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    
+    .form-hint {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 6px;
+    }
+    
+    /* Checkbox group */
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .checkbox-item:hover { border-color: var(--text-dim); }
+    .checkbox-item.selected { border-color: var(--accent); background: rgba(255,77,0,0.1); }
+    
+    .checkbox-item input { display: none; }
+    
+    /* Review table */
+    .review-table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .review-table th, .review-table td {
+      padding: 16px;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .review-table th {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+    
+    .review-post {
+      max-width: 300px;
+      font-size: 13px;
+      color: var(--text-dim);
+      line-height: 1.4;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+    
+    .review-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .review-btn {
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+    }
+    
+    .review-btn.approve { background: var(--green); color: white; }
+    .review-btn.reject { background: var(--border); color: var(--text); }
+    .review-btn:hover { transform: scale(1.05); }
+    
+    /* Empty state */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-dim);
+    }
+    
+    .empty-state svg {
+      width: 64px;
+      height: 64px;
+      margin-bottom: 16px;
+      opacity: 0.5;
+    }
+    
+    .empty-state h3 {
+      font-size: 18px;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    
+    /* Tabs */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      margin-bottom: 24px;
+      background: var(--card);
+      padding: 4px;
+      border-radius: 12px;
+      width: fit-content;
+    }
+    
+    .tab {
+      padding: 10px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s;
+      color: var(--text-dim);
+    }
+    
+    .tab:hover { color: var(--text); }
+    .tab.active { background: var(--accent); color: white; }
+    
+    /* Badge */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 20px;
+      height: 20px;
+      padding: 0 6px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      background: var(--red);
+      color: white;
+      margin-left: 8px;
+    }
+    
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+    }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">DAU<span>influencers</span></div>
+      <div class="sidebar-tagline">Admin Portal</div>
+      
+      <div class="nav-section">
+        <div class="nav-label">Campaigns</div>
+        <div class="nav-item active" onclick="showSection('campaigns')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+          All Campaigns
+        </div>
+        <div class="nav-item" onclick="showSection('review')">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>
+          Review Posts
+          <span class="badge" id="pendingBadge" style="display:none">0</span>
+        </div>
+      </div>
+      
+      <div class="nav-section">
+        <div class="nav-label">Influencers</div>
+        <div class="nav-item" onclick="window.location.href='/admin'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          All Influencers
+        </div>
+        <div class="nav-item">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+          Payouts
+        </div>
+      </div>
+    </aside>
+    
+    <!-- Main content -->
+    <main class="main">
+      <!-- Campaigns section -->
+      <section id="campaignsSection">
+        <div class="header">
+          <h1 class="header-title">Campaigns</h1>
+          <div class="header-actions">
+            <button class="btn btn-primary" onclick="openCreateModal()">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14M5 12h14"/></svg>
+              New Campaign
+            </button>
+          </div>
+        </div>
+        
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div class="stat-label">Total Campaigns</div>
+            <div class="stat-value" id="statCampaigns">0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Budget</div>
+            <div class="stat-value green" id="statBudget">$0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Total Spent</div>
+            <div class="stat-value accent" id="statSpent">$0</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-label">Posts Completed</div>
+            <div class="stat-value" id="statPosts">0</div>
+          </div>
+        </div>
+        
+        <div class="campaigns-grid" id="campaignsGrid">
+          <div class="loading"><div class="spinner"></div></div>
+        </div>
+      </section>
+      
+      <!-- Review section -->
+      <section id="reviewSection" style="display:none">
+        <div class="header">
+          <h1 class="header-title">Review Posts</h1>
+        </div>
+        
+        <div class="campaign-card" style="cursor:default">
+          <table class="review-table">
+            <thead>
+              <tr>
+                <th>Influencer</th>
+                <th>Campaign</th>
+                <th>Platform</th>
+                <th>Post Content</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reviewTableBody">
+              <tr><td colspan="5" class="loading"><div class="spinner"></div></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+  </div>
+  
+  <!-- Create Campaign Modal -->
+  <div class="modal-overlay" id="createModal">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 class="modal-title">Create Campaign</h2>
+        <button class="modal-close" onclick="closeCreateModal()">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="createForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Brand Name *</label>
+              <input type="text" class="form-input" name="brand" placeholder="e.g., SwordPay" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Campaign Name *</label>
+              <input type="text" class="form-input" name="name" placeholder="e.g., Phoenix Launch" required>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Description</label>
+            <textarea class="form-textarea" name="description" placeholder="Brief description of the campaign..."></textarea>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Campaign Brief</label>
+            <textarea class="form-textarea" name="brief" placeholder="Detailed brief for influencers..."></textarea>
+            <div class="form-hint">This will be shown to influencers when they accept missions</div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Tagline</label>
+            <input type="text" class="form-input" name="tagline" placeholder="e.g., Own the Conversation">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Initial Budget</label>
+            <input type="number" class="form-input" name="budget" placeholder="e.g., 500" min="0">
+            <div class="form-hint">Amount in USD to fund this campaign</div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Platforms</label>
+            <div class="checkbox-group">
+              <label class="checkbox-item" onclick="togglePlatform(this, 'twitter')">
+                <input type="checkbox" name="platforms" value="twitter">
+                X (Twitter)
+              </label>
+              <label class="checkbox-item" onclick="togglePlatform(this, 'instagram')">
+                <input type="checkbox" name="platforms" value="instagram">
+                Instagram
+              </label>
+              <label class="checkbox-item" onclick="togglePlatform(this, 'tiktok')">
+                <input type="checkbox" name="platforms" value="tiktok">
+                TikTok
+              </label>
+              <label class="checkbox-item" onclick="togglePlatform(this, 'linkedin')">
+                <input type="checkbox" name="platforms" value="linkedin">
+                LinkedIn
+              </label>
+            </div>
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Target Audience</label>
+            <input type="text" class="form-input" name="target_audience" placeholder="e.g., Female creators in Phoenix, 18-35">
+          </div>
+          
+          <div class="form-group">
+            <label class="form-label">Hashtags</label>
+            <input type="text" class="form-input" name="hashtags" placeholder="#swordpay #phoenix #creators (comma separated)">
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeCreateModal()">Cancel</button>
+        <button class="btn btn-primary" onclick="createCampaign()">Create Campaign</button>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    const API_KEY = localStorage.getItem('adminApiKey') || prompt('Enter Admin API Key:');
+    if (API_KEY) localStorage.setItem('adminApiKey', API_KEY);
+    
+    const API_BASE = '/api/campaigns';
+    
+    async function api(endpoint, options = {}) {
+      const res = await fetch(API_BASE + endpoint, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${API_KEY}`,
+          ...options.headers
+        }
+      });
+      return res.json();
+    }
+    
+    // Load campaigns
+    async function loadCampaigns() {
+      const data = await api('/');
+      const grid = document.getElementById('campaignsGrid');
+      
+      if (!data.campaigns || data.campaigns.length === 0) {
+        grid.innerHTML = `
+          <div class="empty-state">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+            <h3>No campaigns yet</h3>
+            <p>Create your first campaign to get started</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Update stats
+      let totalBudget = 0, totalSpent = 0;
+      data.campaigns.forEach(c => {
+        totalBudget += c.budget_cents || 0;
+        totalSpent += c.spent_cents || 0;
+      });
+      
+      document.getElementById('statCampaigns').textContent = data.campaigns.length;
+      document.getElementById('statBudget').textContent = '$' + (totalBudget / 100).toLocaleString();
+      document.getElementById('statSpent').textContent = '$' + (totalSpent / 100).toLocaleString();
+      
+      grid.innerHTML = data.campaigns.map(c => `
+        <div class="campaign-card" onclick="viewCampaign(${c.id})">
+          <div class="campaign-header">
+            <div>
+              <div class="campaign-brand">${c.brand}</div>
+              <div class="campaign-name">${c.name}</div>
+            </div>
+            <div class="campaign-status ${c.status}">${c.status}</div>
+          </div>
+          <div class="campaign-desc">${c.description || 'No description'}</div>
+          <div class="campaign-stats">
+            <div class="campaign-stat">
+              <div class="campaign-stat-value">$${((c.budget_cents || 0) / 100).toLocaleString()}</div>
+              <div class="campaign-stat-label">Budget</div>
+            </div>
+            <div class="campaign-stat">
+              <div class="campaign-stat-value">$${((c.spent_cents || 0) / 100).toLocaleString()}</div>
+              <div class="campaign-stat-label">Spent</div>
+            </div>
+            <div class="campaign-stat">
+              <div class="campaign-stat-value">${c.total_completions || 0}</div>
+              <div class="campaign-stat-label">Posts</div>
+            </div>
+          </div>
+          ${c.platforms && c.platforms.length > 0 ? `
+            <div class="campaign-platforms">
+              ${c.platforms.map(p => `<span class="platform-tag">${p}</span>`).join('')}
+            </div>
+          ` : ''}
+        </div>
+      `).join('');
+    }
+    
+    // Load pending reviews
+    async function loadPendingReviews() {
+      const data = await api('/review/pending');
+      const badge = document.getElementById('pendingBadge');
+      const tbody = document.getElementById('reviewTableBody');
+      
+      if (!data.completions || data.completions.length === 0) {
+        badge.style.display = 'none';
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="5" class="empty-state">
+              <h3>All caught up!</h3>
+              <p>No posts waiting for review</p>
+            </td>
+          </tr>
+        `;
+        return;
+      }
+      
+      badge.style.display = 'inline-flex';
+      badge.textContent = data.completions.length;
+      
+      tbody.innerHTML = data.completions.map(c => `
+        <tr>
+          <td>
+            <strong>${c.influencer_name}</strong><br>
+            <small style="color:var(--text-dim)">${c.influencer_email}</small>
+          </td>
+          <td>
+            <strong>${c.campaign_name}</strong><br>
+            <small style="color:var(--text-dim)">${c.brand}</small>
+          </td>
+          <td><span class="platform-tag">${c.platform}</span></td>
+          <td>
+            <div class="review-post">${c.post_content || 'No content'}</div>
+            ${c.post_url ? `<a href="${c.post_url}" target="_blank" style="font-size:12px;color:var(--blue)">View Post →</a>` : ''}
+          </td>
+          <td>
+            <div class="review-actions">
+              <button class="review-btn approve" onclick="reviewPost(${c.id}, true)">Approve</button>
+              <button class="review-btn reject" onclick="reviewPost(${c.id}, false)">Reject</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+    
+    async function reviewPost(id, approved) {
+      const reason = approved ? null : prompt('Rejection reason:');
+      if (!approved && reason === null) return;
+      
+      await api(`/review/${id}/verify`, {
+        method: 'POST',
+        body: JSON.stringify({ approved, rejection_reason: reason })
+      });
+      
+      loadPendingReviews();
+    }
+    
+    // Create campaign
+    function openCreateModal() {
+      document.getElementById('createModal').classList.add('active');
+    }
+    
+    function closeCreateModal() {
+      document.getElementById('createModal').classList.remove('active');
+    }
+    
+    function togglePlatform(el, platform) {
+      el.classList.toggle('selected');
+    }
+    
+    async function createCampaign() {
+      const form = document.getElementById('createForm');
+      const formData = new FormData(form);
+      
+      const platforms = [];
+      form.querySelectorAll('input[name="platforms"]:checked').forEach(cb => {
+        platforms.push(cb.value);
+      });
+      
+      const hashtags = (formData.get('hashtags') || '').split(',').map(h => h.trim()).filter(Boolean);
+      
+      const data = {
+        name: formData.get('name'),
+        brand: formData.get('brand'),
+        description: formData.get('description'),
+        brief: formData.get('brief'),
+        tagline: formData.get('tagline'),
+        budget_cents: Math.round((parseFloat(formData.get('budget')) || 0) * 100),
+        platforms,
+        target_audience: formData.get('target_audience'),
+        hashtags
+      };
+      
+      const result = await api('/', {
+        method: 'POST',
+        body: JSON.stringify(data)
+      });
+      
+      if (result.error) {
+        alert('Error: ' + result.error);
+        return;
+      }
+      
+      closeCreateModal();
+      form.reset();
+      loadCampaigns();
+    }
+    
+    function viewCampaign(id) {
+      // TODO: Open campaign detail view
+      alert('Campaign detail view coming soon! ID: ' + id);
+    }
+    
+    function showSection(section) {
+      document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+      event.currentTarget.classList.add('active');
+      
+      document.getElementById('campaignsSection').style.display = section === 'campaigns' ? 'block' : 'none';
+      document.getElementById('reviewSection').style.display = section === 'review' ? 'block' : 'none';
+      
+      if (section === 'review') loadPendingReviews();
+    }
+    
+    // Init
+    loadCampaigns();
+    loadPendingReviews();
+  </script>
+</body>
+</html>

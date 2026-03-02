@@ -11,7 +11,9 @@ import { blogCache, contentCache } from './server/lib/cache.js';
 import { searchRedditThreads, generateRedditComment } from './server/services/reddit.js';
 import { getOrCreateReferralCode, processReferral, getReferralStats, setPool as setReferralPool, initReferralsTable } from './server/services/referrals.js';
 import influencerRoutes from './server/routes/influencers.js';
+import campaignRoutes from './server/routes/campaigns.js';
 import { setCreatorPool, initCreatorTables, createMission } from './server/db/influencers.js';
+import { initCampaignTables } from './server/db/campaigns.js';
 import Stripe from 'stripe';
 import Anthropic from '@anthropic-ai/sdk';
 import { TwitterApi } from 'twitter-api-v2';
@@ -485,6 +487,7 @@ if (usePostgres) {
   initReferralsTable().catch(err => console.error('Referrals table init failed:', err.message));
   initAutoBoostsTable().catch(err => console.error('Auto-boosts table init failed:', err.message));
   initCreatorTables().catch(err => console.error('Creator tables init failed:', err.message));
+  initCampaignTables().catch(err => console.error('Campaign tables init failed:', err.message));
 }
 
 // ============================================
@@ -1047,6 +1050,7 @@ app.use('/api/', apiLimiter);
 
 // DAUinfluencers routes (must be before static middleware)
 app.use('/api/influencers', influencerRoutes);
+app.use('/api/campaigns', campaignRoutes);
 
 // Serve influencer dashboard (must be before catch-all)
 app.get('/influencers', (req, res) => {
@@ -1074,6 +1078,14 @@ app.get('/earn', (req, res) => {
 app.use('/public', express.static(join(__dirname, 'public')));
 app.get('/admin', (req, res) => {
   res.sendFile(join(__dirname, 'public', 'admin.html'));
+});
+
+// Serve admin campaigns dashboard
+app.get('/admin/campaigns', (req, res) => {
+  const filePath = process.env.NODE_ENV === 'production' 
+    ? join(__dirname, 'dist', 'admin-campaigns.html')
+    : join(__dirname, 'public', 'admin-campaigns.html');
+  res.sendFile(filePath);
 });
 
 // Serve static files in production (after specific routes)
