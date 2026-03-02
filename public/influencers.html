@@ -3,26 +3,21 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DAUinfluencers | Own the Conversation</title>
+  <title>DAUinfluencers | Get Paid for Influence</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     :root {
-      --bg: #0a0a0a;
-      --card: #141414;
-      --card-hover: #1a1a1a;
-      --border: #2a2a2a;
+      --bg: #000000;
+      --card: #111111;
+      --border: #222222;
       --text: #ffffff;
-      --text-dim: #888;
+      --text-dim: #666666;
       --accent: #ff4d00;
-      --accent-soft: rgba(255,77,0,0.15);
+      --accent-glow: rgba(255, 77, 0, 0.4);
       --green: #00d26a;
-      --green-soft: rgba(0,210,106,0.15);
-      --blue: #1d9bf0;
-      --purple: #a855f7;
-      --yellow: #fbbf24;
     }
     
     body {
@@ -30,524 +25,443 @@
       background: var(--bg);
       color: var(--text);
       min-height: 100vh;
-      min-height: 100dvh;
+      overflow-x: hidden;
+    }
+    
+    /* Background glow */
+    .bg-glow {
+      position: fixed;
+      top: -50%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 150%;
+      height: 100%;
+      background: radial-gradient(ellipse at center, rgba(255,77,0,0.15) 0%, transparent 60%);
+      pointer-events: none;
+      z-index: 0;
     }
     
     /* Header */
     .header {
-      position: sticky;
+      position: fixed;
       top: 0;
-      background: rgba(10,10,10,0.9);
-      backdrop-filter: blur(20px);
-      border-bottom: 1px solid var(--border);
-      z-index: 100;
-      padding: 16px 20px;
-    }
-    
-    .header-inner {
-      max-width: 600px;
-      margin: 0 auto;
+      left: 0;
+      right: 0;
+      padding: 20px 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      z-index: 100;
     }
     
     .logo {
-      font-size: 18px;
+      font-size: 20px;
       font-weight: 800;
       letter-spacing: -0.5px;
     }
     
     .logo span { color: var(--accent); }
     
-    .balance-pill {
+    .header-cta {
+      padding: 10px 20px;
+      background: transparent;
+      border: 1px solid var(--border);
+      border-radius: 100px;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .header-cta:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+    
+    /* Landing container */
+    .landing {
+      min-height: 100vh;
       display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 100px 20px 60px;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Hero text */
+    .hero-badge {
+      display: inline-flex;
       align-items: center;
       gap: 8px;
       padding: 8px 16px;
-      background: var(--green-soft);
-      border: 1px solid rgba(0,210,106,0.3);
+      background: rgba(255,77,0,0.1);
+      border: 1px solid rgba(255,77,0,0.2);
       border-radius: 100px;
-      font-weight: 700;
-      color: var(--green);
-    }
-    
-    .balance-pill svg { width: 18px; height: 18px; }
-    
-    /* Main */
-    .main {
-      max-width: 600px;
-      margin: 0 auto;
-      padding: 20px;
-      padding-bottom: 100px;
-    }
-    
-    /* Hero card */
-    .hero-card {
-      background: linear-gradient(135deg, var(--accent) 0%, #ff6b35 100%);
-      border-radius: 20px;
-      padding: 24px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
       margin-bottom: 24px;
-      position: relative;
-      overflow: hidden;
-    }
-    
-    .hero-card::before {
-      content: '';
-      position: absolute;
-      top: -50%;
-      right: -50%;
-      width: 100%;
-      height: 100%;
-      background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
-    }
-    
-    .hero-tagline {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 2px;
-      opacity: 0.8;
-      margin-bottom: 8px;
     }
     
     .hero-title {
-      font-size: 24px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      margin-bottom: 12px;
+      font-size: clamp(36px, 8vw, 56px);
+      font-weight: 900;
+      text-align: center;
+      letter-spacing: -2px;
+      line-height: 1.1;
+      margin-bottom: 16px;
     }
     
-    .hero-stats {
+    .hero-title em {
+      font-style: normal;
+      background: linear-gradient(135deg, var(--accent), #ff8c00);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    
+    .hero-sub {
+      font-size: 18px;
+      color: var(--text-dim);
+      text-align: center;
+      max-width: 400px;
+      line-height: 1.5;
+      margin-bottom: 48px;
+    }
+    
+    /* Floating Widget */
+    .widget-container {
+      width: 100%;
+      max-width: 420px;
+      position: relative;
+    }
+    
+    .widget {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 24px;
+      padding: 32px 24px;
+      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.8), 0 0 60px var(--accent-glow);
+    }
+    
+    /* Step indicator */
+    .steps-row {
       display: flex;
-      gap: 24px;
-      margin-top: 16px;
-    }
-    
-    .hero-stat {
-      text-align: left;
-    }
-    
-    .hero-stat-value {
-      font-size: 20px;
-      font-weight: 800;
-    }
-    
-    .hero-stat-label {
-      font-size: 11px;
-      opacity: 0.8;
-    }
-    
-    /* Section */
-    .section {
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
       margin-bottom: 32px;
     }
     
-    .section-header {
+    .step-pill {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
+      gap: 6px;
+      padding: 8px 14px;
+      background: var(--bg);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-dim);
+      transition: all 0.3s;
     }
     
-    .section-title {
-      font-size: 18px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    
-    .section-badge {
+    .step-pill.active {
       background: var(--accent);
       color: white;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 10px;
-      border-radius: 100px;
     }
     
-    .section-link {
-      font-size: 13px;
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 500;
+    .step-pill.done {
+      background: var(--green);
+      color: white;
     }
     
-    /* Mission card */
-    .mission-card {
-      background: var(--card);
-      border: 1px solid var(--border);
+    .step-pill svg { width: 14px; height: 14px; }
+    
+    .step-line {
+      width: 24px;
+      height: 2px;
+      background: var(--border);
+      transition: background 0.3s;
+    }
+    
+    .step-line.done { background: var(--green); }
+    
+    /* Widget content */
+    .widget-step {
+      display: none;
+      animation: fadeIn 0.3s ease;
+    }
+    
+    .widget-step.active { display: block; }
+    
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Platform selection */
+    .platform-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    
+    .platform-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+      padding: 20px 16px;
+      background: var(--bg);
+      border: 2px solid var(--border);
       border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 12px;
       cursor: pointer;
       transition: all 0.2s;
     }
     
-    .mission-card:hover {
+    .platform-btn:hover {
       border-color: var(--accent);
-      transform: translateY(-2px);
+      transform: translateY(-4px);
     }
     
-    .mission-card.claimed {
-      border-color: var(--yellow);
-      background: rgba(251,191,36,0.05);
+    .platform-btn.selected {
+      border-color: var(--green);
+      background: rgba(0,210,106,0.1);
     }
     
-    .mission-header {
-      display: flex;
-      align-items: flex-start;
-      gap: 14px;
-      margin-bottom: 12px;
-    }
-    
-    .mission-icon {
-      width: 44px;
-      height: 44px;
-      border-radius: 12px;
+    .platform-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
       display: flex;
       align-items: center;
       justify-content: center;
-      flex-shrink: 0;
     }
     
-    .mission-icon svg { width: 22px; height: 22px; }
+    .platform-icon svg { width: 24px; height: 24px; }
     
-    .mission-icon.twitter { background: #000; border: 1px solid #333; color: white; }
-    .mission-icon.instagram { background: linear-gradient(135deg, #f09433, #dc2743, #bc1888); color: white; }
-    .mission-icon.tiktok { background: #000; border: 1px solid #333; color: white; }
-    .mission-icon.linkedin { background: #0077b5; color: white; }
+    .platform-icon.twitter { background: #000; border: 1px solid #333; color: white; }
+    .platform-icon.instagram { background: linear-gradient(135deg, #f09433, #dc2743, #bc1888); color: white; }
+    .platform-icon.tiktok { background: #000; border: 1px solid #333; color: white; }
+    .platform-icon.linkedin { background: #0077b5; color: white; }
     
-    .mission-info { flex: 1; min-width: 0; }
-    
-    .mission-brand {
-      font-size: 11px;
-      color: var(--accent);
+    .platform-name {
+      font-size: 13px;
       font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
     }
     
-    .mission-title {
-      font-size: 15px;
-      font-weight: 600;
-      margin-top: 2px;
-      line-height: 1.3;
+    .platform-earn {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--green);
     }
     
-    .mission-payout {
+    /* Content preview */
+    .content-box {
+      background: var(--bg);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .content-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .content-platform {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .content-platform svg { width: 18px; height: 18px; }
+    
+    .content-label {
+      flex: 1;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    
+    .content-payout {
       font-size: 18px;
       font-weight: 800;
       color: var(--green);
-      white-space: nowrap;
     }
     
-    .mission-desc {
-      font-size: 13px;
-      color: var(--text-dim);
-      line-height: 1.5;
-      margin-bottom: 12px;
+    .content-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+      white-space: pre-wrap;
     }
     
-    .mission-footer {
+    .content-text .tag { color: var(--accent); }
+    
+    .content-regen {
       display: flex;
       align-items: center;
-      justify-content: space-between;
-    }
-    
-    .mission-meta {
-      display: flex;
-      gap: 16px;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 16px;
+      padding-top: 16px;
+      border-top: 1px solid var(--border);
       font-size: 12px;
       color: var(--text-dim);
-    }
-    
-    .mission-meta-item {
-      display: flex;
-      align-items: center;
-      gap: 4px;
-    }
-    
-    .mission-btn {
-      padding: 10px 20px;
-      background: var(--accent);
-      border: none;
-      border-radius: 10px;
-      font-size: 13px;
-      font-weight: 600;
-      color: white;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: color 0.2s;
     }
     
-    .mission-btn:hover {
-      transform: scale(1.05);
-    }
+    .content-regen:hover { color: var(--text); }
     
-    .mission-btn.claimed {
-      background: var(--yellow);
-      color: #000;
-    }
-    
-    /* Connected accounts */
-    .accounts-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 12px;
-    }
-    
-    .account-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      padding: 16px;
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .account-card:hover {
-      border-color: var(--text-dim);
-    }
-    
-    .account-card.connected {
-      border-color: var(--green);
-      background: rgba(0,210,106,0.05);
-    }
-    
-    .account-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .account-icon svg { width: 20px; height: 20px; }
-    
-    .account-icon.twitter { background: #000; border: 1px solid #333; color: white; }
-    .account-icon.instagram { background: linear-gradient(135deg, #f09433, #dc2743, #bc1888); color: white; }
-    .account-icon.tiktok { background: #000; border: 1px solid #333; color: white; }
-    .account-icon.linkedin { background: #0077b5; color: white; }
-    
-    .account-info { flex: 1; min-width: 0; }
-    .account-name { font-size: 14px; font-weight: 600; }
-    .account-status { font-size: 12px; color: var(--text-dim); }
-    .account-status.connected { color: var(--green); }
-    
-    /* History */
-    .history-item {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      padding: 16px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 14px;
-      margin-bottom: 10px;
-    }
-    
-    .history-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      background: var(--green-soft);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--green);
-    }
-    
-    .history-icon.pending { background: var(--accent-soft); color: var(--accent); }
-    
-    .history-info { flex: 1; }
-    .history-title { font-size: 14px; font-weight: 600; }
-    .history-meta { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
-    
-    .history-amount {
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--green);
-    }
-    
-    .history-amount.pending { color: var(--accent); }
-    
-    /* Empty state */
-    .empty-state {
+    /* Success */
+    .success-content {
       text-align: center;
-      padding: 40px 20px;
-      color: var(--text-dim);
     }
     
-    .empty-state svg {
-      width: 48px;
-      height: 48px;
-      margin-bottom: 16px;
-      opacity: 0.5;
+    .success-icon {
+      width: 80px;
+      height: 80px;
+      margin: 0 auto 20px;
+      background: var(--green);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     }
     
-    .empty-state h3 {
-      font-size: 16px;
-      color: var(--text);
+    .success-icon svg { width: 40px; height: 40px; color: white; }
+    
+    @keyframes popIn {
+      0% { transform: scale(0); }
+      100% { transform: scale(1); }
+    }
+    
+    .success-amount {
+      font-size: 48px;
+      font-weight: 900;
+      letter-spacing: -2px;
+      color: var(--green);
       margin-bottom: 8px;
     }
     
-    /* Bottom nav */
-    .bottom-nav {
+    .success-label {
+      font-size: 15px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    
+    /* CTA Button */
+    .cta-btn {
+      width: 100%;
+      padding: 18px;
+      background: var(--accent);
+      border: none;
+      border-radius: 14px;
+      font-size: 16px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+    
+    .cta-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px var(--accent-glow);
+    }
+    
+    .cta-btn:disabled {
+      background: var(--border);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .cta-btn.success {
+      background: var(--green);
+    }
+    
+    .cta-btn svg { width: 20px; height: 20px; }
+    
+    /* Social proof */
+    .social-proof {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 32px;
+    }
+    
+    .faces {
+      display: flex;
+    }
+    
+    .face {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--bg);
+      margin-left: -8px;
+      object-fit: cover;
+    }
+    
+    .face:first-child { margin-left: 0; }
+    
+    .proof-text {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    
+    .proof-text strong { color: var(--text); }
+    
+    /* Footer */
+    .footer {
       position: fixed;
       bottom: 0;
       left: 0;
       right: 0;
-      background: rgba(10,10,10,0.95);
-      backdrop-filter: blur(20px);
-      border-top: 1px solid var(--border);
-      padding: 12px 20px;
-      padding-bottom: calc(12px + env(safe-area-inset-bottom));
-    }
-    
-    .bottom-nav-inner {
-      max-width: 600px;
-      margin: 0 auto;
-      display: flex;
-      justify-content: space-around;
-    }
-    
-    .nav-item {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 4px;
-      padding: 8px 16px;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: all 0.2s;
-      color: var(--text-dim);
-    }
-    
-    .nav-item:hover { color: var(--text); }
-    .nav-item.active { color: var(--accent); background: var(--accent-soft); }
-    
-    .nav-item svg { width: 22px; height: 22px; }
-    .nav-item span { font-size: 11px; font-weight: 500; }
-    
-    /* Auth screens */
-    .auth-screen {
-      display: none;
-      min-height: 100vh;
-      padding: 20px;
-    }
-    
-    .auth-screen.active { display: flex; flex-direction: column; }
-    
-    .auth-content {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      max-width: 400px;
-      margin: 0 auto;
-      width: 100%;
-    }
-    
-    .auth-logo {
-      font-size: 28px;
-      font-weight: 800;
-      text-align: center;
-      margin-bottom: 8px;
-    }
-    
-    .auth-logo span { color: var(--accent); }
-    
-    .auth-tagline {
-      text-align: center;
-      color: var(--text-dim);
-      font-size: 14px;
-      margin-bottom: 40px;
-    }
-    
-    .auth-title {
-      font-size: 24px;
-      font-weight: 700;
-      text-align: center;
-      margin-bottom: 32px;
-    }
-    
-    .auth-form { display: flex; flex-direction: column; gap: 16px; }
-    
-    .auth-input {
-      width: 100%;
       padding: 16px;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      font-size: 16px;
-      color: var(--text);
-      font-family: inherit;
-    }
-    
-    .auth-input:focus {
-      outline: none;
-      border-color: var(--accent);
-    }
-    
-    .auth-btn {
-      width: 100%;
-      padding: 16px;
-      background: var(--accent);
-      border: none;
-      border-radius: 12px;
-      font-size: 16px;
-      font-weight: 700;
-      color: white;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .auth-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(255,77,0,0.3);
-    }
-    
-    .auth-switch {
       text-align: center;
-      margin-top: 24px;
-      font-size: 14px;
+      font-size: 11px;
       color: var(--text-dim);
+      z-index: 100;
     }
     
-    .auth-switch a {
-      color: var(--accent);
-      text-decoration: none;
-      font-weight: 600;
-    }
+    .footer a { color: var(--accent); text-decoration: none; }
     
-    .auth-error {
-      background: rgba(255,71,87,0.1);
-      border: 1px solid rgba(255,71,87,0.3);
-      color: #ff4757;
-      padding: 12px 16px;
-      border-radius: 10px;
-      font-size: 13px;
-      text-align: center;
+    /* Loading overlay */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.9);
       display: none;
-    }
-    
-    .auth-error.show { display: block; }
-    
-    /* Loading */
-    .loading {
-      display: flex;
       align-items: center;
       justify-content: center;
-      padding: 40px;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 1000;
     }
+    
+    .loading-overlay.active { display: flex; }
     
     .spinner {
-      width: 32px;
-      height: 32px;
+      width: 48px;
+      height: 48px;
       border: 3px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
@@ -555,602 +469,274 @@
     }
     
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    /* Mission modal */
-    .modal-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.9);
-      display: none;
-      align-items: flex-end;
-      justify-content: center;
-      z-index: 1000;
-    }
     
-    .modal-overlay.active { display: flex; }
+    .loading-text { font-size: 14px; color: var(--text-dim); }
     
-    .modal {
-      background: var(--card);
-      border-radius: 24px 24px 0 0;
-      width: 100%;
-      max-width: 500px;
-      max-height: 90vh;
-      overflow-y: auto;
-      animation: slideUp 0.3s ease;
-    }
-    
-    @keyframes slideUp {
-      from { transform: translateY(100%); }
-      to { transform: translateY(0); }
-    }
-    
-    .modal-handle {
-      width: 40px;
-      height: 4px;
-      background: var(--border);
-      border-radius: 2px;
-      margin: 12px auto;
-    }
-    
-    .modal-content {
-      padding: 0 20px 40px;
-    }
-    
-    .modal-header {
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      margin-bottom: 20px;
-    }
-    
-    .modal-brand {
-      font-size: 12px;
-      color: var(--accent);
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-    
-    .modal-title {
-      font-size: 20px;
-      font-weight: 700;
-      margin-top: 4px;
-    }
-    
-    .modal-payout {
-      margin-left: auto;
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--green);
-    }
-    
-    .modal-section {
-      margin-bottom: 24px;
-    }
-    
-    .modal-section-title {
-      font-size: 12px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: var(--text-dim);
-      margin-bottom: 12px;
-    }
-    
-    .modal-brief {
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--text-dim);
-      background: var(--bg);
-      padding: 16px;
-      border-radius: 12px;
-    }
-    
-    .modal-content-preview {
-      background: var(--bg);
-      border-radius: 12px;
-      padding: 16px;
-    }
-    
-    .modal-content-text {
-      font-size: 14px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-    }
-    
-    .modal-hashtags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 12px;
-    }
-    
-    .modal-hashtag {
-      padding: 6px 12px;
-      background: var(--accent-soft);
-      color: var(--accent);
-      border-radius: 100px;
-      font-size: 12px;
-      font-weight: 500;
-    }
-    
-    .modal-cta {
-      padding: 16px;
-      background: var(--accent);
-      border: none;
-      border-radius: 14px;
-      font-size: 16px;
-      font-weight: 700;
-      color: white;
-      width: 100%;
-      cursor: pointer;
-      transition: all 0.2s;
-    }
-    
-    .modal-cta:hover { transform: scale(1.02); }
-    
-    .modal-cta.success {
-      background: var(--green);
+    /* Mobile adjustments */
+    @media (max-width: 480px) {
+      .header { padding: 16px; }
+      .landing { padding: 80px 16px 80px; }
+      .widget { padding: 24px 20px; }
+      .hero-title { font-size: 32px; }
     }
   </style>
 </head>
 <body>
-  <!-- Login Screen -->
-  <div class="auth-screen active" id="loginScreen">
-    <div class="auth-content">
-      <div class="auth-logo">DAU<span>influencers</span></div>
-      <div class="auth-tagline">Humans influencing the AI economy</div>
-      
-      <h2 class="auth-title">Welcome back</h2>
-      
-      <div class="auth-error" id="loginError"></div>
-      
-      <form class="auth-form" onsubmit="login(event)">
-        <input type="email" class="auth-input" placeholder="Email" id="loginEmail" required>
-        <input type="password" class="auth-input" placeholder="Password" id="loginPassword" required>
-        <button type="submit" class="auth-btn">Sign In</button>
-      </form>
-      
-      <div class="auth-switch">
-        New here? <a href="#" onclick="showSignup()">Create account</a>
-      </div>
-    </div>
-  </div>
+  <div class="bg-glow"></div>
   
-  <!-- Signup Screen -->
-  <div class="auth-screen" id="signupScreen">
-    <div class="auth-content">
-      <div class="auth-logo">DAU<span>influencers</span></div>
-      <div class="auth-tagline">Own the Conversation</div>
-      
-      <h2 class="auth-title">Join the movement</h2>
-      
-      <div class="auth-error" id="signupError"></div>
-      
-      <form class="auth-form" onsubmit="signup(event)">
-        <input type="text" class="auth-input" placeholder="Your name" id="signupName" required>
-        <input type="email" class="auth-input" placeholder="Email" id="signupEmail" required>
-        <input type="password" class="auth-input" placeholder="Password (min 8 chars)" id="signupPassword" required minlength="8">
-        <button type="submit" class="auth-btn">Create Account</button>
-      </form>
-      
-      <div class="auth-switch">
-        Already have an account? <a href="#" onclick="showLogin()">Sign in</a>
-      </div>
-    </div>
-  </div>
+  <header class="header">
+    <div class="logo">DAU<span>influencers</span></div>
+    <button class="header-cta" onclick="showLogin()">Sign In</button>
+  </header>
   
-  <!-- Main App -->
-  <div id="appScreen" style="display:none">
-    <header class="header">
-      <div class="header-inner">
-        <div class="logo">DAU<span>influencers</span></div>
-        <div class="balance-pill">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span id="balanceDisplay">$0.00</span>
-        </div>
-      </div>
-    </header>
+  <main class="landing">
+    <div class="hero-badge">💰 Now Paying Influencers</div>
+    <h1 class="hero-title">Get Paid<br>for <em>Influence</em></h1>
+    <p class="hero-sub">Connect. Share. Get paid instantly.<br>No followers required.</p>
     
-    <main class="main">
-      <!-- Hero card -->
-      <div class="hero-card">
-        <div class="hero-tagline">💰 Humans Influencing AI</div>
-        <div class="hero-title">Own the Conversation</div>
-        <div class="hero-stats">
-          <div class="hero-stat">
-            <div class="hero-stat-value" id="statEarnings">$0</div>
-            <div class="hero-stat-label">Total Earned</div>
+    <!-- Floating Widget -->
+    <div class="widget-container">
+      <div class="widget">
+        <!-- Step indicators -->
+        <div class="steps-row">
+          <div class="step-pill active" id="step1pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
+            Connect
           </div>
-          <div class="hero-stat">
-            <div class="hero-stat-value" id="statMissions">0</div>
-            <div class="hero-stat-label">Missions</div>
+          <div class="step-line" id="line1"></div>
+          <div class="step-pill" id="step2pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>
+            Share
           </div>
-        </div>
-      </div>
-      
-      <!-- Available Missions -->
-      <div class="section" id="missionsSection">
-        <div class="section-header">
-          <h2 class="section-title">
-            🎯 Available Missions
-            <span class="section-badge" id="missionCount">0</span>
-          </h2>
-        </div>
-        <div id="missionsContainer">
-          <div class="loading"><div class="spinner"></div></div>
-        </div>
-      </div>
-      
-      <!-- Connected Accounts -->
-      <div class="section">
-        <div class="section-header">
-          <h2 class="section-title">🔗 Your Accounts</h2>
-          <a href="#" class="section-link" onclick="connectAccount()">+ Add</a>
-        </div>
-        <div class="accounts-grid" id="accountsGrid">
-          <div class="account-card" onclick="connectAccount('twitter')">
-            <div class="account-icon twitter">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            </div>
-            <div class="account-info">
-              <div class="account-name">X (Twitter)</div>
-              <div class="account-status" id="twitterStatus">Tap to connect</div>
-            </div>
-          </div>
-          
-          <div class="account-card" onclick="connectAccount('instagram')">
-            <div class="account-icon instagram">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-            </div>
-            <div class="account-info">
-              <div class="account-name">Instagram</div>
-              <div class="account-status" id="instagramStatus">Tap to connect</div>
-            </div>
-          </div>
-          
-          <div class="account-card" onclick="connectAccount('tiktok')">
-            <div class="account-icon tiktok">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
-            </div>
-            <div class="account-info">
-              <div class="account-name">TikTok</div>
-              <div class="account-status" id="tiktokStatus">Tap to connect</div>
-            </div>
-          </div>
-          
-          <div class="account-card" onclick="connectAccount('linkedin')">
-            <div class="account-icon linkedin">
-              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-            </div>
-            <div class="account-info">
-              <div class="account-name">LinkedIn</div>
-              <div class="account-status" id="linkedinStatus">Tap to connect</div>
-            </div>
-          </div>
-        </div>
-      </div>
-      
-      <!-- Recent Activity -->
-      <div class="section">
-        <div class="section-header">
-          <h2 class="section-title">📜 Recent Activity</h2>
-        </div>
-        <div id="activityContainer">
-          <div class="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            <h3>No activity yet</h3>
-            <p>Complete missions to see your history</p>
-          </div>
-        </div>
-      </div>
-    </main>
-    
-    <!-- Bottom nav -->
-    <nav class="bottom-nav">
-      <div class="bottom-nav-inner">
-        <div class="nav-item active">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9,22 9,12 15,12 15,22"/></svg>
-          <span>Home</span>
-        </div>
-        <div class="nav-item" onclick="window.location.href='/earn'">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
-          <span>Quick Earn</span>
-        </div>
-        <div class="nav-item" onclick="logout()">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
-          <span>Logout</span>
-        </div>
-      </div>
-    </nav>
-  </div>
-  
-  <!-- Mission Modal -->
-  <div class="modal-overlay" id="missionModal" onclick="closeMissionModal(event)">
-    <div class="modal" onclick="event.stopPropagation()">
-      <div class="modal-handle"></div>
-      <div class="modal-content">
-        <div class="modal-header">
-          <div class="mission-icon" id="modalIcon">
-            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-          </div>
-          <div>
-            <div class="modal-brand" id="modalBrand">BRAND</div>
-            <div class="modal-title" id="modalTitle">Mission Title</div>
-          </div>
-          <div class="modal-payout" id="modalPayout">+$2.00</div>
-        </div>
-        
-        <div class="modal-section">
-          <div class="modal-section-title">Campaign Brief</div>
-          <div class="modal-brief" id="modalBrief">
-            Loading...
+          <div class="step-line" id="line2"></div>
+          <div class="step-pill" id="step3pill">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+            Paid
           </div>
         </div>
         
-        <div class="modal-section">
-          <div class="modal-section-title">Suggested Content</div>
-          <div class="modal-content-preview">
-            <div class="modal-content-text" id="modalContent">Loading...</div>
-            <div class="modal-hashtags" id="modalHashtags"></div>
+        <!-- Step 1: Connect -->
+        <div class="widget-step active" id="step1">
+          <div class="platform-grid">
+            <div class="platform-btn" onclick="selectPlatform('twitter')">
+              <div class="platform-icon twitter">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </div>
+              <div class="platform-name">X / Twitter</div>
+              <div class="platform-earn">+$2.00</div>
+            </div>
+            
+            <div class="platform-btn" onclick="selectPlatform('instagram')">
+              <div class="platform-icon instagram">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+              </div>
+              <div class="platform-name">Instagram</div>
+              <div class="platform-earn">+$3.50</div>
+            </div>
+            
+            <div class="platform-btn" onclick="selectPlatform('tiktok')">
+              <div class="platform-icon tiktok">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+              </div>
+              <div class="platform-name">TikTok</div>
+              <div class="platform-earn">+$5.00</div>
+            </div>
+            
+            <div class="platform-btn" onclick="selectPlatform('linkedin')">
+              <div class="platform-icon linkedin">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              </div>
+              <div class="platform-name">LinkedIn</div>
+              <div class="platform-earn">+$2.50</div>
+            </div>
           </div>
         </div>
         
-        <button class="modal-cta" id="modalCta" onclick="acceptMission()">
-          Accept Mission
-        </button>
+        <!-- Step 2: Share -->
+        <div class="widget-step" id="step2">
+          <div class="content-box">
+            <div class="content-header">
+              <div class="content-platform twitter" id="contentPlatform">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+              </div>
+              <div class="content-label">AI-generated for you</div>
+              <div class="content-payout" id="contentPayout">+$2.00</div>
+            </div>
+            <div class="content-text" id="contentText">Loading...</div>
+            <div class="content-regen" onclick="regenerate()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16M16 16h5v5"/></svg>
+              Different content
+            </div>
+          </div>
+          <button class="cta-btn" onclick="share()">
+            Share Now
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+        
+        <!-- Step 3: Paid -->
+        <div class="widget-step" id="step3">
+          <div class="success-content">
+            <div class="success-icon">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
+            </div>
+            <div class="success-amount" id="successAmount">+$2.00</div>
+            <div class="success-label">Added to your balance</div>
+          </div>
+          <button class="cta-btn success" onclick="reset()">
+            Earn More
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+          </button>
+        </div>
+      </div>
+      
+      <!-- Social proof -->
+      <div class="social-proof">
+        <div class="faces">
+          <img class="face" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=face" alt="">
+          <img class="face" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face" alt="">
+          <img class="face" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=64&h=64&fit=crop&crop=face" alt="">
+        </div>
+        <div class="proof-text"><strong>2,847</strong> earned this week</div>
       </div>
     </div>
+  </main>
+  
+  <footer class="footer">
+    <a href="/admin/campaigns">Brands</a> · Humans influencing the AI economy
+  </footer>
+  
+  <!-- Loading -->
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Connecting...</div>
   </div>
   
   <script>
-    // State
-    let user = null;
-    let token = localStorage.getItem('influencerToken');
-    let missions = [];
-    let selectedMission = null;
-    
-    const API = '/api/influencers';
-    
-    // Platform icons
-    const platformIcons = {
-      twitter: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>',
-      instagram: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>',
-      tiktok: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>',
-      linkedin: '<svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>'
+    let state = {
+      step: 1,
+      platform: null,
+      payout: 0,
+      content: ''
     };
     
-    // API helper
-    async function api(endpoint, options = {}) {
-      const headers = { 'Content-Type': 'application/json' };
-      if (token) headers['Authorization'] = `Bearer ${token}`;
-      
-      const res = await fetch(API + endpoint, { ...options, headers });
-      return res.json();
+    const payouts = {
+      twitter: 2.00,
+      instagram: 3.50,
+      tiktok: 5.00,
+      linkedin: 2.50
+    };
+    
+    const platformColors = {
+      twitter: '#000',
+      instagram: 'linear-gradient(135deg, #f09433, #dc2743, #bc1888)',
+      tiktok: '#000',
+      linkedin: '#0077b5'
+    };
+    
+    const sampleContent = {
+      twitter: [
+        "Just found something that actually works 🔥\n\nAutomation that feels human? Sign me up.\n\n<span class='tag'>#buildinpublic</span> <span class='tag'>#productivity</span>",
+        "Hot take: Most tools overcomplicate things.\n\nThis one doesn't. Simple. Fast. Done.\n\n<span class='tag'>#startups</span> <span class='tag'>#tech</span>",
+        "The future of content is AI + humans working together.\n\nFinally seeing it done right 🚀\n\n<span class='tag'>#AI</span> <span class='tag'>#creators</span>"
+      ],
+      instagram: [
+        "✨ Found my new workflow\n\nWhen the tools finally work the way you think. No more manual everything.\n\nDrop a 🙌 if you relate\n\n<span class='tag'>#contentcreator</span> <span class='tag'>#workflow</span>",
+        "POV: You stop doing everything the hard way 😂\n\nWhy did I wait so long?\n\n<span class='tag'>#influencerlife</span> <span class='tag'>#worksmarter</span>"
+      ],
+      tiktok: [
+        "Wait why did no one tell me about this earlier 😭\n\nI've been doing everything manually for MONTHS\n\n<span class='tag'>#fyp</span> <span class='tag'>#productivity</span> <span class='tag'>#lifehack</span>",
+        "POV: You find what the successful creators use 👀\n\n<span class='tag'>#viral</span> <span class='tag'>#learnontiktok</span> <span class='tag'>#moneytok</span>"
+      ],
+      linkedin: [
+        "Simple tools win.\n\nI've tested dozens of solutions. Most are overengineered.\n\nThe best ones do three things:\n→ Save time\n→ Maintain quality\n→ Get out of your way\n\n<span class='tag'>#Productivity</span> <span class='tag'>#AI</span>",
+        "Unpopular opinion: We don't need more content.\n\nWe need better content, faster.\n\nBig difference.\n\n<span class='tag'>#ContentStrategy</span> <span class='tag'>#Marketing</span>"
+      ]
+    };
+    
+    function showLoading(text) {
+      document.getElementById('loadingText').textContent = text;
+      document.getElementById('loading').classList.add('active');
     }
     
-    // Auth
-    function showLogin() {
-      document.getElementById('signupScreen').classList.remove('active');
-      document.getElementById('loginScreen').classList.add('active');
+    function hideLoading() {
+      document.getElementById('loading').classList.remove('active');
     }
     
-    function showSignup() {
-      document.getElementById('loginScreen').classList.remove('active');
-      document.getElementById('signupScreen').classList.add('active');
-    }
-    
-    async function login(e) {
-      e.preventDefault();
-      const email = document.getElementById('loginEmail').value;
-      const password = document.getElementById('loginPassword').value;
-      
-      const data = await api('/login', {
-        method: 'POST',
-        body: JSON.stringify({ email, password })
-      });
-      
-      if (data.error) {
-        document.getElementById('loginError').textContent = data.error;
-        document.getElementById('loginError').classList.add('show');
-        return;
+    function updateSteps() {
+      for (let i = 1; i <= 3; i++) {
+        const pill = document.getElementById('step' + i + 'pill');
+        pill.classList.remove('active', 'done');
+        if (i < state.step) pill.classList.add('done');
+        if (i === state.step) pill.classList.add('active');
       }
-      
-      token = data.token;
-      user = data.influencer;
-      localStorage.setItem('influencerToken', token);
-      showApp();
+      document.getElementById('line1').classList.toggle('done', state.step > 1);
+      document.getElementById('line2').classList.toggle('done', state.step > 2);
     }
     
-    async function signup(e) {
-      e.preventDefault();
-      const name = document.getElementById('signupName').value;
-      const email = document.getElementById('signupEmail').value;
-      const password = document.getElementById('signupPassword').value;
-      
-      const data = await api('/signup', {
-        method: 'POST',
-        body: JSON.stringify({ name, email, password })
-      });
-      
-      if (data.error) {
-        document.getElementById('signupError').textContent = data.error;
-        document.getElementById('signupError').classList.add('show');
-        return;
-      }
-      
-      token = data.token;
-      user = data.influencer;
-      localStorage.setItem('influencerToken', token);
-      showApp();
+    function goToStep(n) {
+      state.step = n;
+      document.querySelectorAll('.widget-step').forEach(s => s.classList.remove('active'));
+      document.getElementById('step' + n).classList.add('active');
+      updateSteps();
     }
     
-    function logout() {
-      token = null;
-      user = null;
-      localStorage.removeItem('influencerToken');
-      document.getElementById('appScreen').style.display = 'none';
-      document.getElementById('loginScreen').classList.add('active');
+    async function selectPlatform(platform) {
+      state.platform = platform;
+      state.payout = payouts[platform];
+      
+      // Mark selected
+      document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
+      event.currentTarget.classList.add('selected');
+      
+      showLoading('Connecting to ' + platform + '...');
+      await new Promise(r => setTimeout(r, 800));
+      
+      document.getElementById('loadingText').textContent = 'Generating content...';
+      await generateContent();
+      
+      hideLoading();
+      goToStep(2);
     }
     
-    // App
-    async function showApp() {
-      document.getElementById('loginScreen').classList.remove('active');
-      document.getElementById('signupScreen').classList.remove('active');
-      document.getElementById('appScreen').style.display = 'block';
+    async function generateContent() {
+      await new Promise(r => setTimeout(r, 600));
       
-      await loadUserData();
-      await loadMissions();
-    }
-    
-    async function loadUserData() {
-      const data = await api('/me');
-      if (data.error) {
-        logout();
-        return;
-      }
-      
-      user = data.influencer;
+      const contents = sampleContent[state.platform];
+      state.content = contents[Math.floor(Math.random() * contents.length)];
       
       // Update UI
-      document.getElementById('balanceDisplay').textContent = '$' + ((user.balance_cents || 0) / 100).toFixed(2);
-      document.getElementById('statEarnings').textContent = '$' + ((user.lifetime_earned_cents || 0) / 100).toFixed(0);
-      document.getElementById('statMissions').textContent = user.missions_completed || 0;
+      const platformEl = document.getElementById('contentPlatform');
+      platformEl.className = 'content-platform ' + state.platform;
+      platformEl.style.background = platformColors[state.platform];
+      
+      document.getElementById('contentPayout').textContent = '+$' + state.payout.toFixed(2);
+      document.getElementById('contentText').innerHTML = state.content;
     }
     
-    async function loadMissions() {
-      const container = document.getElementById('missionsContainer');
-      
-      // For now, show demo missions since we need campaign data
-      missions = [
-        {
-          id: 1,
-          platform: 'twitter',
-          brand: 'SwordPay',
-          campaign_name: 'Phoenix Launch',
-          title: 'Share about creator monetization',
-          description: 'Post about how Phoenix creators are finding new ways to monetize directly with fans.',
-          brief: 'SwordPay is a pay-to-unlock fan monetization platform. Your job is to start conversations about direct fan monetization in Phoenix.',
-          payout_cents: 250,
-          hashtags: ['#phoenix', '#creators', '#monetization']
-        },
-        {
-          id: 2,
-          platform: 'instagram',
-          brand: 'SwordPay',
-          campaign_name: 'Phoenix Launch',
-          title: 'Story about getting paid directly',
-          description: 'Share a story about the shift from platform fees to direct fan payments.',
-          brief: 'Highlight how creators lose 15-20% to platforms. SwordPay lets creators keep nearly everything.',
-          payout_cents: 350,
-          hashtags: ['#contentcreator', '#getpaid']
-        },
-        {
-          id: 3,
-          platform: 'linkedin',
-          brand: 'DAUfinder',
-          campaign_name: 'Product Hunt Launch',
-          title: 'Post about AI marketing tools',
-          description: 'Share thoughts on how AI is changing product marketing and discovery.',
-          brief: 'DAUfinder helps products get discovered through AI-generated tweets that reference relevant blogs. $1.99 per boost.',
-          payout_cents: 300,
-          hashtags: ['#AI', '#marketing', '#startups']
-        }
-      ];
-      
-      document.getElementById('missionCount').textContent = missions.length;
-      
-      if (missions.length === 0) {
-        container.innerHTML = `
-          <div class="empty-state">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
-            <h3>No missions available</h3>
-            <p>Check back soon for new opportunities!</p>
-          </div>
-        `;
-        return;
-      }
-      
-      container.innerHTML = missions.map(m => `
-        <div class="mission-card" onclick="openMission(${m.id})">
-          <div class="mission-header">
-            <div class="mission-icon ${m.platform}">${platformIcons[m.platform]}</div>
-            <div class="mission-info">
-              <div class="mission-brand">${m.brand}</div>
-              <div class="mission-title">${m.title}</div>
-            </div>
-            <div class="mission-payout">+$${(m.payout_cents / 100).toFixed(2)}</div>
-          </div>
-          <div class="mission-desc">${m.description}</div>
-          <div class="mission-footer">
-            <div class="mission-meta">
-              <div class="mission-meta-item">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
-                ${m.campaign_name}
-              </div>
-            </div>
-            <button class="mission-btn">View →</button>
-          </div>
-        </div>
-      `).join('');
+    async function regenerate() {
+      showLoading('Generating...');
+      await generateContent();
+      hideLoading();
     }
     
-    function openMission(id) {
-      selectedMission = missions.find(m => m.id === id);
-      if (!selectedMission) return;
+    async function share() {
+      showLoading('Posting to ' + state.platform + '...');
+      await new Promise(r => setTimeout(r, 1500));
+      hideLoading();
       
-      const m = selectedMission;
-      
-      document.getElementById('modalIcon').className = 'mission-icon ' + m.platform;
-      document.getElementById('modalIcon').innerHTML = platformIcons[m.platform];
-      document.getElementById('modalBrand').textContent = m.brand;
-      document.getElementById('modalTitle').textContent = m.title;
-      document.getElementById('modalPayout').textContent = '+$' + (m.payout_cents / 100).toFixed(2);
-      document.getElementById('modalBrief').textContent = m.brief;
-      document.getElementById('modalContent').textContent = m.description;
-      document.getElementById('modalHashtags').innerHTML = m.hashtags.map(h => `<span class="modal-hashtag">${h}</span>`).join('');
-      
-      document.getElementById('missionModal').classList.add('active');
+      document.getElementById('successAmount').textContent = '+$' + state.payout.toFixed(2);
+      goToStep(3);
     }
     
-    function closeMissionModal(e) {
-      if (e.target === document.getElementById('missionModal')) {
-        document.getElementById('missionModal').classList.remove('active');
-      }
+    function reset() {
+      document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
+      goToStep(1);
     }
     
-    async function acceptMission() {
-      const btn = document.getElementById('modalCta');
-      btn.textContent = 'Opening...';
-      btn.classList.add('success');
-      
-      // In production, this would claim the mission and open the share flow
-      await new Promise(r => setTimeout(r, 1000));
-      
-      // Redirect to quick earn flow
-      window.location.href = '/earn';
+    function showLogin() {
+      alert('Sign in coming soon! For now, just use the widget.');
     }
-    
-    function connectAccount(platform) {
-      // In production, this would trigger OAuth
-      alert('OAuth connection for ' + platform + ' coming soon!');
-    }
-    
-    // Init
-    async function init() {
-      if (token) {
-        // Verify token
-        const data = await api('/me');
-        if (!data.error) {
-          user = data.influencer;
-          showApp();
-          return;
-        }
-      }
-      // Show login
-      document.getElementById('loginScreen').classList.add('active');
-    }
-    
-    init();
   </script>
 </body>
 </html>
