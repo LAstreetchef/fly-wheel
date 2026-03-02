@@ -931,10 +931,28 @@
       left: 24px;
       width: 280px;
       background: var(--bg);
-      border: 1px solid var(--border);
-      box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+      border: 2px solid var(--text);
+      box-shadow: 0 0 20px rgba(0,0,0,0.15), 0 0 60px rgba(0,0,0,0.1);
       z-index: 500;
       transition: all 0.3s ease;
+      animation: widgetPulse 3s ease-in-out infinite;
+    }
+    
+    @keyframes widgetPulse {
+      0%, 100% { 
+        box-shadow: 0 0 20px rgba(0,0,0,0.15), 0 0 60px rgba(0,0,0,0.1);
+        transform: translateY(0);
+      }
+      50% { 
+        box-shadow: 0 0 30px rgba(0,0,0,0.25), 0 0 80px rgba(0,0,0,0.15);
+        transform: translateY(-4px);
+      }
+    }
+    
+    .floating-widget:hover {
+      animation: none;
+      box-shadow: 0 0 40px rgba(0,0,0,0.3), 0 0 100px rgba(0,0,0,0.2);
+      transform: translateY(-4px);
     }
     
     .floating-widget.collapsed .fw-body {
@@ -968,6 +986,42 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 1px;
+      background: linear-gradient(90deg, #000, #444, #000);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: shimmer 2s linear infinite;
+    }
+    
+    @keyframes shimmer {
+      to { background-position: 200% center; }
+    }
+    
+    .fw-pulse {
+      width: 8px;
+      height: 8px;
+      background: #00c853;
+      border-radius: 50%;
+      margin-right: 10px;
+      animation: pulseDot 1.5s ease-in-out infinite;
+      box-shadow: 0 0 8px #00c853;
+    }
+    
+    @keyframes pulseDot {
+      0%, 100% { 
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 8px #00c853;
+      }
+      50% { 
+        opacity: 0.7;
+        transform: scale(1.2);
+        box-shadow: 0 0 16px #00c853, 0 0 32px rgba(0,200,83,0.4);
+      }
+    }
+    
+    .floating-widget.collapsed .fw-pulse {
+      display: none;
     }
     
     .fw-toggle {
@@ -1361,6 +1415,7 @@ The key? Start small. One habit at a time.</p>
   <!-- Floating Widget -->
   <div class="floating-widget" id="floatingWidget">
     <div class="fw-header" onclick="toggleWidget()">
+      <span class="fw-pulse"></span>
       <span class="fw-title">Start Earning</span>
       <span class="fw-toggle">+</span>
     </div>
