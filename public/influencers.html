@@ -3,23 +3,23 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>DAUinfluencers | Get Paid for Influence</title>
+  <title>DAUinfluencers | The Modern Influence Agency</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     :root {
-      --bg: #000000;
-      --card: #111111;
-      --border: #222222;
-      --text: #ffffff;
+      --bg: #ffffff;
+      --bg-alt: #fafafa;
+      --card: #ffffff;
+      --border: #e0e0e0;
+      --border-dark: #000000;
+      --text: #000000;
       --text-dim: #666666;
-      --accent: #ff4d00;
-      --accent-glow: rgba(255, 77, 0, 0.4);
-      --green: #00d26a;
-      --gold: #ffd700;
-      --gold-glow: rgba(255, 215, 0, 0.3);
+      --accent: #000000;
+      --green: #00a854;
+      --gold: #c9a227;
     }
     
     body {
@@ -28,20 +28,11 @@
       color: var(--text);
       min-height: 100vh;
       overflow-x: hidden;
+      -webkit-font-smoothing: antialiased;
     }
     
-    /* Background glow */
-    .bg-glow {
-      position: fixed;
-      top: -50%;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 150%;
-      height: 100%;
-      background: radial-gradient(ellipse at center, rgba(255,77,0,0.15) 0%, transparent 60%);
-      pointer-events: none;
-      z-index: 0;
-    }
+    /* Typography */
+    .serif { font-family: 'Playfair Display', Georgia, serif; }
     
     /* Header */
     .header {
@@ -49,467 +40,606 @@
       top: 0;
       left: 0;
       right: 0;
-      padding: 20px 24px;
+      padding: 20px 40px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       z-index: 100;
-      background: linear-gradient(to bottom, rgba(0,0,0,0.8), transparent);
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
     }
     
     .logo {
-      font-size: 20px;
+      font-size: 18px;
       font-weight: 800;
       letter-spacing: -0.5px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
     
-    .logo span { color: var(--accent); }
-    
-    .header-btns {
+    .header-nav {
       display: flex;
-      gap: 8px;
+      gap: 32px;
+      align-items: center;
     }
+    
+    .nav-link {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .nav-link:hover { color: var(--text); }
     
     .header-cta {
-      padding: 10px 20px;
-      background: transparent;
-      border: 1px solid var(--border);
-      border-radius: 100px;
-      font-size: 13px;
-      font-weight: 600;
-      color: var(--text);
+      padding: 12px 24px;
+      background: var(--text);
+      border: none;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--bg);
       cursor: pointer;
       transition: all 0.2s;
       text-decoration: none;
     }
     
     .header-cta:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+      background: var(--text-dim);
     }
     
-    .header-cta.premium {
-      border-color: var(--gold);
-      color: var(--gold);
-    }
-    
-    .header-cta.premium:hover {
-      background: var(--gold);
-      color: #000;
-    }
-    
-    /* Landing container */
-    .landing {
+    /* Hero */
+    .hero {
       min-height: 100vh;
       display: flex;
-      flex-direction: column;
       align-items: center;
-      justify-content: center;
-      padding: 100px 20px 60px;
-      position: relative;
-      z-index: 1;
+      padding: 120px 40px 80px;
+      border-bottom: 1px solid var(--border);
     }
     
-    /* Hero text */
-    .hero-badge {
-      display: inline-flex;
+    .hero-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
       align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: rgba(255,77,0,0.1);
-      border: 1px solid rgba(255,77,0,0.2);
-      border-radius: 100px;
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--accent);
+    }
+    
+    .hero-left {
+      max-width: 560px;
+    }
+    
+    .hero-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--text-dim);
       margin-bottom: 24px;
     }
     
     .hero-title {
-      font-size: clamp(36px, 8vw, 56px);
-      font-weight: 900;
-      text-align: center;
-      letter-spacing: -2px;
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(48px, 6vw, 72px);
+      font-weight: 400;
       line-height: 1.1;
-      margin-bottom: 16px;
-    }
-    
-    .hero-title em {
-      font-style: normal;
-      background: linear-gradient(135deg, var(--accent), #ff8c00);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-    
-    .hero-sub {
-      font-size: 18px;
-      color: var(--text-dim);
-      text-align: center;
-      max-width: 400px;
-      line-height: 1.5;
-      margin-bottom: 48px;
-    }
-    
-    /* Floating Widget */
-    .widget-container {
-      width: 100%;
-      max-width: 420px;
-      position: relative;
-    }
-    
-    .widget {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 24px;
-      padding: 32px 24px;
-      box-shadow: 0 40px 80px -20px rgba(0,0,0,0.8), 0 0 60px var(--accent-glow);
-    }
-    
-    /* Step indicator */
-    .steps-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
+      letter-spacing: -2px;
       margin-bottom: 32px;
     }
     
-    .step-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 14px;
-      background: var(--bg);
-      border-radius: 100px;
-      font-size: 12px;
-      font-weight: 600;
+    .hero-title em {
+      font-style: italic;
+    }
+    
+    .hero-desc {
+      font-size: 16px;
+      line-height: 1.7;
       color: var(--text-dim);
-      transition: all 0.3s;
+      margin-bottom: 40px;
+      max-width: 440px;
     }
     
-    .step-pill.active {
-      background: var(--accent);
-      color: white;
-    }
-    
-    .step-pill.done {
-      background: var(--green);
-      color: white;
-    }
-    
-    .step-pill svg { width: 14px; height: 14px; }
-    
-    .step-line {
-      width: 24px;
-      height: 2px;
-      background: var(--border);
-      transition: background 0.3s;
-    }
-    
-    .step-line.done { background: var(--green); }
-    
-    /* Widget content */
-    .widget-step {
-      display: none;
-      animation: fadeIn 0.3s ease;
-    }
-    
-    .widget-step.active { display: block; }
-    
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(10px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-    
-    /* Platform selection */
-    .platform-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-    }
-    
-    .platform-btn {
+    .hero-stats {
       display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 10px;
-      padding: 20px 16px;
-      background: var(--bg);
-      border: 2px solid var(--border);
-      border-radius: 16px;
-      cursor: pointer;
-      transition: all 0.2s;
+      gap: 48px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
     }
     
-    .platform-btn:hover {
-      border-color: var(--accent);
-      transform: translateY(-4px);
+    .stat {
+      text-align: left;
     }
     
-    .platform-btn.selected {
-      border-color: var(--green);
-      background: rgba(0,210,106,0.1);
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
     }
     
-    .platform-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .platform-icon svg { width: 24px; height: 24px; }
-    
-    .platform-icon.twitter { background: #000; border: 1px solid #333; color: white; }
-    .platform-icon.instagram { background: linear-gradient(135deg, #f09433, #dc2743, #bc1888); color: white; }
-    .platform-icon.tiktok { background: #000; border: 1px solid #333; color: white; }
-    .platform-icon.linkedin { background: #0077b5; color: white; }
-    
-    .platform-name {
-      font-size: 13px;
-      font-weight: 600;
-    }
-    
-    .platform-earn {
-      font-size: 14px;
-      font-weight: 700;
-      color: var(--green);
-    }
-    
-    .platform-earn-range {
+    .stat-label {
       font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
       color: var(--text-dim);
+      margin-top: 4px;
     }
     
-    /* Content preview */
-    .content-box {
-      background: var(--bg);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
+    /* Hero Grid - Influencer Photos */
+    .hero-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
     }
     
-    .content-header {
+    .hero-img {
+      aspect-ratio: 3/4;
+      object-fit: cover;
+      width: 100%;
+      filter: grayscale(100%);
+      transition: filter 0.3s;
+    }
+    
+    .hero-img:hover {
+      filter: grayscale(0%);
+    }
+    
+    .hero-img-tall {
+      grid-row: span 2;
+    }
+    
+    /* Brands Section */
+    .brands-section {
+      padding: 60px 40px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-alt);
+    }
+    
+    .brands-label {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+      margin-bottom: 32px;
+    }
+    
+    .brands-logos {
       display: flex;
+      justify-content: center;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding-bottom: 16px;
+      gap: 64px;
+      flex-wrap: wrap;
+    }
+    
+    .brand-logo {
+      font-size: 20px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--text-dim);
+      opacity: 0.5;
+      transition: opacity 0.2s;
+    }
+    
+    .brand-logo:hover { opacity: 1; }
+    
+    /* How It Works */
+    .how-section {
+      padding: 120px 40px;
       border-bottom: 1px solid var(--border);
     }
     
-    .content-platform {
-      width: 36px;
-      height: 36px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    
-    .content-platform svg { width: 18px; height: 18px; }
-    
-    .content-label {
-      flex: 1;
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-    
-    .content-payout {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--green);
-    }
-    
-    .content-text {
-      font-size: 14px;
-      line-height: 1.6;
-      color: var(--text);
-      white-space: pre-wrap;
-    }
-    
-    .content-text .tag { color: var(--accent); }
-    
-    .content-regen {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
-      font-size: 12px;
-      color: var(--text-dim);
-      cursor: pointer;
-      transition: color 0.2s;
-    }
-    
-    .content-regen:hover { color: var(--text); }
-    
-    /* Success */
-    .success-content {
+    .section-header {
       text-align: center;
+      max-width: 600px;
+      margin: 0 auto 80px;
     }
     
-    .success-icon {
-      width: 80px;
-      height: 80px;
-      margin: 0 auto 20px;
-      background: var(--green);
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    .section-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
     }
     
-    .success-icon svg { width: 40px; height: 40px; color: white; }
-    
-    @keyframes popIn {
-      0% { transform: scale(0); }
-      100% { transform: scale(1); }
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      font-weight: 400;
+      letter-spacing: -1px;
     }
     
-    .success-amount {
-      font-size: 48px;
-      font-weight: 900;
-      letter-spacing: -2px;
-      color: var(--green);
-      margin-bottom: 8px;
+    .steps-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 40px;
+      max-width: 1200px;
+      margin: 0 auto;
     }
     
-    .success-label {
-      font-size: 15px;
+    .step-card {
+      padding: 40px;
+      border: 1px solid var(--border);
+      transition: border-color 0.2s;
+    }
+    
+    .step-card:hover {
+      border-color: var(--text);
+    }
+    
+    .step-num {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 2px;
       color: var(--text-dim);
       margin-bottom: 24px;
     }
     
-    /* CTA Button */
-    .cta-btn {
-      width: 100%;
-      padding: 18px;
-      background: var(--accent);
-      border: none;
-      border-radius: 14px;
-      font-size: 16px;
+    .step-title {
+      font-size: 20px;
       font-weight: 700;
-      color: white;
+      margin-bottom: 16px;
+    }
+    
+    .step-desc {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-dim);
+    }
+    
+    /* Featured Influencers */
+    .influencers-section {
+      padding: 120px 40px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-alt);
+    }
+    
+    .influencer-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 24px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .influencer-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      overflow: hidden;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s;
+    }
+    
+    .influencer-card:hover {
+      border-color: var(--text);
+      transform: translateY(-4px);
+    }
+    
+    .influencer-img {
+      width: 100%;
+      aspect-ratio: 1;
+      object-fit: cover;
+      filter: grayscale(100%);
+      transition: filter 0.3s;
+    }
+    
+    .influencer-card:hover .influencer-img {
+      filter: grayscale(0%);
+    }
+    
+    .influencer-info {
+      padding: 20px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .influencer-name {
+      font-size: 15px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+    
+    .influencer-handle {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-bottom: 12px;
+    }
+    
+    .influencer-meta {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-top: 12px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .influencer-followers {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .influencer-followers strong {
+      color: var(--text);
+      font-weight: 700;
+    }
+    
+    .influencer-rate {
+      font-size: 14px;
+      font-weight: 700;
+    }
+    
+    /* Sample Posts */
+    .posts-section {
+      padding: 120px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .posts-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 32px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    
+    .post-card {
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+    
+    .post-header {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
-    }
-    
-    .cta-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 32px var(--accent-glow);
-    }
-    
-    .cta-btn:disabled {
-      background: var(--border);
-      cursor: not-allowed;
-      transform: none;
-      box-shadow: none;
-    }
-    
-    .cta-btn.success {
-      background: var(--green);
-    }
-    
-    .cta-btn.gold {
-      background: linear-gradient(135deg, var(--gold), #ffaa00);
-      color: #000;
-    }
-    
-    .cta-btn.gold:hover {
-      box-shadow: 0 12px 32px var(--gold-glow);
-    }
-    
-    .cta-btn svg { width: 20px; height: 20px; }
-    
-    /* Social proof */
-    .social-proof {
-      display: flex;
-      align-items: center;
-      justify-content: center;
       gap: 12px;
-      margin-top: 32px;
+      padding: 16px;
+      border-bottom: 1px solid var(--border);
     }
     
-    .faces {
-      display: flex;
-    }
-    
-    .face {
-      width: 32px;
-      height: 32px;
+    .post-avatar {
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
-      border: 2px solid var(--bg);
-      margin-left: -8px;
       object-fit: cover;
     }
     
-    .face:first-child { margin-left: 0; }
+    .post-author {
+      font-size: 14px;
+      font-weight: 600;
+    }
     
-    .proof-text {
-      font-size: 13px;
+    .post-handle {
+      font-size: 12px;
       color: var(--text-dim);
     }
     
-    .proof-text strong { color: var(--text); }
+    .post-platform {
+      margin-left: auto;
+      width: 20px;
+      height: 20px;
+      opacity: 0.5;
+    }
+    
+    .post-body {
+      padding: 20px;
+    }
+    
+    .post-text {
+      font-size: 14px;
+      line-height: 1.6;
+      margin-bottom: 16px;
+    }
+    
+    .post-image {
+      width: 100%;
+      aspect-ratio: 16/9;
+      object-fit: cover;
+      border-radius: 4px;
+    }
+    
+    .post-stats {
+      display: flex;
+      gap: 24px;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .post-stats strong { color: var(--text); }
+    
+    /* Pricing */
+    .pricing-section {
+      padding: 120px 40px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-alt);
+    }
+    
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      max-width: 1000px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+    }
+    
+    .pricing-card {
+      padding: 40px 32px;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      text-align: center;
+    }
+    
+    .pricing-card:last-child { border-right: none; }
+    
+    .pricing-card.featured {
+      background: var(--text);
+      color: var(--bg);
+    }
+    
+    .pricing-card.featured .pricing-label,
+    .pricing-card.featured .pricing-features li {
+      color: rgba(255,255,255,0.7);
+    }
+    
+    .pricing-icon {
+      width: 48px;
+      height: 48px;
+      margin: 0 auto 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .pricing-icon svg { width: 28px; height: 28px; }
+    
+    .pricing-platform {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .pricing-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    
+    .pricing-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 4px;
+    }
+    
+    .pricing-per {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    
+    .pricing-features {
+      list-style: none;
+      font-size: 13px;
+      color: var(--text-dim);
+      text-align: left;
+    }
+    
+    .pricing-features li {
+      padding: 8px 0;
+      border-top: 1px solid var(--border);
+    }
+    
+    .pricing-card.featured .pricing-features li {
+      border-color: rgba(255,255,255,0.1);
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      padding: 120px 40px;
+      text-align: center;
+    }
+    
+    .cta-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      font-weight: 400;
+      letter-spacing: -1px;
+      margin-bottom: 24px;
+    }
+    
+    .cta-desc {
+      font-size: 16px;
+      color: var(--text-dim);
+      max-width: 500px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    
+    .cta-buttons {
+      display: flex;
+      gap: 16px;
+      justify-content: center;
+    }
+    
+    .cta-btn {
+      padding: 16px 40px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+      border: 2px solid var(--text);
+    }
+    
+    .cta-btn.primary {
+      background: var(--text);
+      color: var(--bg);
+    }
+    
+    .cta-btn.primary:hover {
+      background: var(--text-dim);
+      border-color: var(--text-dim);
+    }
+    
+    .cta-btn.secondary {
+      background: transparent;
+      color: var(--text);
+    }
+    
+    .cta-btn.secondary:hover {
+      background: var(--text);
+      color: var(--bg);
+    }
     
     /* Footer */
     .footer {
-      position: fixed;
-      bottom: 0;
-      left: 0;
-      right: 0;
-      padding: 16px;
-      text-align: center;
-      font-size: 11px;
-      color: var(--text-dim);
-      z-index: 100;
-    }
-    
-    .footer a { color: var(--accent); text-decoration: none; }
-    
-    /* Loading overlay */
-    .loading-overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(0,0,0,0.9);
-      display: none;
+      padding: 40px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
       align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 20px;
-      z-index: 1000;
     }
     
-    .loading-overlay.active { display: flex; }
-    
-    .spinner {
-      width: 48px;
-      height: 48px;
-      border: 3px solid var(--border);
-      border-top-color: var(--accent);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
+    .footer-logo {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
     }
     
-    @keyframes spin { to { transform: rotate(360deg); } }
+    .footer-links {
+      display: flex;
+      gap: 32px;
+    }
     
-    .loading-text { font-size: 14px; color: var(--text-dim); }
+    .footer-link {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .footer-link:hover { color: var(--text); }
     
     /* ==================== MODAL SYSTEM ==================== */
     .modal-overlay {
       position: fixed;
       inset: 0;
-      background: rgba(0,0,0,0.9);
+      background: rgba(255,255,255,0.95);
       backdrop-filter: blur(8px);
       display: none;
       align-items: center;
@@ -522,9 +652,8 @@
     .modal-overlay.active { display: flex; }
     
     .modal {
-      background: var(--card);
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 24px;
       width: 100%;
       max-width: 500px;
       max-height: 90vh;
@@ -533,8 +662,8 @@
     }
     
     @keyframes modalIn {
-      from { opacity: 0; transform: scale(0.95) translateY(20px); }
-      to { opacity: 1; transform: scale(1) translateY(0); }
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
     }
     
     .modal-header {
@@ -545,17 +674,18 @@
     }
     
     .modal-title {
-      font-size: 20px;
-      font-weight: 800;
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
     }
     
     .modal-close {
       width: 36px;
       height: 36px;
-      border-radius: 50%;
-      background: var(--bg);
+      background: transparent;
       border: 1px solid var(--border);
-      color: var(--text-dim);
+      color: var(--text);
       cursor: pointer;
       display: flex;
       align-items: center;
@@ -564,27 +694,11 @@
     }
     
     .modal-close:hover {
-      border-color: var(--accent);
-      color: var(--accent);
+      border-color: var(--text);
     }
     
     .modal-body {
       padding: 24px;
-    }
-    
-    /* Premium badge */
-    .premium-badge {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 6px 12px;
-      background: linear-gradient(135deg, rgba(255,215,0,0.2), rgba(255,170,0,0.2));
-      border: 1px solid var(--gold);
-      border-radius: 100px;
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--gold);
-      margin-bottom: 16px;
     }
     
     /* Form styles */
@@ -594,8 +708,10 @@
     
     .form-label {
       display: block;
-      font-size: 13px;
-      font-weight: 600;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
       color: var(--text-dim);
       margin-bottom: 8px;
     }
@@ -605,7 +721,6 @@
       padding: 14px 16px;
       background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 12px;
       font-size: 15px;
       color: var(--text);
       font-family: inherit;
@@ -614,7 +729,7 @@
     
     .form-input:focus {
       outline: none;
-      border-color: var(--accent);
+      border-color: var(--text);
     }
     
     .form-input::placeholder {
@@ -633,38 +748,52 @@
       margin-top: 6px;
     }
     
+    .modal-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--text);
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--bg);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-btn:hover {
+      background: var(--text-dim);
+    }
+    
     /* Stats display */
     .stats-row {
       display: flex;
       gap: 16px;
-      margin-bottom: 20px;
+      margin-bottom: 24px;
     }
     
     .stat-box {
       flex: 1;
-      background: var(--bg);
-      border-radius: 12px;
-      padding: 16px;
+      padding: 20px;
+      border: 1px solid var(--border);
       text-align: center;
     }
     
-    .stat-value {
+    .stat-box .stat-value {
       font-size: 24px;
       font-weight: 800;
       margin-bottom: 4px;
     }
     
-    .stat-value.green { color: var(--green); }
-    .stat-value.gold { color: var(--gold); }
-    
-    .stat-label {
-      font-size: 11px;
-      color: var(--text-dim);
+    .stat-box .stat-label {
+      font-size: 10px;
       text-transform: uppercase;
-      letter-spacing: 0.5px;
+      letter-spacing: 1px;
+      color: var(--text-dim);
     }
     
-    /* Influencer cards */
+    /* Influencer list */
     .influencer-list {
       display: flex;
       flex-direction: column;
@@ -672,89 +801,65 @@
       margin-bottom: 20px;
     }
     
-    .influencer-card {
-      background: var(--bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 16px;
+    .influencer-list-card {
       display: flex;
       align-items: center;
       gap: 14px;
+      padding: 16px;
+      border: 1px solid var(--border);
       cursor: pointer;
       transition: all 0.2s;
     }
     
-    .influencer-card:hover {
-      border-color: var(--accent);
-      transform: translateX(4px);
+    .influencer-list-card:hover {
+      border-color: var(--text);
     }
     
-    .influencer-avatar {
+    .influencer-list-avatar {
       width: 50px;
       height: 50px;
-      border-radius: 50%;
       object-fit: cover;
     }
     
-    .influencer-info {
+    .influencer-list-info {
       flex: 1;
     }
     
-    .influencer-name {
-      font-size: 15px;
+    .influencer-list-name {
+      font-size: 14px;
       font-weight: 700;
       margin-bottom: 2px;
     }
     
-    .influencer-handle {
-      font-size: 13px;
+    .influencer-list-handle {
+      font-size: 12px;
       color: var(--text-dim);
     }
     
-    .influencer-stats {
+    .influencer-list-stats {
       display: flex;
       gap: 12px;
       margin-top: 6px;
-    }
-    
-    .influencer-stat {
       font-size: 11px;
       color: var(--text-dim);
     }
     
-    .influencer-stat strong {
-      color: var(--text);
-    }
+    .influencer-list-stats strong { color: var(--text); }
     
-    .influencer-price {
+    .influencer-list-price {
       text-align: right;
     }
     
-    .influencer-rate {
-      font-size: 18px;
-      font-weight: 800;
-      color: var(--green);
+    .influencer-list-rate {
+      font-size: 16px;
+      font-weight: 700;
     }
     
-    .influencer-platform {
-      font-size: 11px;
+    .influencer-list-platform {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: var(--text-dim);
-    }
-    
-    /* Niche tags */
-    .niche-tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-      margin-top: 8px;
-    }
-    
-    .niche-tag {
-      padding: 4px 10px;
-      background: rgba(255,77,0,0.1);
-      border-radius: 100px;
-      font-size: 11px;
-      color: var(--accent);
     }
     
     /* Filter bar */
@@ -768,11 +873,12 @@
     
     .filter-btn {
       padding: 8px 16px;
-      background: var(--bg);
+      background: transparent;
       border: 1px solid var(--border);
-      border-radius: 100px;
-      font-size: 12px;
+      font-size: 11px;
       font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
       color: var(--text-dim);
       cursor: pointer;
       white-space: nowrap;
@@ -781,229 +887,367 @@
     
     .filter-btn:hover,
     .filter-btn.active {
-      border-color: var(--accent);
-      color: var(--accent);
+      border-color: var(--text);
+      color: var(--text);
     }
     
-    /* Tier indicator */
-    .tier-indicator {
-      background: var(--bg);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
-    }
-    
-    .tier-header {
-      display: flex;
+    /* Loading */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.95);
+      display: none;
       align-items: center;
-      justify-content: space-between;
-      margin-bottom: 16px;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 3000;
     }
     
-    .tier-name {
-      font-size: 16px;
-      font-weight: 700;
+    .loading-overlay.active { display: flex; }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--border);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
     }
     
-    .tier-name.gold { color: var(--gold); }
+    @keyframes spin { to { transform: rotate(360deg); } }
     
-    .tier-followers {
-      font-size: 13px;
-      color: var(--text-dim);
-    }
-    
-    .tier-bar {
-      height: 8px;
-      background: var(--border);
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 12px;
-    }
-    
-    .tier-progress {
-      height: 100%;
-      background: linear-gradient(90deg, var(--green), var(--gold));
-      border-radius: 4px;
-      transition: width 0.5s ease;
-    }
-    
-    .tier-payout {
-      font-size: 24px;
-      font-weight: 800;
-      color: var(--green);
-    }
-    
-    .tier-payout-label {
+    .loading-text { 
       font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
       color: var(--text-dim);
     }
     
-    /* Mobile adjustments */
-    @media (max-width: 480px) {
-      .header { padding: 16px; }
-      .landing { padding: 80px 16px 80px; }
-      .widget { padding: 24px 20px; }
-      .hero-title { font-size: 32px; }
-      .modal { border-radius: 20px; }
-      .form-row { grid-template-columns: 1fr; }
-      .stats-row { flex-direction: column; gap: 12px; }
+    /* Mobile */
+    @media (max-width: 1024px) {
+      .hero-content { grid-template-columns: 1fr; gap: 60px; }
+      .hero-grid { display: none; }
+      .steps-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .pricing-card { border-right: none; border-bottom: 1px solid var(--border); }
+      .pricing-card:last-child { border-bottom: none; }
+      .influencer-grid { grid-template-columns: repeat(2, 1fr); }
+      .posts-grid { grid-template-columns: 1fr; }
+    }
+    
+    @media (max-width: 640px) {
+      .header { padding: 16px 20px; }
+      .header-nav { gap: 16px; }
+      .nav-link { display: none; }
+      .hero { padding: 100px 20px 60px; }
+      .hero-stats { flex-direction: column; gap: 24px; }
+      .section-title { font-size: 32px; }
+      .influencer-grid { grid-template-columns: 1fr; }
+      .cta-buttons { flex-direction: column; }
+      .footer { flex-direction: column; gap: 24px; text-align: center; }
     }
   </style>
 </head>
 <body>
-  <div class="bg-glow"></div>
   
+  <!-- Header -->
   <header class="header">
-    <div class="logo">DAU<span>influencers</span></div>
-    <div class="header-btns">
-      <button class="header-cta premium" onclick="openModal('browseInfluencers')">⭐ Top Creators</button>
-      <a href="/admin/campaigns" class="header-cta">For Brands</a>
-    </div>
+    <div class="logo">DAUinfluencers</div>
+    <nav class="header-nav">
+      <a href="#how" class="nav-link">How It Works</a>
+      <a href="#creators" class="nav-link">Creators</a>
+      <a href="#pricing" class="nav-link">Pricing</a>
+      <button class="header-cta" onclick="openModal('connect')">Get Started</button>
+    </nav>
   </header>
   
-  <main class="landing">
-    <div class="hero-badge">💰 Now Paying Influencers</div>
-    <h1 class="hero-title">Get Paid<br>for <em>Influence</em></h1>
-    <p class="hero-sub">Connect. Share. Get paid instantly.<br>More followers = more earnings.</p>
-    
-    <!-- Floating Widget -->
-    <div class="widget-container">
-      <div class="widget">
-        <!-- Step indicators -->
-        <div class="steps-row">
-          <div class="step-pill active" id="step1pill">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13.5 6H5.25A2.25 2.25 0 003 8.25v10.5A2.25 2.25 0 005.25 21h10.5A2.25 2.25 0 0018 18.75V10.5m-10.5 6L21 3m0 0h-5.25M21 3v5.25"/></svg>
-            Connect
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-left">
+        <div class="hero-tag">The Modern Influence Agency</div>
+        <h1 class="hero-title">Where <em>Creators</em> Meet Brands</h1>
+        <p class="hero-desc">
+          Connect your audience. Share great products. Get paid instantly. 
+          We're building the future of authentic influence — one post at a time.
+        </p>
+        <div class="hero-stats">
+          <div class="stat">
+            <div class="stat-value">2,847</div>
+            <div class="stat-label">Active Creators</div>
           </div>
-          <div class="step-line" id="line1"></div>
-          <div class="step-pill" id="step2pill">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M7.217 10.907a2.25 2.25 0 100 2.186m0-2.186c.18.324.283.696.283 1.093s-.103.77-.283 1.093m0-2.186l9.566-5.314m-9.566 7.5l9.566 5.314m0 0a2.25 2.25 0 103.935 2.186 2.25 2.25 0 00-3.935-2.186zm0-12.814a2.25 2.25 0 103.933-2.185 2.25 2.25 0 00-3.933 2.185z"/></svg>
-            Share
+          <div class="stat">
+            <div class="stat-value">$128K</div>
+            <div class="stat-label">Paid This Month</div>
           </div>
-          <div class="step-line" id="line2"></div>
-          <div class="step-pill" id="step3pill">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6v12m-3-2.818l.879.659c1.171.879 3.07.879 4.242 0 1.172-.879 1.172-2.303 0-3.182C13.536 12.219 12.768 12 12 12c-.725 0-1.45-.22-2.003-.659-1.106-.879-1.106-2.303 0-3.182s2.9-.879 4.006 0l.415.33M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
-            Paid
+          <div class="stat">
+            <div class="stat-value">94%</div>
+            <div class="stat-label">Post Approval Rate</div>
           </div>
-        </div>
-        
-        <!-- Step 1: Connect -->
-        <div class="widget-step active" id="step1">
-          <div class="platform-grid">
-            <div class="platform-btn" onclick="selectPlatform('twitter')">
-              <div class="platform-icon twitter">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              </div>
-              <div class="platform-name">X / Twitter</div>
-              <div class="platform-earn">$1 - $100+</div>
-              <div class="platform-earn-range">based on followers</div>
-            </div>
-            
-            <div class="platform-btn" onclick="selectPlatform('instagram')">
-              <div class="platform-icon instagram">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
-              </div>
-              <div class="platform-name">Instagram</div>
-              <div class="platform-earn">$2 - $200+</div>
-              <div class="platform-earn-range">based on followers</div>
-            </div>
-            
-            <div class="platform-btn" onclick="selectPlatform('tiktok')">
-              <div class="platform-icon tiktok">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
-              </div>
-              <div class="platform-name">TikTok</div>
-              <div class="platform-earn">$3 - $300+</div>
-              <div class="platform-earn-range">based on followers</div>
-            </div>
-            
-            <div class="platform-btn" onclick="selectPlatform('linkedin')">
-              <div class="platform-icon linkedin">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
-              </div>
-              <div class="platform-name">LinkedIn</div>
-              <div class="platform-earn">$2 - $150+</div>
-              <div class="platform-earn-range">based on followers</div>
-            </div>
-          </div>
-        </div>
-        
-        <!-- Step 2: Share (with tier info) -->
-        <div class="widget-step" id="step2">
-          <!-- Tier indicator -->
-          <div class="tier-indicator" id="tierIndicator">
-            <div class="tier-header">
-              <div>
-                <div class="tier-name" id="tierName">Standard</div>
-                <div class="tier-followers" id="tierFollowers">0 followers detected</div>
-              </div>
-              <div>
-                <div class="tier-payout" id="tierPayout">$2.00</div>
-                <div class="tier-payout-label">per post</div>
-              </div>
-            </div>
-            <div class="tier-bar">
-              <div class="tier-progress" id="tierProgress" style="width: 10%"></div>
-            </div>
-          </div>
-          
-          <div class="content-box">
-            <div class="content-header">
-              <div class="content-platform twitter" id="contentPlatform">
-                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-              </div>
-              <div class="content-label">AI-generated for you</div>
-              <div class="content-payout" id="contentPayout">+$2.00</div>
-            </div>
-            <div class="content-text" id="contentText">Loading...</div>
-            <div class="content-regen" onclick="regenerate()">
-              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8M3 3v5h5M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16M16 16h5v5"/></svg>
-              Different content
-            </div>
-          </div>
-          <button class="cta-btn" onclick="share()">
-            Share Now
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
-          
-          <!-- Premium upsell for 50K+ -->
-          <div id="premiumUpsell" style="display: none; margin-top: 16px;">
-            <button class="cta-btn gold" onclick="openModal('premiumSetup')">
-              ⭐ Set Custom Rates (50K+ Creator)
-            </button>
-          </div>
-        </div>
-        
-        <!-- Step 3: Paid -->
-        <div class="widget-step" id="step3">
-          <div class="success-content">
-            <div class="success-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
-            </div>
-            <div class="success-amount" id="successAmount">+$2.00</div>
-            <div class="success-label">Added to your balance</div>
-          </div>
-          <button class="cta-btn success" onclick="reset()">
-            Earn More
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-          </button>
         </div>
       </div>
-      
-      <!-- Social proof -->
-      <div class="social-proof">
-        <div class="faces">
-          <img class="face" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=64&h=64&fit=crop&crop=face" alt="">
-          <img class="face" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=64&h=64&fit=crop&crop=face" alt="">
-          <img class="face" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=64&h=64&fit=crop&crop=face" alt="">
-        </div>
-        <div class="proof-text"><strong>$12,847</strong> earned this week</div>
+      <div class="hero-grid">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=600&fit=crop&crop=face" alt="Creator" class="hero-img hero-img-tall">
+        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=300&fit=crop&crop=face" alt="Creator" class="hero-img">
+        <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=300&fit=crop&crop=face" alt="Creator" class="hero-img">
+        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=300&fit=crop&crop=face" alt="Creator" class="hero-img">
+        <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=300&fit=crop&crop=face" alt="Creator" class="hero-img">
       </div>
     </div>
-  </main>
+  </section>
   
+  <!-- Brands -->
+  <section class="brands-section">
+    <div class="brands-label">Trusted by Brands</div>
+    <div class="brands-logos">
+      <span class="brand-logo">NOTION</span>
+      <span class="brand-logo">LINEAR</span>
+      <span class="brand-logo">VERCEL</span>
+      <span class="brand-logo">FIGMA</span>
+      <span class="brand-logo">STRIPE</span>
+      <span class="brand-logo">RAYCAST</span>
+    </div>
+  </section>
+  
+  <!-- How It Works -->
+  <section class="how-section" id="how">
+    <div class="section-header">
+      <div class="section-tag">How It Works</div>
+      <h2 class="section-title">Three Steps to Earning</h2>
+    </div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01 — Connect</div>
+        <h3 class="step-title">Link Your Account</h3>
+        <p class="step-desc">Connect your Twitter, Instagram, TikTok, or LinkedIn. We'll verify your followers and engagement rate to calculate your earning potential.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02 — Share</div>
+        <h3 class="step-title">Post Great Content</h3>
+        <p class="step-desc">Browse available campaigns or let our AI generate authentic content for you. Share products you believe in with your audience.</p>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03 — Earn</div>
+        <h3 class="step-title">Get Paid Instantly</h3>
+        <p class="step-desc">Once your post is verified, payment is released immediately. More followers and engagement means higher earnings per post.</p>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Featured Influencers -->
+  <section class="influencers-section" id="creators">
+    <div class="section-header">
+      <div class="section-tag">Featured Creators</div>
+      <h2 class="section-title">Our Top Performers</h2>
+    </div>
+    <div class="influencer-grid">
+      <div class="influencer-card" onclick="openInfluencerModal(1)">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop&crop=face" alt="Sarah Chen" class="influencer-img">
+        <div class="influencer-info">
+          <div class="influencer-name">Sarah Chen</div>
+          <div class="influencer-handle">@sarahtech</div>
+          <div class="influencer-meta">
+            <span class="influencer-followers"><strong>89K</strong> followers</span>
+            <span class="influencer-rate">$45</span>
+          </div>
+        </div>
+      </div>
+      <div class="influencer-card" onclick="openInfluencerModal(2)">
+        <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=face" alt="Josh Martinez" class="influencer-img">
+        <div class="influencer-info">
+          <div class="influencer-name">Josh Martinez</div>
+          <div class="influencer-handle">@devjosh</div>
+          <div class="influencer-meta">
+            <span class="influencer-followers"><strong>124K</strong> followers</span>
+            <span class="influencer-rate">$75</span>
+          </div>
+        </div>
+      </div>
+      <div class="influencer-card" onclick="openInfluencerModal(3)">
+        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=400&fit=crop&crop=face" alt="Emma Wilson" class="influencer-img">
+        <div class="influencer-info">
+          <div class="influencer-name">Emma Wilson</div>
+          <div class="influencer-handle">@emmafitlife</div>
+          <div class="influencer-meta">
+            <span class="influencer-followers"><strong>267K</strong> followers</span>
+            <span class="influencer-rate">$150</span>
+          </div>
+        </div>
+      </div>
+      <div class="influencer-card" onclick="openInfluencerModal(4)">
+        <img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=400&h=400&fit=crop&crop=face" alt="Alex Rivera" class="influencer-img">
+        <div class="influencer-info">
+          <div class="influencer-name">Alex Rivera</div>
+          <div class="influencer-handle">@alexfinance</div>
+          <div class="influencer-meta">
+            <span class="influencer-followers"><strong>91K</strong> followers</span>
+            <span class="influencer-rate">$55</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Sample Posts -->
+  <section class="posts-section">
+    <div class="section-header">
+      <div class="section-tag">Real Results</div>
+      <h2 class="section-title">Recent Campaigns</h2>
+    </div>
+    <div class="posts-grid">
+      <div class="post-card">
+        <div class="post-header">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=80&h=80&fit=crop&crop=face" alt="Sarah" class="post-avatar">
+          <div>
+            <div class="post-author">Sarah Chen</div>
+            <div class="post-handle">@sarahtech</div>
+          </div>
+          <svg class="post-platform" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <div class="post-body">
+          <p class="post-text">Finally found a design tool that doesn't make me want to throw my laptop. @Figma's new AI features are actually useful. Not just a gimmick. #design #productivity</p>
+          <img src="https://images.unsplash.com/photo-1561070791-2526d30994b5?w=600&h=340&fit=crop" alt="Post image" class="post-image">
+        </div>
+        <div class="post-stats">
+          <span><strong>2.4K</strong> likes</span>
+          <span><strong>189</strong> replies</span>
+          <span><strong>412</strong> reposts</span>
+        </div>
+      </div>
+      <div class="post-card">
+        <div class="post-header">
+          <img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=80&h=80&fit=crop&crop=face" alt="Josh" class="post-avatar">
+          <div>
+            <div class="post-author">Josh Martinez</div>
+            <div class="post-handle">@devjosh</div>
+          </div>
+          <svg class="post-platform" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <div class="post-body">
+          <p class="post-text">Hot take: Your deployment pipeline shouldn't require a PhD to understand.
+
+Been using @Vercel for 6 months now. Zero regrets. Push to main, it just works.</p>
+        </div>
+        <div class="post-stats">
+          <span><strong>5.1K</strong> likes</span>
+          <span><strong>342</strong> replies</span>
+          <span><strong>891</strong> reposts</span>
+        </div>
+      </div>
+      <div class="post-card">
+        <div class="post-header">
+          <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=80&h=80&fit=crop&crop=face" alt="Emma" class="post-avatar">
+          <div>
+            <div class="post-author">Emma Wilson</div>
+            <div class="post-handle">@emmafitlife</div>
+          </div>
+          <svg class="post-platform" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/><circle cx="12" cy="12" r="3.5"/></svg>
+        </div>
+        <div class="post-body">
+          <p class="post-text">My morning routine that actually sticks ✨
+
+5:30 - Wake up (no snooze!)
+5:45 - @Headspace meditation
+6:00 - Workout
+7:00 - Cold shower
+7:15 - Healthy breakfast
+
+The key? Start small. One habit at a time.</p>
+        </div>
+        <div class="post-stats">
+          <span><strong>12.8K</strong> likes</span>
+          <span><strong>1.2K</strong> comments</span>
+          <span><strong>3.4K</strong> saves</span>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Pricing -->
+  <section class="pricing-section" id="pricing">
+    <div class="section-header">
+      <div class="section-tag">Earnings</div>
+      <h2 class="section-title">What You'll Earn</h2>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+        </div>
+        <div class="pricing-platform">X / Twitter</div>
+        <div class="pricing-label">Per Post</div>
+        <div class="pricing-value">$1–$100+</div>
+        <div class="pricing-per">based on followers</div>
+        <ul class="pricing-features">
+          <li>$1 base + $0.15/1K followers</li>
+          <li>Premium: $0.25/1K (50K+)</li>
+          <li>Set custom rates at 50K+</li>
+        </ul>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/><circle cx="12" cy="12" r="3.5"/></svg>
+        </div>
+        <div class="pricing-platform">Instagram</div>
+        <div class="pricing-label">Per Post</div>
+        <div class="pricing-value">$2–$200+</div>
+        <div class="pricing-per">based on followers</div>
+        <ul class="pricing-features">
+          <li>$2 base + $0.25/1K followers</li>
+          <li>Premium: $0.40/1K (50K+)</li>
+          <li>Stories & Reels available</li>
+        </ul>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+        </div>
+        <div class="pricing-platform">TikTok</div>
+        <div class="pricing-label">Per Video</div>
+        <div class="pricing-value">$3–$300+</div>
+        <div class="pricing-per">based on followers</div>
+        <ul class="pricing-features">
+          <li>$3 base + $0.35/1K followers</li>
+          <li>Premium: $0.50/1K (50K+)</li>
+          <li>Highest engagement rates</li>
+        </ul>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-icon">
+          <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+        </div>
+        <div class="pricing-platform">LinkedIn</div>
+        <div class="pricing-label">Per Post</div>
+        <div class="pricing-value">$2–$150+</div>
+        <div class="pricing-per">based on followers</div>
+        <ul class="pricing-features">
+          <li>$2 base + $0.20/1K followers</li>
+          <li>Premium: $0.35/1K (50K+)</li>
+          <li>B2B & professional reach</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+  
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2 class="cta-title serif">Ready to Start Earning?</h2>
+    <p class="cta-desc">Join thousands of creators turning their influence into income. Connect your account in 30 seconds.</p>
+    <div class="cta-buttons">
+      <button class="cta-btn primary" onclick="openModal('connect')">I'm a Creator</button>
+      <a href="/admin/campaigns" class="cta-btn secondary">I'm a Brand</a>
+    </div>
+  </section>
+  
+  <!-- Footer -->
   <footer class="footer">
-    <a href="/admin/campaigns">Brands</a> · Humans influencing the AI economy
+    <div class="footer-logo">DAUinfluencers</div>
+    <div class="footer-links">
+      <a href="#" class="footer-link">Terms</a>
+      <a href="#" class="footer-link">Privacy</a>
+      <a href="#" class="footer-link">Contact</a>
+      <a href="/admin/campaigns" class="footer-link">For Brands</a>
+    </div>
   </footer>
   
   <!-- Loading -->
@@ -1014,249 +1258,137 @@
   
   <!-- ==================== MODALS ==================== -->
   
-  <!-- Premium Setup Modal (for 50K+ creators) -->
-  <div class="modal-overlay" id="premiumSetupModal">
+  <!-- Connect Modal -->
+  <div class="modal-overlay" id="connectModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">⭐ Premium Creator</div>
-        <button class="modal-close" onclick="closeModal('premiumSetup')">
+        <div class="modal-title">Connect Account</div>
+        <button class="modal-close" onclick="closeModal('connect')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
       <div class="modal-body">
-        <div class="premium-badge">🌟 50K+ VERIFIED CREATOR</div>
-        
         <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 24px;">
-          Set your own rates and let brands come to you. Your profile will be featured in our creator marketplace.
+          Choose a platform to connect. We'll verify your followers and calculate your earning rate.
         </p>
         
-        <div class="stats-row">
-          <div class="stat-box">
-            <div class="stat-value" id="premiumFollowers">0</div>
-            <div class="stat-label">Followers</div>
-          </div>
-          <div class="stat-box">
-            <div class="stat-value green" id="premiumEngagement">0%</div>
-            <div class="stat-label">Engagement</div>
-          </div>
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Your Niche</label>
-          <input type="text" class="form-input" id="premiumNiche" placeholder="e.g., Tech, Fitness, Finance...">
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Your Rates</label>
-          <div class="form-row">
-            <div>
-              <input type="number" class="form-input" id="premiumRatePost" placeholder="Single post">
-              <div class="form-hint">Per post ($)</div>
+        <div class="influencer-list">
+          <div class="influencer-list-card" onclick="connectPlatform('twitter')">
+            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
             </div>
-            <div>
-              <input type="number" class="form-input" id="premiumRateVideo" placeholder="Video/Reel">
-              <div class="form-hint">Video ($)</div>
+            <div class="influencer-list-info">
+              <div class="influencer-list-name">X / Twitter</div>
+              <div class="influencer-list-handle">Connect your X account</div>
+            </div>
+            <div class="influencer-list-price">
+              <div class="influencer-list-rate">$1–$100+</div>
+              <div class="influencer-list-platform">per post</div>
             </div>
           </div>
+          
+          <div class="influencer-list-card" onclick="connectPlatform('instagram')">
+            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #f09433, #dc2743, #bc1888); color: white;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073z"/><circle cx="12" cy="12" r="3.5"/></svg>
+            </div>
+            <div class="influencer-list-info">
+              <div class="influencer-list-name">Instagram</div>
+              <div class="influencer-list-handle">Connect your Instagram</div>
+            </div>
+            <div class="influencer-list-price">
+              <div class="influencer-list-rate">$2–$200+</div>
+              <div class="influencer-list-platform">per post</div>
+            </div>
+          </div>
+          
+          <div class="influencer-list-card" onclick="connectPlatform('tiktok')">
+            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border);">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+            </div>
+            <div class="influencer-list-info">
+              <div class="influencer-list-name">TikTok</div>
+              <div class="influencer-list-handle">Connect your TikTok</div>
+            </div>
+            <div class="influencer-list-price">
+              <div class="influencer-list-rate">$3–$300+</div>
+              <div class="influencer-list-platform">per video</div>
+            </div>
+          </div>
+          
+          <div class="influencer-list-card" onclick="connectPlatform('linkedin')">
+            <div style="width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; background: #0077b5; color: white;">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+            </div>
+            <div class="influencer-list-info">
+              <div class="influencer-list-name">LinkedIn</div>
+              <div class="influencer-list-handle">Connect your LinkedIn</div>
+            </div>
+            <div class="influencer-list-price">
+              <div class="influencer-list-rate">$2–$150+</div>
+              <div class="influencer-list-platform">per post</div>
+            </div>
+          </div>
         </div>
-        
-        <div class="form-group">
-          <label class="form-label">Bio (optional)</label>
-          <textarea class="form-input" id="premiumBio" rows="3" placeholder="Tell brands about yourself..."></textarea>
-        </div>
-        
-        <button class="cta-btn gold" onclick="savePremiumProfile()">
-          Save & Go Live
-        </button>
-      </div>
-    </div>
-  </div>
-  
-  <!-- Browse Influencers Modal (for brands) -->
-  <div class="modal-overlay" id="browseInfluencersModal">
-    <div class="modal" style="max-width: 600px;">
-      <div class="modal-header">
-        <div class="modal-title">⭐ Top Creators</div>
-        <button class="modal-close" onclick="closeModal('browseInfluencers')">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
-        </button>
-      </div>
-      <div class="modal-body">
-        <p style="color: var(--text-dim); font-size: 14px; margin-bottom: 20px;">
-          Premium creators with 50K+ followers. Book directly for sponsored posts.
-        </p>
-        
-        <div class="filter-bar">
-          <button class="filter-btn active" onclick="filterInfluencers('all')">All</button>
-          <button class="filter-btn" onclick="filterInfluencers('tech')">Tech</button>
-          <button class="filter-btn" onclick="filterInfluencers('finance')">Finance</button>
-          <button class="filter-btn" onclick="filterInfluencers('fitness')">Fitness</button>
-          <button class="filter-btn" onclick="filterInfluencers('lifestyle')">Lifestyle</button>
-        </div>
-        
-        <div class="influencer-list" id="influencerList">
-          <!-- Populated by JS -->
-        </div>
-        
-        <p style="text-align: center; color: var(--text-dim); font-size: 13px;">
-          Are you a 50K+ creator? <a href="#" style="color: var(--accent);" onclick="closeModal('browseInfluencers'); return false;">Connect your account</a> to get listed.
-        </p>
       </div>
     </div>
   </div>
   
   <!-- Book Influencer Modal -->
-  <div class="modal-overlay" id="bookInfluencerModal">
+  <div class="modal-overlay" id="bookModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">📋 Book Campaign</div>
-        <button class="modal-close" onclick="closeModal('bookInfluencer')">
+        <div class="modal-title">Book Creator</div>
+        <button class="modal-close" onclick="closeModal('book')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
       <div class="modal-body">
-        <div class="influencer-card" style="cursor: default; margin-bottom: 20px;" id="selectedInfluencer">
+        <div class="influencer-list-card" style="cursor: default; margin-bottom: 24px;" id="selectedCreator">
           <!-- Populated by JS -->
         </div>
         
         <div class="form-group">
-          <label class="form-label">Product / Brand Name</label>
-          <input type="text" class="form-input" id="bookProductName" placeholder="Your product name">
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Product URL</label>
-          <input type="url" class="form-input" id="bookProductUrl" placeholder="https://...">
+          <label class="form-label">Product / Brand</label>
+          <input type="text" class="form-input" id="bookProduct" placeholder="Your product name">
         </div>
         
         <div class="form-group">
           <label class="form-label">Campaign Brief</label>
-          <textarea class="form-input" id="bookBrief" rows="4" placeholder="Describe what you'd like the influencer to share..."></textarea>
+          <textarea class="form-input" id="bookBrief" rows="4" placeholder="Describe what you'd like shared..."></textarea>
         </div>
         
-        <div class="form-group">
-          <label class="form-label">Content Type</label>
-          <select class="form-input" id="bookContentType">
-            <option value="post">Single Post</option>
-            <option value="video">Video / Reel</option>
-            <option value="story">Story + Post</option>
-          </select>
-        </div>
-        
-        <div style="background: var(--bg); border-radius: 12px; padding: 16px; margin-bottom: 20px;">
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+        <div style="border: 1px solid var(--border); padding: 16px; margin-bottom: 24px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
             <span style="color: var(--text-dim);">Creator fee</span>
-            <span id="bookCreatorFee">$0.00</span>
+            <span id="creatorFee">$0</span>
           </div>
-          <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+          <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
             <span style="color: var(--text-dim);">Platform fee (10%)</span>
-            <span id="bookPlatformFee">$0.00</span>
+            <span id="platformFee">$0</span>
           </div>
-          <div style="display: flex; justify-content: space-between; font-weight: 700; padding-top: 8px; border-top: 1px solid var(--border);">
+          <div style="display: flex; justify-content: space-between; font-size: 16px; font-weight: 700; padding-top: 8px; border-top: 1px solid var(--border);">
             <span>Total</span>
-            <span style="color: var(--green);" id="bookTotal">$0.00</span>
+            <span id="totalFee">$0</span>
           </div>
         </div>
         
-        <button class="cta-btn" onclick="submitBooking()">
-          Send Request
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
-        </button>
-        
-        <p style="text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 12px;">
-          Payment held in escrow until post is verified
+        <button class="modal-btn" onclick="submitBooking()">Send Request</button>
+        <p style="text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 12px; text-transform: uppercase; letter-spacing: 0.5px;">
+          Payment held until post verified
         </p>
       </div>
     </div>
   </div>
   
   <script>
-    let state = {
-      step: 1,
-      platform: null,
-      payout: 0,
-      content: '',
-      followers: 0,
-      engagement: 0,
-      tier: 'standard'
-    };
-    
-    // Pricing formula: base + (followers / 1000) * rate
-    // Higher rate kicks in after 50K
-    const pricing = {
-      twitter:   { base: 1.00, per1k: 0.15, per1kPremium: 0.25 },
-      instagram: { base: 2.00, per1k: 0.25, per1kPremium: 0.40 },
-      tiktok:    { base: 3.00, per1k: 0.35, per1kPremium: 0.50 },
-      linkedin:  { base: 2.00, per1k: 0.20, per1kPremium: 0.35 }
-    };
-    
-    const platformColors = {
-      twitter: '#000',
-      instagram: 'linear-gradient(135deg, #f09433, #dc2743, #bc1888)',
-      tiktok: '#000',
-      linkedin: '#0077b5'
-    };
-    
-    // Sample premium influencers
-    const sampleInfluencers = [
-      { id: 1, name: 'Sarah Chen', handle: '@sarahtech', avatar: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face', followers: 89400, engagement: 4.2, niche: ['tech', 'saas'], platform: 'twitter', rate: 45 },
-      { id: 2, name: 'Josh Martinez', handle: '@devjosh', avatar: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face', followers: 124000, engagement: 3.8, niche: ['tech', 'developer'], platform: 'twitter', rate: 75 },
-      { id: 3, name: 'Emma Wilson', handle: '@emmafitlife', avatar: 'https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face', followers: 267000, engagement: 5.1, niche: ['fitness', 'lifestyle'], platform: 'instagram', rate: 150 },
-      { id: 4, name: 'Alex Rivera', handle: '@alexfinance', avatar: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face', followers: 91000, engagement: 3.4, niche: ['finance', 'crypto'], platform: 'twitter', rate: 55 },
-      { id: 5, name: 'Mia Thompson', handle: '@miacreates', avatar: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=100&h=100&fit=crop&crop=face', followers: 512000, engagement: 4.8, niche: ['lifestyle', 'travel'], platform: 'tiktok', rate: 280 },
+    const creators = [
+      { id: 1, name: 'Sarah Chen', handle: '@sarahtech', img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face', followers: '89K', rate: 45, platform: 'twitter' },
+      { id: 2, name: 'Josh Martinez', handle: '@devjosh', img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face', followers: '124K', rate: 75, platform: 'twitter' },
+      { id: 3, name: 'Emma Wilson', handle: '@emmafitlife', img: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face', followers: '267K', rate: 150, platform: 'instagram' },
+      { id: 4, name: 'Alex Rivera', handle: '@alexfinance', img: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&h=100&fit=crop&crop=face', followers: '91K', rate: 55, platform: 'twitter' },
     ];
     
-    let selectedInfluencer = null;
-    
-    const sampleContent = {
-      twitter: [
-        "Just found something that actually works 🔥\n\nAutomation that feels human? Sign me up.\n\n<span class='tag'>#buildinpublic</span> <span class='tag'>#productivity</span>",
-        "Hot take: Most tools overcomplicate things.\n\nThis one doesn't. Simple. Fast. Done.\n\n<span class='tag'>#startups</span> <span class='tag'>#tech</span>",
-        "The future of content is AI + humans working together.\n\nFinally seeing it done right 🚀\n\n<span class='tag'>#AI</span> <span class='tag'>#creators</span>"
-      ],
-      instagram: [
-        "✨ Found my new workflow\n\nWhen the tools finally work the way you think. No more manual everything.\n\nDrop a 🙌 if you relate\n\n<span class='tag'>#contentcreator</span> <span class='tag'>#workflow</span>",
-        "POV: You stop doing everything the hard way 😂\n\nWhy did I wait so long?\n\n<span class='tag'>#influencerlife</span> <span class='tag'>#worksmarter</span>"
-      ],
-      tiktok: [
-        "Wait why did no one tell me about this earlier 😭\n\nI've been doing everything manually for MONTHS\n\n<span class='tag'>#fyp</span> <span class='tag'>#productivity</span> <span class='tag'>#lifehack</span>",
-        "POV: You find what the successful creators use 👀\n\n<span class='tag'>#viral</span> <span class='tag'>#learnontiktok</span> <span class='tag'>#moneytok</span>"
-      ],
-      linkedin: [
-        "Simple tools win.\n\nI've tested dozens of solutions. Most are overengineered.\n\nThe best ones do three things:\n→ Save time\n→ Maintain quality\n→ Get out of your way\n\n<span class='tag'>#Productivity</span> <span class='tag'>#AI</span>",
-        "Unpopular opinion: We don't need more content.\n\nWe need better content, faster.\n\nBig difference.\n\n<span class='tag'>#ContentStrategy</span> <span class='tag'>#Marketing</span>"
-      ]
-    };
-    
-    // Calculate payout based on followers
-    function calculatePayout(platform, followers) {
-      const p = pricing[platform];
-      const k = followers / 1000;
-      
-      if (followers >= 50000) {
-        // Premium rate for 50K+
-        const baseK = 50;
-        const premiumK = k - baseK;
-        return p.base + (baseK * p.per1k) + (premiumK * p.per1kPremium);
-      } else {
-        return p.base + (k * p.per1k);
-      }
-    }
-    
-    // Get tier info
-    function getTierInfo(followers) {
-      if (followers >= 100000) return { name: 'Mega Creator', color: 'gold', progress: 100 };
-      if (followers >= 50000) return { name: 'Premium Creator', color: 'gold', progress: 80 };
-      if (followers >= 10000) return { name: 'Rising Creator', color: '', progress: 50 };
-      if (followers >= 1000) return { name: 'Micro Creator', color: '', progress: 25 };
-      return { name: 'Starter', color: '', progress: 10 };
-    }
-    
-    function formatFollowers(n) {
-      if (n >= 1000000) return (n / 1000000).toFixed(1) + 'M';
-      if (n >= 1000) return (n / 1000).toFixed(1) + 'K';
-      return n.toString();
-    }
+    let selectedCreator = null;
     
     function showLoading(text) {
       document.getElementById('loadingText').textContent = text;
@@ -1267,166 +1399,9 @@
       document.getElementById('loading').classList.remove('active');
     }
     
-    function updateSteps() {
-      for (let i = 1; i <= 3; i++) {
-        const pill = document.getElementById('step' + i + 'pill');
-        pill.classList.remove('active', 'done');
-        if (i < state.step) pill.classList.add('done');
-        if (i === state.step) pill.classList.add('active');
-      }
-      document.getElementById('line1').classList.toggle('done', state.step > 1);
-      document.getElementById('line2').classList.toggle('done', state.step > 2);
-    }
-    
-    function goToStep(n) {
-      state.step = n;
-      document.querySelectorAll('.widget-step').forEach(s => s.classList.remove('active'));
-      document.getElementById('step' + n).classList.add('active');
-      updateSteps();
-    }
-    
-    function updateTierDisplay() {
-      const tier = getTierInfo(state.followers);
-      const payout = calculatePayout(state.platform, state.followers);
-      
-      document.getElementById('tierName').textContent = tier.name;
-      document.getElementById('tierName').className = 'tier-name ' + tier.color;
-      document.getElementById('tierFollowers').textContent = formatFollowers(state.followers) + ' followers detected';
-      document.getElementById('tierPayout').textContent = '$' + payout.toFixed(2);
-      document.getElementById('tierProgress').style.width = tier.progress + '%';
-      
-      document.getElementById('contentPayout').textContent = '+$' + payout.toFixed(2);
-      
-      // Show premium upsell for 50K+
-      document.getElementById('premiumUpsell').style.display = state.followers >= 50000 ? 'block' : 'none';
-      
-      state.payout = payout;
-    }
-    
-    async function selectPlatform(platform) {
-      state.platform = platform;
-      
-      // Mark selected
-      document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
-      event.currentTarget.classList.add('selected');
-      
-      // Check if already connected via OAuth callback
-      const params = new URLSearchParams(window.location.search);
-      if (params.get('platform') === platform && params.get('connected') === 'true') {
-        state.token = params.get('token');
-        state.username = params.get('username');
-        state.followers = parseInt(params.get('followers') || '0');
-        state.engagement = parseFloat(params.get('engagement') || '0');
-        
-        showLoading('Generating content...');
-        updateTierDisplay();
-        await generateContent();
-        hideLoading();
-        goToStep(2);
-        return;
-      }
-      
-      // Redirect to OAuth for Twitter
-      if (platform === 'twitter') {
-        showLoading('Connecting to X...');
-        window.location.href = '/api/oauth/twitter?return_url=/influencers';
-        return;
-      }
-      
-      // Demo mode for other platforms
-      showLoading('Connecting to ' + platform + '...');
-      await new Promise(r => setTimeout(r, 800));
-      
-      // Simulate follower count (for demo)
-      state.followers = Math.floor(Math.random() * 150000) + 500;
-      state.engagement = (Math.random() * 4 + 1).toFixed(1);
-      
-      document.getElementById('loadingText').textContent = 'Generating content...';
-      updateTierDisplay();
-      await generateContent();
-      
-      hideLoading();
-      goToStep(2);
-    }
-    
-    async function generateContent() {
-      await new Promise(r => setTimeout(r, 600));
-      
-      const contents = sampleContent[state.platform];
-      state.content = contents[Math.floor(Math.random() * contents.length)];
-      
-      // Update UI
-      const platformEl = document.getElementById('contentPlatform');
-      platformEl.className = 'content-platform ' + state.platform;
-      platformEl.style.background = platformColors[state.platform];
-      
-      document.getElementById('contentText').innerHTML = state.content;
-    }
-    
-    async function regenerate() {
-      showLoading('Generating...');
-      await generateContent();
-      hideLoading();
-    }
-    
-    async function share() {
-      showLoading('Posting to ' + state.platform + '...');
-      
-      const plainText = state.content.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim();
-      
-      if (state.platform === 'twitter' && state.token) {
-        try {
-          const res = await fetch('/api/oauth/twitter/tweet', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ token: state.token, text: plainText })
-          });
-          const data = await res.json();
-          
-          if (data.error) {
-            hideLoading();
-            alert('Failed to post: ' + data.error);
-            return;
-          }
-          
-          state.tweetUrl = data.url;
-        } catch (err) {
-          hideLoading();
-          alert('Failed to post. Please try again.');
-          return;
-        }
-      } else {
-        await new Promise(r => setTimeout(r, 1500));
-      }
-      
-      hideLoading();
-      document.getElementById('successAmount').textContent = '+$' + state.payout.toFixed(2);
-      goToStep(3);
-    }
-    
-    function reset() {
-      window.history.replaceState({}, '', '/influencers');
-      state.token = null;
-      state.username = null;
-      state.followers = 0;
-      document.querySelectorAll('.platform-btn').forEach(b => b.classList.remove('selected'));
-      goToStep(1);
-    }
-    
-    // ==================== MODAL FUNCTIONS ====================
-    
     function openModal(name) {
       document.getElementById(name + 'Modal').classList.add('active');
       document.body.style.overflow = 'hidden';
-      
-      if (name === 'browseInfluencers') {
-        renderInfluencerList(sampleInfluencers);
-      }
-      
-      if (name === 'premiumSetup') {
-        document.getElementById('premiumFollowers').textContent = formatFollowers(state.followers);
-        document.getElementById('premiumEngagement').textContent = state.engagement + '%';
-      }
     }
     
     function closeModal(name) {
@@ -1434,7 +1409,6 @@
       document.body.style.overflow = '';
     }
     
-    // Close modal on backdrop click
     document.querySelectorAll('.modal-overlay').forEach(overlay => {
       overlay.addEventListener('click', (e) => {
         if (e.target === overlay) {
@@ -1444,143 +1418,78 @@
       });
     });
     
-    function renderInfluencerList(influencers) {
-      const list = document.getElementById('influencerList');
-      list.innerHTML = influencers.map(inf => `
-        <div class="influencer-card" onclick="selectInfluencerForBooking(${inf.id})">
-          <img class="influencer-avatar" src="${inf.avatar}" alt="${inf.name}">
-          <div class="influencer-info">
-            <div class="influencer-name">${inf.name}</div>
-            <div class="influencer-handle">${inf.handle}</div>
-            <div class="influencer-stats">
-              <span class="influencer-stat"><strong>${formatFollowers(inf.followers)}</strong> followers</span>
-              <span class="influencer-stat"><strong>${inf.engagement}%</strong> engagement</span>
-            </div>
-            <div class="niche-tags">
-              ${inf.niche.map(n => `<span class="niche-tag">${n}</span>`).join('')}
-            </div>
-          </div>
-          <div class="influencer-price">
-            <div class="influencer-rate">$${inf.rate}</div>
-            <div class="influencer-platform">${inf.platform}</div>
-          </div>
-        </div>
-      `).join('');
+    function connectPlatform(platform) {
+      closeModal('connect');
+      showLoading('Connecting to ' + platform + '...');
+      
+      if (platform === 'twitter') {
+        window.location.href = '/api/oauth/twitter?return_url=/influencers';
+        return;
+      }
+      
+      // Demo for other platforms
+      setTimeout(() => {
+        hideLoading();
+        alert('Coming soon! Twitter/X is currently available.');
+      }, 1000);
     }
     
-    function filterInfluencers(niche) {
-      document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
-      event.currentTarget.classList.add('active');
+    function openInfluencerModal(id) {
+      selectedCreator = creators.find(c => c.id === id);
+      if (!selectedCreator) return;
       
-      const filtered = niche === 'all' 
-        ? sampleInfluencers 
-        : sampleInfluencers.filter(i => i.niche.includes(niche));
-      
-      renderInfluencerList(filtered);
-    }
-    
-    function selectInfluencerForBooking(id) {
-      selectedInfluencer = sampleInfluencers.find(i => i.id === id);
-      if (!selectedInfluencer) return;
-      
-      closeModal('browseInfluencers');
-      
-      // Populate selected influencer in booking modal
-      document.getElementById('selectedInfluencer').innerHTML = `
-        <img class="influencer-avatar" src="${selectedInfluencer.avatar}" alt="${selectedInfluencer.name}">
-        <div class="influencer-info">
-          <div class="influencer-name">${selectedInfluencer.name}</div>
-          <div class="influencer-handle">${selectedInfluencer.handle}</div>
-          <div class="influencer-stats">
-            <span class="influencer-stat"><strong>${formatFollowers(selectedInfluencer.followers)}</strong> followers</span>
-            <span class="influencer-stat"><strong>${selectedInfluencer.engagement}%</strong> engagement</span>
+      document.getElementById('selectedCreator').innerHTML = `
+        <img class="influencer-list-avatar" src="${selectedCreator.img}" alt="${selectedCreator.name}">
+        <div class="influencer-list-info">
+          <div class="influencer-list-name">${selectedCreator.name}</div>
+          <div class="influencer-list-handle">${selectedCreator.handle}</div>
+          <div class="influencer-list-stats">
+            <span><strong>${selectedCreator.followers}</strong> followers</span>
           </div>
         </div>
-        <div class="influencer-price">
-          <div class="influencer-rate">$${selectedInfluencer.rate}</div>
-          <div class="influencer-platform">per post</div>
+        <div class="influencer-list-price">
+          <div class="influencer-list-rate">$${selectedCreator.rate}</div>
+          <div class="influencer-list-platform">${selectedCreator.platform}</div>
         </div>
       `;
       
-      updateBookingPrices();
-      openModal('bookInfluencer');
-    }
-    
-    function updateBookingPrices() {
-      if (!selectedInfluencer) return;
+      const platformFee = selectedCreator.rate * 0.10;
+      document.getElementById('creatorFee').textContent = '$' + selectedCreator.rate;
+      document.getElementById('platformFee').textContent = '$' + platformFee.toFixed(2);
+      document.getElementById('totalFee').textContent = '$' + (selectedCreator.rate + platformFee).toFixed(2);
       
-      const creatorFee = selectedInfluencer.rate;
-      const platformFee = creatorFee * 0.10;
-      const total = creatorFee + platformFee;
-      
-      document.getElementById('bookCreatorFee').textContent = '$' + creatorFee.toFixed(2);
-      document.getElementById('bookPlatformFee').textContent = '$' + platformFee.toFixed(2);
-      document.getElementById('bookTotal').textContent = '$' + total.toFixed(2);
+      openModal('book');
     }
     
     async function submitBooking() {
-      const productName = document.getElementById('bookProductName').value;
-      const productUrl = document.getElementById('bookProductUrl').value;
+      const product = document.getElementById('bookProduct').value;
       const brief = document.getElementById('bookBrief').value;
       
-      if (!productName || !brief) {
-        alert('Please fill in product name and campaign brief');
+      if (!product || !brief) {
+        alert('Please fill in all fields');
         return;
       }
       
       showLoading('Sending request...');
       await new Promise(r => setTimeout(r, 1500));
       hideLoading();
+      closeModal('book');
       
-      closeModal('bookInfluencer');
-      alert('🎉 Request sent to ' + selectedInfluencer.name + '! You\'ll be notified when they respond.');
+      alert('Request sent to ' + selectedCreator.name + '! You\'ll be notified when they respond.');
     }
     
-    async function savePremiumProfile() {
-      const niche = document.getElementById('premiumNiche').value;
-      const ratePost = document.getElementById('premiumRatePost').value;
-      
-      if (!niche || !ratePost) {
-        alert('Please fill in your niche and rate');
-        return;
-      }
-      
-      showLoading('Saving profile...');
-      await new Promise(r => setTimeout(r, 1000));
-      hideLoading();
-      
-      closeModal('premiumSetup');
-      alert('🌟 Your premium profile is now live! Brands can find and book you.');
-    }
-    
-    // Init
+    // Check for OAuth callback
     (function init() {
       const params = new URLSearchParams(window.location.search);
-      
-      const refCode = params.get('ref');
-      if (refCode) {
-        sessionStorage.setItem('referralCode', refCode);
-      }
       
       if (params.get('error')) {
         alert('Connection failed: ' + params.get('error').replace(/_/g, ' '));
         window.history.replaceState({}, '', '/influencers');
-        return;
       }
       
       if (params.get('connected') === 'true') {
-        const platform = params.get('platform');
-        state.platform = platform;
-        state.token = params.get('token');
-        state.username = params.get('username');
-        state.followers = parseInt(params.get('followers') || '0');
-        state.engagement = parseFloat(params.get('engagement') || '0');
-        
-        const btn = document.querySelector(`.platform-btn[onclick*="${platform}"]`);
-        if (btn) btn.classList.add('selected');
-        
-        updateTierDisplay();
-        generateContent().then(() => goToStep(2));
+        alert('Connected! You can now start earning.');
+        window.history.replaceState({}, '', '/influencers');
       }
     })();
   </script>
