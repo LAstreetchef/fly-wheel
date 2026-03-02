@@ -792,6 +792,12 @@
     (function init() {
       const params = new URLSearchParams(window.location.search);
       
+      // Save referral code for later signup
+      const refCode = params.get('ref');
+      if (refCode) {
+        sessionStorage.setItem('referralCode', refCode);
+      }
+      
       if (params.get('error')) {
         alert('Connection failed: ' + params.get('error').replace(/_/g, ' '));
         window.history.replaceState({}, '', '/influencers');

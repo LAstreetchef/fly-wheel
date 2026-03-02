@@ -1090,6 +1090,14 @@ app.get('/admin/campaigns', (req, res) => {
   res.sendFile(filePath);
 });
 
+// Serve influencer dashboard
+app.get('/dashboard', (req, res) => {
+  const filePath = process.env.NODE_ENV === 'production' 
+    ? join(__dirname, 'dist', 'dashboard.html')
+    : join(__dirname, 'public', 'dashboard.html');
+  res.sendFile(filePath);
+});
+
 // Serve static files in production (after specific routes)
 if (process.env.NODE_ENV === 'production') {
   app.use(express.static('dist'));
