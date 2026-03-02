@@ -5,13 +5,14 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>Earn | DAUinfluencers</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
     
     :root {
       --bg: #0a0a0a;
       --card: #141414;
+      --card-hover: #1a1a1a;
       --border: #2a2a2a;
       --text: #ffffff;
       --text-dim: #888;
@@ -27,8 +28,6 @@
       color: var(--text);
       min-height: 100vh;
       min-height: 100dvh;
-      display: flex;
-      flex-direction: column;
     }
     
     /* Header */
@@ -38,11 +37,15 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
     }
     
     .logo {
       font-size: 18px;
-      font-weight: 600;
+      font-weight: 700;
       letter-spacing: -0.5px;
     }
     
@@ -52,203 +55,421 @@
       font-size: 14px;
       color: var(--green);
       font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
     }
     
-    /* Progress */
-    .progress-bar {
+    .header-balance svg { width: 16px; height: 16px; }
+    
+    /* Hero Section */
+    .hero {
+      position: relative;
+      padding: 40px 20px;
+      text-align: center;
+      overflow: hidden;
+    }
+    
+    .hero-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, rgba(255,77,0,0.1) 0%, transparent 100%);
+      z-index: 0;
+    }
+    
+    .hero-content {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .hero-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: rgba(255,77,0,0.15);
+      border: 1px solid rgba(255,77,0,0.3);
+      border-radius: 100px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--accent);
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 20px;
+    }
+    
+    .hero-title {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+      margin-bottom: 12px;
+      line-height: 1.1;
+    }
+    
+    .hero-title em {
+      font-style: normal;
+      color: var(--accent);
+    }
+    
+    .hero-subtitle {
+      font-size: 16px;
+      color: var(--text-dim);
+      line-height: 1.5;
+      max-width: 320px;
+      margin: 0 auto 24px;
+    }
+    
+    /* Influencer faces */
+    .faces {
       display: flex;
+      justify-content: center;
+      margin-bottom: 16px;
+    }
+    
+    .face {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid var(--bg);
+      margin-left: -12px;
+      object-fit: cover;
+      background: var(--card);
+    }
+    
+    .face:first-child { margin-left: 0; }
+    
+    .face-more {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      border: 3px solid var(--bg);
+      margin-left: -12px;
+      background: var(--accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+    }
+    
+    .social-proof {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    
+    .social-proof strong {
+      color: var(--text);
+    }
+    
+    /* Steps indicator */
+    .steps-indicator {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
       padding: 20px;
+    }
+    
+    .step-dot {
+      display: flex;
+      align-items: center;
       gap: 8px;
     }
     
-    .progress-step {
-      flex: 1;
-      height: 4px;
+    .step-num {
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
       background: var(--border);
-      border-radius: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 700;
+      transition: all 0.3s;
+    }
+    
+    .step-dot.active .step-num {
+      background: var(--accent);
+    }
+    
+    .step-dot.done .step-num {
+      background: var(--green);
+    }
+    
+    .step-line {
+      width: 40px;
+      height: 2px;
+      background: var(--border);
       transition: background 0.3s;
     }
     
-    .progress-step.active { background: var(--accent); }
-    .progress-step.done { background: var(--green); }
+    .step-dot.done + .step-line,
+    .step-line.done {
+      background: var(--green);
+    }
     
     /* Main content */
     .main {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      padding: 20px;
+      padding: 0 20px 100px;
     }
     
     .step {
       display: none;
-      flex-direction: column;
-      flex: 1;
       animation: fadeIn 0.3s ease;
     }
     
-    .step.active { display: flex; }
+    .step.active { display: block; }
     
     @keyframes fadeIn {
       from { opacity: 0; transform: translateY(10px); }
       to { opacity: 1; transform: translateY(0); }
     }
     
-    .step-num {
-      font-size: 12px;
+    .step-header {
+      text-align: center;
+      margin-bottom: 24px;
+    }
+    
+    .step-label {
+      font-size: 11px;
       text-transform: uppercase;
       letter-spacing: 2px;
-      color: var(--text-dim);
+      color: var(--accent);
       margin-bottom: 8px;
+      font-weight: 600;
     }
     
     .step-title {
-      font-size: 28px;
+      font-size: 24px;
       font-weight: 700;
       margin-bottom: 8px;
-      letter-spacing: -1px;
+      letter-spacing: -0.5px;
     }
     
     .step-desc {
-      font-size: 15px;
+      font-size: 14px;
       color: var(--text-dim);
       line-height: 1.5;
-      margin-bottom: 32px;
     }
     
-    /* Platform buttons */
+    /* Platform cards */
     .platforms {
       display: flex;
       flex-direction: column;
       gap: 12px;
-      flex: 1;
     }
     
-    .platform-btn {
+    .platform-card {
       display: flex;
       align-items: center;
-      gap: 16px;
-      padding: 18px 20px;
+      gap: 14px;
+      padding: 16px;
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 12px;
+      border-radius: 16px;
       cursor: pointer;
       transition: all 0.2s;
     }
     
-    .platform-btn:hover {
-      border-color: var(--accent);
+    .platform-card:hover {
+      background: var(--card-hover);
+      border-color: #3a3a3a;
       transform: translateY(-2px);
     }
     
-    .platform-btn.connected {
+    .platform-card.connected {
       border-color: var(--green);
       background: rgba(0, 210, 106, 0.05);
     }
     
-    .platform-icon {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
+    .platform-logo {
+      width: 48px;
+      height: 48px;
+      border-radius: 12px;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
+      flex-shrink: 0;
     }
     
-    .platform-icon.twitter { background: #1da1f2; }
-    .platform-icon.instagram { background: linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
-    .platform-icon.tiktok { background: #000; border: 1px solid #333; }
-    .platform-icon.linkedin { background: #0077b5; }
+    .platform-logo svg {
+      width: 24px;
+      height: 24px;
+    }
     
-    .platform-info { flex: 1; text-align: left; }
-    .platform-name { font-weight: 600; font-size: 16px; }
-    .platform-handle { font-size: 13px; color: var(--text-dim); margin-top: 2px; }
+    .platform-logo.twitter { background: #000; border: 1px solid #333; }
+    .platform-logo.instagram { background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888); }
+    .platform-logo.tiktok { background: #000; border: 1px solid #333; }
+    .platform-logo.linkedin { background: #0077b5; }
     
-    .platform-status {
-      font-size: 13px;
+    .platform-info { flex: 1; min-width: 0; }
+    .platform-name { font-weight: 600; font-size: 15px; margin-bottom: 2px; }
+    .platform-earn { font-size: 13px; color: var(--green); font-weight: 500; }
+    
+    .platform-arrow {
+      color: var(--text-dim);
+      transition: transform 0.2s;
+    }
+    
+    .platform-card:hover .platform-arrow {
+      transform: translateX(4px);
+      color: var(--text);
+    }
+    
+    .platform-check {
       color: var(--green);
-      font-weight: 500;
     }
     
     /* Content preview */
-    .content-preview {
+    .content-card {
       background: var(--card);
       border: 1px solid var(--border);
-      border-radius: 16px;
-      padding: 20px;
-      margin-bottom: 20px;
+      border-radius: 20px;
+      overflow: hidden;
+      margin-bottom: 16px;
     }
     
-    .content-platform {
+    .content-header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 16px;
-      padding-bottom: 16px;
+      gap: 12px;
+      padding: 16px;
       border-bottom: 1px solid var(--border);
     }
     
-    .content-platform-icon {
-      width: 32px;
-      height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
+    .content-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      object-fit: cover;
+      background: var(--border);
     }
     
-    .content-platform-name {
+    .content-user {
+      flex: 1;
+    }
+    
+    .content-username {
       font-weight: 600;
       font-size: 14px;
     }
     
-    .content-payout {
-      margin-left: auto;
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--green);
+    .content-handle {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .content-platform-badge {
+      padding: 6px 12px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    
+    .content-platform-badge svg {
+      width: 14px;
+      height: 14px;
+    }
+    
+    .content-platform-badge.twitter { background: rgba(0,0,0,0.5); }
+    .content-platform-badge.instagram { background: rgba(225,48,108,0.2); }
+    
+    .content-body {
+      padding: 16px;
     }
     
     .content-text {
       font-size: 15px;
       line-height: 1.6;
       white-space: pre-wrap;
+      margin-bottom: 16px;
     }
     
     .content-text .hashtag { color: var(--accent); }
-    .content-text .mention { color: #1da1f2; }
+    .content-text .mention { color: #1d9bf0; }
+    
+    .content-image {
+      width: 100%;
+      border-radius: 12px;
+      margin-bottom: 16px;
+    }
+    
+    .content-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      border-top: 1px solid var(--border);
+      background: rgba(0,0,0,0.2);
+    }
+    
+    .content-payout {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .payout-amount {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--green);
+    }
+    
+    .payout-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
     
     .content-regen {
       display: flex;
       align-items: center;
-      justify-content: center;
       gap: 6px;
-      margin-top: 16px;
-      padding-top: 16px;
-      border-top: 1px solid var(--border);
-      font-size: 13px;
+      padding: 8px 14px;
+      background: var(--border);
+      border-radius: 100px;
+      font-size: 12px;
       color: var(--text-dim);
       cursor: pointer;
-      transition: color 0.2s;
+      transition: all 0.2s;
+      border: none;
     }
     
-    .content-regen:hover { color: var(--text); }
+    .content-regen:hover {
+      background: #3a3a3a;
+      color: var(--text);
+    }
     
-    /* Main CTA */
+    /* CTA Button */
+    .cta-container {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      padding: 16px 20px;
+      background: linear-gradient(0deg, var(--bg) 80%, transparent);
+      padding-top: 40px;
+    }
+    
     .cta-btn {
       width: 100%;
       padding: 18px;
       background: var(--accent);
       border: none;
-      border-radius: 12px;
+      border-radius: 14px;
       font-size: 16px;
-      font-weight: 600;
+      font-weight: 700;
       color: white;
       cursor: pointer;
       transition: all 0.2s;
-      margin-top: auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
     }
     
     .cta-btn:hover {
@@ -271,18 +492,33 @@
       box-shadow: 0 8px 24px var(--green-glow);
     }
     
-    /* Paid screen */
-    .paid-icon {
+    .cta-btn svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    /* Success screen */
+    .success-screen {
+      text-align: center;
+      padding: 40px 0;
+    }
+    
+    .success-icon {
       width: 100px;
       height: 100px;
-      margin: 40px auto 30px;
+      margin: 0 auto 24px;
       background: var(--green);
       border-radius: 50%;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 50px;
       animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    
+    .success-icon svg {
+      width: 50px;
+      height: 50px;
+      color: white;
     }
     
     @keyframes popIn {
@@ -290,55 +526,88 @@
       100% { transform: scale(1); }
     }
     
-    .paid-amount {
-      font-size: 48px;
-      font-weight: 700;
-      text-align: center;
+    .success-amount {
+      font-size: 56px;
+      font-weight: 800;
+      letter-spacing: -3px;
       margin-bottom: 8px;
-      letter-spacing: -2px;
+      background: linear-gradient(135deg, var(--green), #00ff88);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
     
-    .paid-label {
-      text-align: center;
+    .success-label {
       color: var(--text-dim);
       font-size: 15px;
-      margin-bottom: 40px;
+      margin-bottom: 32px;
     }
     
-    .paid-details {
+    .success-card {
       background: var(--card);
-      border-radius: 12px;
-      padding: 16px;
+      border-radius: 16px;
+      padding: 20px;
       margin-bottom: 20px;
+      text-align: left;
     }
     
-    .paid-row {
+    .success-row {
       display: flex;
       justify-content: space-between;
-      padding: 10px 0;
+      padding: 12px 0;
       font-size: 14px;
-    }
-    
-    .paid-row:not(:last-child) {
       border-bottom: 1px solid var(--border);
     }
     
-    .paid-row-label { color: var(--text-dim); }
-    .paid-row-value { font-weight: 600; }
+    .success-row:last-child {
+      border-bottom: none;
+    }
     
-    /* Loading */
-    .loading {
+    .success-row-label { color: var(--text-dim); }
+    .success-row-value { font-weight: 600; }
+    
+    .success-balance {
       display: flex;
-      flex-direction: column;
       align-items: center;
       justify-content: center;
-      flex: 1;
-      gap: 16px;
+      gap: 8px;
+      padding: 16px;
+      background: rgba(0,210,106,0.1);
+      border: 1px solid rgba(0,210,106,0.2);
+      border-radius: 12px;
+      margin-bottom: 20px;
+    }
+    
+    .success-balance-label {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    
+    .success-balance-amount {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--green);
+    }
+    
+    /* Loading */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(10,10,10,0.9);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 1000;
+    }
+    
+    .loading-overlay.active {
+      display: flex;
     }
     
     .spinner {
-      width: 40px;
-      height: 40px;
+      width: 48px;
+      height: 48px;
       border: 3px solid var(--border);
       border-top-color: var(--accent);
       border-radius: 50%;
@@ -350,143 +619,205 @@
     }
     
     .loading-text {
-      font-size: 14px;
+      font-size: 15px;
       color: var(--text-dim);
     }
-    
-    /* Footer */
-    .footer {
-      padding: 16px 20px;
-      text-align: center;
-      font-size: 12px;
-      color: var(--text-dim);
-      border-top: 1px solid var(--border);
-    }
-    
-    .footer a { color: var(--accent); text-decoration: none; }
   </style>
 </head>
 <body>
   <header class="header">
     <div class="logo">DAU<span>influencers</span></div>
-    <div class="header-balance" id="headerBalance" style="display:none">$0.00</div>
+    <div class="header-balance" id="headerBalance" style="display:none">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+      <span id="balanceAmount">$0.00</span>
+    </div>
   </header>
   
-  <div class="progress-bar">
-    <div class="progress-step active" id="prog1"></div>
-    <div class="progress-step" id="prog2"></div>
-    <div class="progress-step" id="prog3"></div>
+  <!-- Hero (only on step 1) -->
+  <section class="hero" id="heroSection">
+    <div class="hero-bg"></div>
+    <div class="hero-content">
+      <div class="hero-badge">
+        <span>💰</span> Now Paying Influencers
+      </div>
+      <h1 class="hero-title">Get Paid<br>for <em>Influence</em></h1>
+      <p class="hero-subtitle">Connect your social account, share AI-generated content, get paid instantly. It's that simple.</p>
+      
+      <div class="faces">
+        <img class="face" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face" alt="">
+        <img class="face" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=100&h=100&fit=crop&crop=face" alt="">
+        <img class="face" src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=100&h=100&fit=crop&crop=face" alt="">
+        <img class="face" src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=100&h=100&fit=crop&crop=face" alt="">
+        <div class="face-more">+2k</div>
+      </div>
+      <p class="social-proof"><strong>2,847 influencers</strong> earned $18,400 this week</p>
+    </div>
+  </section>
+  
+  <!-- Steps indicator -->
+  <div class="steps-indicator">
+    <div class="step-dot active" id="dot1">
+      <div class="step-num">1</div>
+    </div>
+    <div class="step-line" id="line1"></div>
+    <div class="step-dot" id="dot2">
+      <div class="step-num">2</div>
+    </div>
+    <div class="step-line" id="line2"></div>
+    <div class="step-dot" id="dot3">
+      <div class="step-num">3</div>
+    </div>
   </div>
   
   <main class="main">
     <!-- STEP 1: Connect -->
     <div class="step active" id="step1">
-      <div class="step-num">Step 1 of 3</div>
-      <div class="step-title">Connect</div>
-      <div class="step-desc">Link your social account to start earning. One tap, instant connection.</div>
+      <div class="step-header">
+        <div class="step-label">Step 1</div>
+        <div class="step-title">Connect Your Account</div>
+        <div class="step-desc">One tap to link. We never post without your approval.</div>
+      </div>
       
       <div class="platforms">
-        <div class="platform-btn" onclick="connectPlatform('twitter')">
-          <div class="platform-icon twitter">𝕏</div>
+        <div class="platform-card" onclick="connectPlatform('twitter')">
+          <div class="platform-logo twitter">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+          </div>
           <div class="platform-info">
             <div class="platform-name">X (Twitter)</div>
-            <div class="platform-handle">Connect to post tweets</div>
+            <div class="platform-earn">Earn $1-5 per post</div>
           </div>
-          <div class="platform-status" id="twitter-status"></div>
+          <div class="platform-arrow" id="twitter-status">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
         </div>
         
-        <div class="platform-btn" onclick="connectPlatform('instagram')">
-          <div class="platform-icon instagram">📷</div>
+        <div class="platform-card" onclick="connectPlatform('instagram')">
+          <div class="platform-logo instagram">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+          </div>
           <div class="platform-info">
             <div class="platform-name">Instagram</div>
-            <div class="platform-handle">Connect to post stories & reels</div>
+            <div class="platform-earn">Earn $2-8 per story</div>
           </div>
-          <div class="platform-status" id="instagram-status"></div>
+          <div class="platform-arrow" id="instagram-status">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
         </div>
         
-        <div class="platform-btn" onclick="connectPlatform('tiktok')">
-          <div class="platform-icon tiktok">♪</div>
+        <div class="platform-card" onclick="connectPlatform('tiktok')">
+          <div class="platform-logo tiktok">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+          </div>
           <div class="platform-info">
             <div class="platform-name">TikTok</div>
-            <div class="platform-handle">Connect to post videos</div>
+            <div class="platform-earn">Earn $3-15 per video</div>
           </div>
-          <div class="platform-status" id="tiktok-status"></div>
+          <div class="platform-arrow" id="tiktok-status">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
         </div>
         
-        <div class="platform-btn" onclick="connectPlatform('linkedin')">
-          <div class="platform-icon linkedin">in</div>
+        <div class="platform-card" onclick="connectPlatform('linkedin')">
+          <div class="platform-logo linkedin">
+            <svg viewBox="0 0 24 24" fill="white"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+          </div>
           <div class="platform-info">
             <div class="platform-name">LinkedIn</div>
-            <div class="platform-handle">Connect to post updates</div>
+            <div class="platform-earn">Earn $2-6 per post</div>
           </div>
-          <div class="platform-status" id="linkedin-status"></div>
+          <div class="platform-arrow" id="linkedin-status">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M9 18l6-6-6-6"/></svg>
+          </div>
         </div>
       </div>
     </div>
     
     <!-- STEP 2: Share -->
     <div class="step" id="step2">
-      <div class="step-num">Step 2 of 3</div>
-      <div class="step-title">Share</div>
-      <div class="step-desc">AI-generated content ready to post. Edit if you want, or share as-is.</div>
-      
-      <div class="content-preview">
-        <div class="content-platform">
-          <div class="content-platform-icon twitter" id="contentIcon">𝕏</div>
-          <div class="content-platform-name" id="contentPlatform">X (Twitter)</div>
-          <div class="content-payout" id="contentPayout">+$2.00</div>
-        </div>
-        <div class="content-text" id="contentText">
-          Loading...
-        </div>
-        <div class="content-regen" onclick="regenerateContent()">
-          🔄 Generate different content
-        </div>
+      <div class="step-header">
+        <div class="step-label">Step 2</div>
+        <div class="step-title">Review & Share</div>
+        <div class="step-desc">AI-crafted content ready to post. Edit if you want!</div>
       </div>
       
-      <button class="cta-btn" id="shareBtn" onclick="shareContent()">
-        Share Now →
-      </button>
+      <div class="content-card">
+        <div class="content-header">
+          <img class="content-avatar" id="contentAvatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=100&h=100&fit=crop&crop=face" alt="">
+          <div class="content-user">
+            <div class="content-username" id="contentUsername">You</div>
+            <div class="content-handle" id="contentHandle">@yourhandle</div>
+          </div>
+          <div class="content-platform-badge twitter" id="contentBadge">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            <span id="contentPlatformName">X</span>
+          </div>
+        </div>
+        
+        <div class="content-body">
+          <div class="content-text" id="contentText">Loading...</div>
+        </div>
+        
+        <div class="content-footer">
+          <div class="content-payout">
+            <div>
+              <div class="payout-amount" id="contentPayout">+$2.00</div>
+              <div class="payout-label">Your earnings</div>
+            </div>
+          </div>
+          <button class="content-regen" onclick="regenerateContent()">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+            Regenerate
+          </button>
+        </div>
+      </div>
     </div>
     
     <!-- STEP 3: Paid -->
     <div class="step" id="step3">
-      <div class="paid-icon">✓</div>
-      <div class="paid-amount" id="paidAmount">+$2.00</div>
-      <div class="paid-label">Added to your balance</div>
-      
-      <div class="paid-details">
-        <div class="paid-row">
-          <span class="paid-row-label">Platform</span>
-          <span class="paid-row-value" id="paidPlatform">X (Twitter)</span>
+      <div class="success-screen">
+        <div class="success-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>
         </div>
-        <div class="paid-row">
-          <span class="paid-row-label">Content</span>
-          <span class="paid-row-value">AI-Generated Post</span>
+        <div class="success-amount" id="successAmount">+$2.00</div>
+        <div class="success-label">Added to your balance!</div>
+        
+        <div class="success-balance">
+          <span class="success-balance-label">Total Balance:</span>
+          <span class="success-balance-amount" id="successBalance">$2.00</span>
         </div>
-        <div class="paid-row">
-          <span class="paid-row-label">New Balance</span>
-          <span class="paid-row-value" id="paidBalance">$2.00</span>
+        
+        <div class="success-card">
+          <div class="success-row">
+            <span class="success-row-label">Platform</span>
+            <span class="success-row-value" id="successPlatform">X (Twitter)</span>
+          </div>
+          <div class="success-row">
+            <span class="success-row-label">Content Type</span>
+            <span class="success-row-value">AI-Generated Post</span>
+          </div>
+          <div class="success-row">
+            <span class="success-row-label">Status</span>
+            <span class="success-row-value" style="color: var(--green)">✓ Posted & Verified</span>
+          </div>
         </div>
-      </div>
-      
-      <button class="cta-btn success" onclick="shareAnother()">
-        Share Another →
-      </button>
-    </div>
-    
-    <!-- Loading state -->
-    <div class="step" id="stepLoading">
-      <div class="loading">
-        <div class="spinner"></div>
-        <div class="loading-text" id="loadingText">Generating content...</div>
       </div>
     </div>
   </main>
   
-  <footer class="footer">
-    Powered by <a href="/">DAUinfluencers</a>
-  </footer>
+  <!-- Fixed CTA -->
+  <div class="cta-container" id="ctaContainer" style="display:none">
+    <button class="cta-btn" id="ctaBtn" onclick="handleCta()">
+      <span id="ctaText">Share Now</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+    </button>
+  </div>
+  
+  <!-- Loading overlay -->
+  <div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Generating content...</div>
+  </div>
   
   <script>
     // State
@@ -498,138 +829,166 @@
       payout: 2.00
     };
     
-    const platformNames = {
-      twitter: 'X (Twitter)',
-      instagram: 'Instagram',
-      tiktok: 'TikTok',
-      linkedin: 'LinkedIn'
+    const platformData = {
+      twitter: { name: 'X (Twitter)', shortName: 'X', payout: 2.00 },
+      instagram: { name: 'Instagram', shortName: 'Instagram', payout: 3.50 },
+      tiktok: { name: 'TikTok', shortName: 'TikTok', payout: 5.00 },
+      linkedin: { name: 'LinkedIn', shortName: 'LinkedIn', payout: 2.50 }
     };
     
-    const platformIcons = {
-      twitter: '𝕏',
-      instagram: '📷',
-      tiktok: '♪',
-      linkedin: 'in'
-    };
-    
-    // Sample content per platform
     const sampleContent = {
       twitter: [
-        "Just discovered this amazing tool that's changing how I work 🔥\n\nHonestly didn't think automation could feel this natural. Game changer for anyone building online.\n\n#buildinpublic #productivity",
-        "The future of content creation is here and it's wild 🚀\n\nAI-powered, human-approved. Finally something that actually saves time without feeling robotic.\n\n#AI #creators",
-        "Hot take: Most \"productivity\" tools make you less productive.\n\nBut every once in a while you find one that just clicks. This is one of those. 💯\n\n#startups #tech"
+        "Just found a tool that actually delivers on its promises 🔥\n\nBeen burned by \"productivity\" apps before but this one hits different. Finally automating the boring stuff.\n\n#buildinpublic #productivity",
+        "The future of content is here and it's kinda wild 🚀\n\nAI that feels human? Sign me up. Way better than I expected.\n\n#AI #contentcreation",
+        "Hot take: Most tools overcomplicate things.\n\nThis one doesn't. Simple, fast, actually useful. That's it. That's the tweet.\n\n#startups #tech"
       ],
       instagram: [
-        "✨ When the workflow finally works\n\nFound something that actually lives up to the hype. Automating the boring stuff so I can focus on creating.\n\nLink in bio if you want to check it out 👆\n\n#contentcreator #productivity #automation #workflow #createeveryday",
-        "POV: You finally found a tool that doesn't suck 😂\n\nNo but seriously, been testing this for a week and I'm impressed. Real results, not just promises.\n\n#influencerlife #toolsofthetrade #worksmarter",
+        "✨ Finally found my flow\n\nYou know that feeling when something just clicks? That's been my week. Automating the stuff I hate so I can focus on creating.\n\nDrop a 🙌 if you're building something too\n\n#contentcreator #workflow #createeveryday",
+        "POV: You stop doing everything manually 😂\n\nSeriously though, why did I wait so long? Game. Changed.\n\n#influencerlife #worksmarter #productivity",
       ],
       tiktok: [
-        "Wait why did no one tell me about this sooner 😭\n\nBeen doing everything manually like a fool. This changes everything fr\n\n#fyp #productivity #lifehack #creatortips",
-        "POV: You discover the tool all the big creators use 👀\n\n#viral #learnontiktok #contentcreation"
+        "Wait why did no one tell me about this earlier 😭\n\nI've been doing everything the hard way for MONTHS\n\n#fyp #productivity #lifehack #creatortips",
+        "POV: You find what all the successful creators are using 👀\n\nAnd it's actually affordable??\n\n#viral #learnontiktok #moneytok"
       ],
       linkedin: [
-        "The best tools don't add complexity—they remove it.\n\nI've been testing a new approach to content automation, and the results speak for themselves:\n\n→ 3x faster content creation\n→ Consistent quality\n→ More time for actual strategy\n\nThe future of work isn't about doing more. It's about doing what matters.\n\n#Productivity #FutureOfWork #ContentStrategy",
-        "Unpopular opinion: Most automation tools are solving the wrong problem.\n\nWe don't need more content. We need better content, faster.\n\nFinally found something that gets this right. Happy to share more in the comments.\n\n#Marketing #Automation #ContentMarketing"
+        "Simple tools win.\n\nI've tested dozens of \"AI productivity\" solutions this year. Most are overengineered.\n\nThe best one I found does three things:\n→ Saves time\n→ Maintains quality\n→ Gets out of your way\n\nThat's it. No 47-step workflows. No enterprise pricing.\n\nSometimes less really is more.\n\n#Productivity #AI #WorkSmarter",
+        "Unpopular opinion: We don't need more content.\n\nWe need better content, faster.\n\nBig difference.\n\nFound a tool that finally gets this right. Happy to share in the comments if you're curious.\n\n#ContentStrategy #Marketing"
       ]
     };
+    
+    function showLoading(text) {
+      document.getElementById('loadingText').textContent = text;
+      document.getElementById('loadingOverlay').classList.add('active');
+    }
+    
+    function hideLoading() {
+      document.getElementById('loadingOverlay').classList.remove('active');
+    }
+    
+    function updateSteps(step) {
+      // Update dots
+      for (let i = 1; i <= 3; i++) {
+        const dot = document.getElementById('dot' + i);
+        dot.classList.remove('active', 'done');
+        if (i < step) dot.classList.add('done');
+        if (i === step) dot.classList.add('active');
+      }
+      
+      // Update lines
+      document.getElementById('line1').classList.toggle('done', step > 1);
+      document.getElementById('line2').classList.toggle('done', step > 2);
+      
+      // Show/hide hero
+      document.getElementById('heroSection').style.display = step === 1 ? 'block' : 'none';
+    }
     
     function goToStep(n) {
       state.step = n;
       document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
       document.getElementById('step' + n).classList.add('active');
+      updateSteps(n);
       
-      // Update progress
-      for (let i = 1; i <= 3; i++) {
-        const prog = document.getElementById('prog' + i);
-        prog.classList.remove('active', 'done');
-        if (i < n) prog.classList.add('done');
-        if (i === n) prog.classList.add('active');
+      // Show CTA on step 2 and 3
+      const cta = document.getElementById('ctaContainer');
+      const btn = document.getElementById('ctaBtn');
+      const text = document.getElementById('ctaText');
+      
+      if (n === 2) {
+        cta.style.display = 'block';
+        text.textContent = 'Share Now';
+        btn.classList.remove('success');
+      } else if (n === 3) {
+        cta.style.display = 'block';
+        text.textContent = 'Earn More';
+        btn.classList.add('success');
+      } else {
+        cta.style.display = 'none';
       }
-    }
-    
-    function showLoading(text) {
-      document.getElementById('loadingText').textContent = text;
-      document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
-      document.getElementById('stepLoading').classList.add('active');
     }
     
     async function connectPlatform(platform) {
       state.platform = platform;
+      state.payout = platformData[platform].payout;
       
-      // Show connecting state
-      const btn = event.currentTarget;
-      const status = document.getElementById(platform + '-status');
-      status.textContent = 'Connecting...';
+      // Show connected state
+      const statusEl = document.getElementById(platform + '-status');
+      statusEl.innerHTML = '<svg class="platform-check" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#00d26a" stroke-width="3"><path d="M20 6L9 17l-5-5"/></svg>';
       
-      // Simulate OAuth (in production, this would open OAuth popup)
-      await new Promise(r => setTimeout(r, 1000));
+      // Simulate OAuth
+      showLoading('Connecting to ' + platformData[platform].name + '...');
+      await new Promise(r => setTimeout(r, 1200));
       
-      // Mark as connected
-      btn.classList.add('connected');
-      status.textContent = '✓ Connected';
-      
-      // Generate content after short delay
-      await new Promise(r => setTimeout(r, 500));
-      showLoading('Generating content...');
-      
+      // Generate content
+      document.getElementById('loadingText').textContent = 'Creating your content...';
       await generateContent();
+      
+      hideLoading();
+      goToStep(2);
     }
     
     async function generateContent() {
-      // Simulate AI generation
-      await new Promise(r => setTimeout(r, 1500));
+      await new Promise(r => setTimeout(r, 1000));
       
       const contents = sampleContent[state.platform];
       state.content = contents[Math.floor(Math.random() * contents.length)];
       
-      // Update UI
-      document.getElementById('contentIcon').className = 'content-platform-icon ' + state.platform;
-      document.getElementById('contentIcon').textContent = platformIcons[state.platform];
-      document.getElementById('contentPlatform').textContent = platformNames[state.platform];
+      // Update content card
+      const data = platformData[state.platform];
+      document.getElementById('contentPlatformName').textContent = data.shortName;
       document.getElementById('contentPayout').textContent = '+$' + state.payout.toFixed(2);
       
-      // Format content with colored hashtags/mentions
+      // Format content
       let formatted = state.content
         .replace(/(#\w+)/g, '<span class="hashtag">$1</span>')
         .replace(/(@\w+)/g, '<span class="mention">$1</span>');
       document.getElementById('contentText').innerHTML = formatted;
       
-      goToStep(2);
+      // Update badge class
+      document.getElementById('contentBadge').className = 'content-platform-badge ' + state.platform;
     }
     
     async function regenerateContent() {
       showLoading('Generating new content...');
       await generateContent();
+      hideLoading();
+    }
+    
+    async function handleCta() {
+      if (state.step === 2) {
+        await shareContent();
+      } else if (state.step === 3) {
+        // Reset for another share
+        goToStep(1);
+      }
     }
     
     async function shareContent() {
-      const btn = document.getElementById('shareBtn');
-      btn.disabled = true;
-      btn.textContent = 'Posting...';
+      const btn = document.getElementById('ctaBtn');
+      const text = document.getElementById('ctaText');
       
-      // Simulate posting
+      btn.disabled = true;
+      text.textContent = 'Posting...';
+      
+      showLoading('Sharing to ' + platformData[state.platform].name + '...');
       await new Promise(r => setTimeout(r, 2000));
+      hideLoading();
       
       // Update balance
       state.balance += state.payout;
       
-      // Show paid screen
-      document.getElementById('paidAmount').textContent = '+$' + state.payout.toFixed(2);
-      document.getElementById('paidPlatform').textContent = platformNames[state.platform];
-      document.getElementById('paidBalance').textContent = '$' + state.balance.toFixed(2);
-      document.getElementById('headerBalance').textContent = '$' + state.balance.toFixed(2);
-      document.getElementById('headerBalance').style.display = 'block';
+      // Show success
+      document.getElementById('successAmount').textContent = '+$' + state.payout.toFixed(2);
+      document.getElementById('successBalance').textContent = '$' + state.balance.toFixed(2);
+      document.getElementById('successPlatform').textContent = platformData[state.platform].name;
+      
+      // Update header balance
+      document.getElementById('headerBalance').style.display = 'flex';
+      document.getElementById('balanceAmount').textContent = '$' + state.balance.toFixed(2);
       
       goToStep(3);
       
-      // Reset share button
+      // Reset button
       btn.disabled = false;
-      btn.textContent = 'Share Now →';
-    }
-    
-    function shareAnother() {
-      // Reset to step 1 but keep connected state
-      goToStep(1);
     }
   </script>
 </body>
