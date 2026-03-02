@@ -30,6 +30,7 @@ router.get('/twitter', (req, res) => {
     oauthStates.set(state, {
       codeVerifier,
       returnUrl: req.query.return_url || '/influencers',
+      popup: req.query.popup === 'true',
       createdAt: Date.now()
     });
     
@@ -99,6 +100,11 @@ router.get('/twitter/callback', async (req, res) => {
       // Store tokens in sessionStorage via frontend (temp solution)
       token: Buffer.from(JSON.stringify({ accessToken, refreshToken, expiresIn })).toString('base64')
     });
+    
+    // If popup mode, include that param so frontend knows to postMessage and close
+    if (stored.popup) {
+      params.set('popup', 'true');
+    }
     
     res.redirect(`/influencers?${params.toString()}`);
   } catch (err) {
