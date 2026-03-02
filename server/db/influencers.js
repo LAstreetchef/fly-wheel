@@ -11,6 +11,8 @@ export function setCreatorPool(p) {
   pool = p;
 }
 
+export { pool };
+
 // Initialize influencer tables
 export async function initCreatorTables() {
   if (!pool) {
@@ -113,6 +115,9 @@ export async function initCreatorTables() {
   `);
 
   console.log('✅ Creator tables initialized');
+  
+  // Initialize referral system
+  await initReferralSystem();
 }
 
 // ============================================
@@ -409,9 +414,212 @@ export async function getInfluencerStats(influencerId) {
 export async function getAllInfluencersAdmin() {
   const result = await pool.query(
     `SELECT id, email, name, created_at, balance_cents, lifetime_earned_cents,
-            missions_completed, current_streak, status
+            missions_completed, current_streak, status, referral_code
      FROM influencers
      ORDER BY created_at DESC`
   );
   return result.rows;
+}
+
+// ============================================
+// Referral System
+// ============================================
+
+export async function initReferralSystem() {
+  // Add referral columns to influencers table if they don't exist
+  await pool.query(`
+    ALTER TABLE influencers 
+    ADD COLUMN IF NOT EXISTS referral_code VARCHAR(20) UNIQUE,
+    ADD COLUMN IF NOT EXISTS referred_by INTEGER REFERENCES influencers(id),
+    ADD COLUMN IF NOT EXISTS referral_earnings_cents INTEGER DEFAULT 0,
+    ADD COLUMN IF NOT EXISTS referral_count INTEGER DEFAULT 0
+  `);
+
+  // Referral tracking table
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS influencer_referrals (
+      id SERIAL PRIMARY KEY,
+      referrer_id INTEGER REFERENCES influencers(id) ON DELETE CASCADE,
+      referred_id INTEGER REFERENCES influencers(id) ON DELETE CASCADE,
+      status VARCHAR(50) DEFAULT 'signed_up',
+      bonus_paid_cents INTEGER DEFAULT 0,
+      created_at TIMESTAMPTZ DEFAULT NOW(),
+      first_mission_at TIMESTAMPTZ,
+      UNIQUE(referred_id)
+    )
+  `);
+
+  // Referral earnings log
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS referral_earnings (
+      id SERIAL PRIMARY KEY,
+      referrer_id INTEGER REFERENCES influencers(id),
+      referred_id INTEGER REFERENCES influencers(id),
+      mission_id INTEGER,
+      amount_cents INTEGER NOT NULL,
+      created_at TIMESTAMPTZ DEFAULT NOW()
+    )
+  `);
+
+  console.log('✅ Referral system initialized');
+}
+
+// Generate unique referral code
+function generateReferralCode() {
+  return crypto.randomBytes(4).toString('hex').toUpperCase();
+}
+
+// Get or create referral code for influencer
+export async function getOrCreateReferralCode(influencerId) {
+  // Check if already has code
+  const existing = await pool.query(
+    'SELECT referral_code FROM influencers WHERE id = $1',
+    [influencerId]
+  );
+  
+  if (existing.rows[0]?.referral_code) {
+    return existing.rows[0].referral_code;
+  }
+  
+  // Generate new unique code
+  let code;
+  let attempts = 0;
+  while (attempts < 10) {
+    code = generateReferralCode();
+    try {
+      await pool.query(
+        'UPDATE influencers SET referral_code = $1 WHERE id = $2',
+        [code, influencerId]
+      );
+      return code;
+    } catch (err) {
+      if (err.code === '23505') { // Unique violation
+        attempts++;
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error('Failed to generate unique referral code');
+}
+
+// Process referral signup
+export async function processReferralSignup(newInfluencerId, referralCode) {
+  if (!referralCode) return null;
+  
+  // Find referrer by code
+  const referrer = await pool.query(
+    'SELECT id FROM influencers WHERE referral_code = $1',
+    [referralCode.toUpperCase()]
+  );
+  
+  if (!referrer.rows[0]) return null;
+  
+  const referrerId = referrer.rows[0].id;
+  
+  // Don't allow self-referral
+  if (referrerId === newInfluencerId) return null;
+  
+  // Link referral
+  await pool.query(
+    'UPDATE influencers SET referred_by = $1 WHERE id = $2',
+    [referrerId, newInfluencerId]
+  );
+  
+  // Track referral
+  await pool.query(
+    `INSERT INTO influencer_referrals (referrer_id, referred_id)
+     VALUES ($1, $2)
+     ON CONFLICT (referred_id) DO NOTHING`,
+    [referrerId, newInfluencerId]
+  );
+  
+  // Increment referrer's count
+  await pool.query(
+    'UPDATE influencers SET referral_count = referral_count + 1 WHERE id = $1',
+    [referrerId]
+  );
+  
+  return referrerId;
+}
+
+// Process referral bonus when referred user completes mission
+export async function processReferralBonus(influencerId, missionEarningsCents, missionId = null) {
+  const REFERRAL_PERCENTAGE = 0.10; // 10% of referred user's earnings
+  
+  // Get referrer
+  const result = await pool.query(
+    'SELECT referred_by FROM influencers WHERE id = $1',
+    [influencerId]
+  );
+  
+  const referrerId = result.rows[0]?.referred_by;
+  if (!referrerId) return null;
+  
+  const bonusCents = Math.floor(missionEarningsCents * REFERRAL_PERCENTAGE);
+  if (bonusCents < 1) return null;
+  
+  // Credit referrer
+  await pool.query(
+    `UPDATE influencers 
+     SET balance_cents = balance_cents + $1,
+         referral_earnings_cents = referral_earnings_cents + $1,
+         lifetime_earned_cents = lifetime_earned_cents + $1
+     WHERE id = $2`,
+    [bonusCents, referrerId]
+  );
+  
+  // Log the earning
+  await pool.query(
+    `INSERT INTO referral_earnings (referrer_id, referred_id, mission_id, amount_cents)
+     VALUES ($1, $2, $3, $4)`,
+    [referrerId, influencerId, missionId, bonusCents]
+  );
+  
+  // Update referral status if first mission
+  await pool.query(
+    `UPDATE influencer_referrals 
+     SET status = 'active', 
+         first_mission_at = COALESCE(first_mission_at, NOW()),
+         bonus_paid_cents = bonus_paid_cents + $3
+     WHERE referrer_id = $1 AND referred_id = $2`,
+    [referrerId, influencerId, bonusCents]
+  );
+  
+  return { referrerId, bonusCents };
+}
+
+// Get referral stats for an influencer
+export async function getReferralStats(influencerId) {
+  const stats = await pool.query(
+    `SELECT 
+       i.referral_code,
+       i.referral_count,
+       i.referral_earnings_cents,
+       (SELECT COUNT(*) FROM influencer_referrals WHERE referrer_id = $1 AND status = 'active') as active_referrals
+     FROM influencers i
+     WHERE i.id = $1`,
+    [influencerId]
+  );
+  
+  const referrals = await pool.query(
+    `SELECT 
+       ir.created_at,
+       ir.status,
+       ir.bonus_paid_cents,
+       ir.first_mission_at,
+       i.name,
+       i.missions_completed
+     FROM influencer_referrals ir
+     JOIN influencers i ON ir.referred_id = i.id
+     WHERE ir.referrer_id = $1
+     ORDER BY ir.created_at DESC
+     LIMIT 20`,
+    [influencerId]
+  );
+  
+  return {
+    ...stats.rows[0],
+    referrals: referrals.rows
+  };
 }

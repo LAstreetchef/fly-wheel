@@ -26,6 +26,9 @@ import {
   getAllInfluencersAdmin,
   getPendingPayouts,
   completePayout,
+  getOrCreateReferralCode,
+  processReferralSignup,
+  getReferralStats,
 } from '../db/influencers.js';
 
 const router = express.Router();
@@ -59,7 +62,7 @@ function influencerAuth(req, res, next) {
 // POST /api/influencers/signup
 router.post('/signup', async (req, res) => {
   try {
-    const { email, password, name } = req.body;
+    const { email, password, name, referral_code } = req.body;
     
     if (!email || !password) {
       return res.status(400).json({ error: 'Email and password required' });
@@ -72,6 +75,11 @@ router.post('/signup', async (req, res) => {
     }
     
     const influencer = await createInfluencer({ email, password, name: name || email.split('@')[0] });
+    
+    // Process referral if code provided
+    if (referral_code) {
+      await processReferralSignup(influencer.id, referral_code);
+    }
     
     const token = jwt.sign({ influencerId: influencer.id }, JWT_SECRET, { expiresIn: '30d' });
     
@@ -372,6 +380,69 @@ router.post('/admin/payouts/:id/complete', async (req, res) => {
   } catch (err) {
     console.error('Admin complete payout error:', err);
     res.status(500).json({ error: 'Failed to complete payout' });
+  }
+});
+
+// ============================================
+// Referral Routes
+// ============================================
+
+// GET /api/influencers/referral/code - Get or create referral code
+router.get('/referral/code', influencerAuth, async (req, res) => {
+  try {
+    const code = await getOrCreateReferralCode(req.influencerId);
+    const baseUrl = process.env.NODE_ENV === 'production' 
+      ? 'https://daufinder.com' 
+      : 'http://localhost:10000';
+    
+    res.json({
+      code,
+      link: `${baseUrl}/influencers?ref=${code}`,
+      share_text: `Join me on DAUinfluencers and get paid to share content! Use my code: ${code}`
+    });
+  } catch (err) {
+    console.error('Get referral code error:', err);
+    res.status(500).json({ error: 'Failed to get referral code' });
+  }
+});
+
+// GET /api/influencers/referral/stats - Get referral stats
+router.get('/referral/stats', influencerAuth, async (req, res) => {
+  try {
+    const stats = await getReferralStats(req.influencerId);
+    res.json(stats);
+  } catch (err) {
+    console.error('Get referral stats error:', err);
+    res.status(500).json({ error: 'Failed to get referral stats' });
+  }
+});
+
+// POST /api/influencers/referral/validate - Validate a referral code
+router.post('/referral/validate', async (req, res) => {
+  try {
+    const { code } = req.body;
+    if (!code) {
+      return res.status(400).json({ valid: false, error: 'Code required' });
+    }
+    
+    // Import pool for direct query
+    const { pool } = await import('../db/influencers.js');
+    const result = await pool.query(
+      'SELECT id, name FROM influencers WHERE referral_code = $1',
+      [code.toUpperCase()]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.json({ valid: false });
+    }
+    
+    res.json({
+      valid: true,
+      referrer_name: result.rows[0].name
+    });
+  } catch (err) {
+    console.error('Validate referral error:', err);
+    res.status(500).json({ valid: false, error: 'Validation failed' });
   }
 });
 
