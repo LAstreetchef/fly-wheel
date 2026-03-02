@@ -1,0 +1,1209 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>DAUinfluencers for Brands | Authentic Influence at Scale</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Playfair+Display:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #ffffff;
+      --bg-alt: #fafafa;
+      --card: #ffffff;
+      --border: #e0e0e0;
+      --text: #000000;
+      --text-dim: #666666;
+      --accent: #000000;
+      --green: #00a854;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    
+    .serif { font-family: 'Playfair Display', Georgia, serif; }
+    
+    /* Header */
+    .header {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      padding: 20px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      z-index: 100;
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .logo {
+      font-size: 18px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    
+    .header-nav {
+      display: flex;
+      gap: 32px;
+      align-items: center;
+    }
+    
+    .nav-link {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .nav-link:hover { color: var(--text); }
+    
+    .header-cta {
+      padding: 12px 24px;
+      background: var(--text);
+      border: none;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--bg);
+      cursor: pointer;
+      transition: all 0.2s;
+      text-decoration: none;
+    }
+    
+    .header-cta:hover { background: var(--text-dim); }
+    
+    /* Hero */
+    .hero {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      padding: 120px 40px 80px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .hero-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 80px;
+      align-items: center;
+    }
+    
+    .hero-left { max-width: 560px; }
+    
+    .hero-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    
+    .hero-title {
+      font-family: 'Playfair Display', serif;
+      font-size: clamp(42px, 5vw, 64px);
+      font-weight: 400;
+      line-height: 1.1;
+      letter-spacing: -2px;
+      margin-bottom: 32px;
+    }
+    
+    .hero-title em { font-style: italic; }
+    
+    .hero-desc {
+      font-size: 16px;
+      line-height: 1.7;
+      color: var(--text-dim);
+      margin-bottom: 40px;
+      max-width: 440px;
+    }
+    
+    .hero-cta {
+      display: inline-flex;
+      padding: 18px 48px;
+      background: var(--text);
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--bg);
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid var(--text);
+      text-decoration: none;
+    }
+    
+    .hero-cta:hover {
+      background: transparent;
+      color: var(--text);
+    }
+    
+    .hero-stats {
+      display: flex;
+      gap: 48px;
+      padding-top: 40px;
+      border-top: 1px solid var(--border);
+      margin-top: 40px;
+    }
+    
+    .stat-value {
+      font-size: 32px;
+      font-weight: 800;
+      letter-spacing: -1px;
+    }
+    
+    .stat-label {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+    
+    /* Hero Visual - Campaign Preview */
+    .hero-visual {
+      background: var(--bg-alt);
+      border: 1px solid var(--border);
+      padding: 32px;
+    }
+    
+    .campaign-preview {
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    
+    .campaign-header {
+      padding: 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .campaign-title {
+      font-size: 14px;
+      font-weight: 700;
+    }
+    
+    .campaign-status {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 6px 12px;
+      background: var(--green);
+      color: white;
+    }
+    
+    .campaign-stats-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .campaign-stat {
+      padding: 20px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    
+    .campaign-stat:last-child { border-right: none; }
+    
+    .campaign-stat-value {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    
+    .campaign-stat-label {
+      font-size: 10px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+    
+    .campaign-posts {
+      padding: 20px;
+    }
+    
+    .campaign-posts-title {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+    
+    .campaign-post-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .campaign-post-row:last-child { border-bottom: none; }
+    
+    .campaign-post-avatar {
+      width: 36px;
+      height: 36px;
+      object-fit: cover;
+    }
+    
+    .campaign-post-info { flex: 1; }
+    
+    .campaign-post-name {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .campaign-post-handle {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    
+    .campaign-post-reach {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .campaign-post-reach strong { color: var(--text); }
+    
+    /* Value Props */
+    .value-section {
+      padding: 120px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .section-header {
+      text-align: center;
+      max-width: 600px;
+      margin: 0 auto 80px;
+    }
+    
+    .section-tag {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 3px;
+      color: var(--text-dim);
+      margin-bottom: 16px;
+    }
+    
+    .section-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 42px;
+      font-weight: 400;
+      letter-spacing: -1px;
+    }
+    
+    .value-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      max-width: 1200px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+    }
+    
+    .value-card {
+      padding: 48px 40px;
+      border-right: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    
+    .value-card:last-child { border-right: none; }
+    
+    .value-card:hover { background: var(--bg-alt); }
+    
+    .value-icon {
+      width: 48px;
+      height: 48px;
+      border: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 24px;
+    }
+    
+    .value-title {
+      font-size: 18px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    
+    .value-desc {
+      font-size: 14px;
+      line-height: 1.7;
+      color: var(--text-dim);
+    }
+    
+    /* Pricing */
+    .pricing-section {
+      padding: 120px 40px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-alt);
+    }
+    
+    .pricing-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      max-width: 1000px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+    }
+    
+    .pricing-card {
+      padding: 48px 40px;
+      background: var(--bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .pricing-card:last-child { border-right: none; }
+    
+    .pricing-card.featured {
+      background: var(--text);
+      color: var(--bg);
+    }
+    
+    .pricing-card.featured .pricing-label,
+    .pricing-card.featured .pricing-feature {
+      color: rgba(255,255,255,0.7);
+    }
+    
+    .pricing-card.featured .pricing-feature strong {
+      color: var(--bg);
+    }
+    
+    .pricing-name {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+    
+    .pricing-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 24px;
+    }
+    
+    .pricing-price {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      margin-bottom: 4px;
+    }
+    
+    .pricing-per {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-bottom: 32px;
+    }
+    
+    .pricing-features {
+      list-style: none;
+      flex: 1;
+      margin-bottom: 32px;
+    }
+    
+    .pricing-feature {
+      padding: 12px 0;
+      font-size: 13px;
+      color: var(--text-dim);
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .pricing-card.featured .pricing-feature {
+      border-color: rgba(255,255,255,0.1);
+    }
+    
+    .pricing-feature strong { color: var(--text); }
+    
+    .pricing-cta {
+      padding: 16px;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 2px solid var(--text);
+      background: transparent;
+      color: var(--text);
+      text-decoration: none;
+      display: block;
+    }
+    
+    .pricing-cta:hover {
+      background: var(--text);
+      color: var(--bg);
+    }
+    
+    .pricing-card.featured .pricing-cta {
+      border-color: var(--bg);
+      color: var(--bg);
+    }
+    
+    .pricing-card.featured .pricing-cta:hover {
+      background: var(--bg);
+      color: var(--text);
+    }
+    
+    /* How It Works */
+    .how-section {
+      padding: 120px 40px;
+      border-bottom: 1px solid var(--border);
+    }
+    
+    .how-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      max-width: 1200px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+    }
+    
+    .how-step {
+      padding: 40px 32px;
+      border-right: 1px solid var(--border);
+      position: relative;
+    }
+    
+    .how-step:last-child { border-right: none; }
+    
+    .how-num {
+      font-size: 64px;
+      font-weight: 800;
+      color: var(--border);
+      line-height: 1;
+      margin-bottom: 24px;
+    }
+    
+    .how-title {
+      font-size: 16px;
+      font-weight: 700;
+      margin-bottom: 12px;
+    }
+    
+    .how-desc {
+      font-size: 13px;
+      line-height: 1.6;
+      color: var(--text-dim);
+    }
+    
+    /* Results */
+    .results-section {
+      padding: 120px 40px;
+      border-bottom: 1px solid var(--border);
+      background: var(--bg-alt);
+    }
+    
+    .results-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0;
+      max-width: 1200px;
+      margin: 0 auto;
+      border: 1px solid var(--border);
+      background: var(--bg);
+    }
+    
+    .result-card {
+      padding: 48px 32px;
+      text-align: center;
+      border-right: 1px solid var(--border);
+    }
+    
+    .result-card:last-child { border-right: none; }
+    
+    .result-value {
+      font-size: 48px;
+      font-weight: 800;
+      letter-spacing: -2px;
+      margin-bottom: 8px;
+    }
+    
+    .result-label {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+    }
+    
+    /* CTA Section */
+    .cta-section {
+      padding: 120px 40px;
+      text-align: center;
+    }
+    
+    .cta-title {
+      font-family: 'Playfair Display', serif;
+      font-size: 48px;
+      font-weight: 400;
+      letter-spacing: -1px;
+      margin-bottom: 24px;
+    }
+    
+    .cta-desc {
+      font-size: 16px;
+      color: var(--text-dim);
+      max-width: 500px;
+      margin: 0 auto 40px;
+      line-height: 1.7;
+    }
+    
+    .cta-form {
+      max-width: 500px;
+      margin: 0 auto;
+    }
+    
+    .cta-input-row {
+      display: flex;
+      gap: 0;
+      border: 1px solid var(--border);
+    }
+    
+    .cta-input {
+      flex: 1;
+      padding: 18px 20px;
+      font-size: 15px;
+      border: none;
+      font-family: inherit;
+    }
+    
+    .cta-input:focus { outline: none; }
+    
+    .cta-submit {
+      padding: 18px 32px;
+      background: var(--text);
+      border: none;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--bg);
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    
+    .cta-submit:hover { background: var(--text-dim); }
+    
+    /* Footer */
+    .footer {
+      padding: 40px;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .footer-logo {
+      font-size: 14px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .footer-links {
+      display: flex;
+      gap: 32px;
+    }
+    
+    .footer-link {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    
+    .footer-link:hover { color: var(--text); }
+    
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.95);
+      backdrop-filter: blur(8px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2000;
+      padding: 20px;
+      overflow-y: auto;
+    }
+    
+    .modal-overlay.active { display: flex; }
+    
+    .modal {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      width: 100%;
+      max-width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
+      animation: modalIn 0.3s ease;
+    }
+    
+    @keyframes modalIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    
+    .modal-header {
+      padding: 24px 24px 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .modal-close {
+      width: 36px;
+      height: 36px;
+      background: transparent;
+      border: 1px solid var(--border);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+    }
+    
+    .modal-close:hover { border-color: var(--text); }
+    
+    .modal-body { padding: 24px; }
+    
+    .form-group { margin-bottom: 20px; }
+    
+    .form-label {
+      display: block;
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    
+    .form-input {
+      width: 100%;
+      padding: 14px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      font-size: 15px;
+      color: var(--text);
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--text);
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    
+    .modal-btn {
+      width: 100%;
+      padding: 16px;
+      background: var(--text);
+      border: none;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--bg);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .modal-btn:hover { background: var(--text-dim); }
+    
+    /* Loading */
+    .loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(255,255,255,0.95);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 20px;
+      z-index: 3000;
+    }
+    
+    .loading-overlay.active { display: flex; }
+    
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 2px solid var(--border);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin { to { transform: rotate(360deg); } }
+    
+    .loading-text {
+      font-size: 12px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      color: var(--text-dim);
+    }
+    
+    /* Mobile */
+    @media (max-width: 1024px) {
+      .hero-content { grid-template-columns: 1fr; gap: 60px; }
+      .hero-visual { display: none; }
+      .value-grid, .pricing-grid { grid-template-columns: 1fr; }
+      .value-card, .pricing-card { border-right: none; border-bottom: 1px solid var(--border); }
+      .value-card:last-child, .pricing-card:last-child { border-bottom: none; }
+      .how-grid { grid-template-columns: repeat(2, 1fr); }
+      .how-step { border-bottom: 1px solid var(--border); }
+      .how-step:nth-child(2), .how-step:nth-child(4) { border-right: none; }
+      .results-grid { grid-template-columns: repeat(2, 1fr); }
+      .result-card { border-bottom: 1px solid var(--border); }
+      .result-card:nth-child(2), .result-card:nth-child(4) { border-right: none; }
+    }
+    
+    @media (max-width: 640px) {
+      .header { padding: 16px 20px; }
+      .header-nav { gap: 16px; }
+      .nav-link { display: none; }
+      .hero { padding: 100px 20px 60px; }
+      .hero-stats { flex-direction: column; gap: 24px; }
+      .section-title { font-size: 32px; }
+      .how-grid, .results-grid { grid-template-columns: 1fr; }
+      .how-step, .result-card { border-right: none; }
+      .cta-input-row { flex-direction: column; }
+      .footer { flex-direction: column; gap: 24px; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+  
+  <!-- Header -->
+  <header class="header">
+    <a href="/influencers" class="logo">DAUinfluencers</a>
+    <nav class="header-nav">
+      <a href="#pricing" class="nav-link">Pricing</a>
+      <a href="#how" class="nav-link">How It Works</a>
+      <a href="/influencers" class="nav-link">For Creators</a>
+      <button class="header-cta" onclick="openModal('signup')">Start Campaign</button>
+    </nav>
+  </header>
+  
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-content">
+      <div class="hero-left">
+        <div class="hero-tag">For Brands & Marketers</div>
+        <h1 class="hero-title">Authentic <em>Influence</em> at Scale</h1>
+        <p class="hero-desc">
+          Access 2,800+ verified creators across Twitter, Instagram, TikTok, and LinkedIn. 
+          Launch campaigns in minutes. Pay only for real posts.
+        </p>
+        <a href="#" class="hero-cta" onclick="openModal('signup'); return false;">Launch a Campaign</a>
+        
+        <div class="hero-stats">
+          <div>
+            <div class="stat-value">2,847</div>
+            <div class="stat-label">Active Creators</div>
+          </div>
+          <div>
+            <div class="stat-value">47M</div>
+            <div class="stat-label">Combined Reach</div>
+          </div>
+          <div>
+            <div class="stat-value">4.2%</div>
+            <div class="stat-label">Avg Engagement</div>
+          </div>
+        </div>
+      </div>
+      
+      <div class="hero-visual">
+        <div class="campaign-preview">
+          <div class="campaign-header">
+            <div class="campaign-title">Notion AI Launch</div>
+            <div class="campaign-status">Active</div>
+          </div>
+          <div class="campaign-stats-row">
+            <div class="campaign-stat">
+              <div class="campaign-stat-value">24</div>
+              <div class="campaign-stat-label">Posts</div>
+            </div>
+            <div class="campaign-stat">
+              <div class="campaign-stat-value">892K</div>
+              <div class="campaign-stat-label">Reach</div>
+            </div>
+            <div class="campaign-stat">
+              <div class="campaign-stat-value">34K</div>
+              <div class="campaign-stat-label">Engagements</div>
+            </div>
+            <div class="campaign-stat">
+              <div class="campaign-stat-value">$0.12</div>
+              <div class="campaign-stat-label">CPE</div>
+            </div>
+          </div>
+          <div class="campaign-posts">
+            <div class="campaign-posts-title">Recent Posts</div>
+            <div class="campaign-post-row">
+              <img class="campaign-post-avatar" src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=72&h=72&fit=crop&crop=face" alt="">
+              <div class="campaign-post-info">
+                <div class="campaign-post-name">Sarah Chen</div>
+                <div class="campaign-post-handle">@sarahtech</div>
+              </div>
+              <div class="campaign-post-reach"><strong>89K</strong> reach</div>
+            </div>
+            <div class="campaign-post-row">
+              <img class="campaign-post-avatar" src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=72&h=72&fit=crop&crop=face" alt="">
+              <div class="campaign-post-info">
+                <div class="campaign-post-name">Josh Martinez</div>
+                <div class="campaign-post-handle">@devjosh</div>
+              </div>
+              <div class="campaign-post-reach"><strong>124K</strong> reach</div>
+            </div>
+            <div class="campaign-post-row">
+              <img class="campaign-post-avatar" src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=72&h=72&fit=crop&crop=face" alt="">
+              <div class="campaign-post-info">
+                <div class="campaign-post-name">Alex Rivera</div>
+                <div class="campaign-post-handle">@alexfinance</div>
+              </div>
+              <div class="campaign-post-reach"><strong>91K</strong> reach</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Value Props -->
+  <section class="value-section">
+    <div class="section-header">
+      <div class="section-tag">Why Brands Choose Us</div>
+      <h2 class="section-title">Marketing That Feels Real</h2>
+    </div>
+    <div class="value-grid">
+      <div class="value-card">
+        <div class="value-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3 class="value-title">Real People, Real Voices</h3>
+        <p class="value-desc">Every creator is verified with real followers and genuine engagement. No bots. No fake accounts. Just authentic influence.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/></svg>
+        </div>
+        <h3 class="value-title">Pay Per Post</h3>
+        <p class="value-desc">No subscriptions. No minimums. Pay only when a verified post goes live. Full transparency on pricing and reach.</p>
+      </div>
+      <div class="value-card">
+        <div class="value-icon">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+        </div>
+        <h3 class="value-title">Launch in Minutes</h3>
+        <p class="value-desc">Create a campaign, set your budget, and watch posts roll in. Our AI matches you with the right creators automatically.</p>
+      </div>
+    </div>
+  </section>
+  
+  <!-- How It Works -->
+  <section class="how-section" id="how">
+    <div class="section-header">
+      <div class="section-tag">How It Works</div>
+      <h2 class="section-title">Four Simple Steps</h2>
+    </div>
+    <div class="how-grid">
+      <div class="how-step">
+        <div class="how-num">01</div>
+        <h3 class="how-title">Create Campaign</h3>
+        <p class="how-desc">Tell us about your product, target audience, and goals. Set your budget and timeline.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">02</div>
+        <h3 class="how-title">AI Matching</h3>
+        <p class="how-desc">Our algorithm finds creators whose audience matches your target market and brand voice.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">03</div>
+        <h3 class="how-title">Posts Go Live</h3>
+        <p class="how-desc">Creators share authentic content about your product. Each post is verified automatically.</p>
+      </div>
+      <div class="how-step">
+        <div class="how-num">04</div>
+        <h3 class="how-title">Track Results</h3>
+        <p class="how-desc">Monitor reach, engagement, and ROI in real-time. Pay only for verified performance.</p>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Pricing -->
+  <section class="pricing-section" id="pricing">
+    <div class="section-header">
+      <div class="section-tag">Simple Pricing</div>
+      <h2 class="section-title">Choose Your Plan</h2>
+    </div>
+    <div class="pricing-grid">
+      <div class="pricing-card">
+        <div class="pricing-name">Starter</div>
+        <div class="pricing-label">Test the waters</div>
+        <div class="pricing-price">$99</div>
+        <div class="pricing-per">one-time</div>
+        <ul class="pricing-features">
+          <li class="pricing-feature"><strong>10 posts</strong> included</li>
+          <li class="pricing-feature">Up to <strong>100K</strong> reach</li>
+          <li class="pricing-feature"><strong>1 platform</strong></li>
+          <li class="pricing-feature">Basic targeting</li>
+          <li class="pricing-feature">Email support</li>
+        </ul>
+        <a href="#" class="pricing-cta" onclick="openModal('signup'); return false;">Get Started</a>
+      </div>
+      <div class="pricing-card featured">
+        <div class="pricing-name">Growth</div>
+        <div class="pricing-label">Most popular</div>
+        <div class="pricing-price">$499</div>
+        <div class="pricing-per">per month</div>
+        <ul class="pricing-features">
+          <li class="pricing-feature"><strong>50 posts</strong> per month</li>
+          <li class="pricing-feature">Up to <strong>500K</strong> reach</li>
+          <li class="pricing-feature"><strong>All platforms</strong></li>
+          <li class="pricing-feature">Advanced targeting</li>
+          <li class="pricing-feature">Priority support</li>
+        </ul>
+        <a href="#" class="pricing-cta" onclick="openModal('signup'); return false;">Start Free Trial</a>
+      </div>
+      <div class="pricing-card">
+        <div class="pricing-name">Scale</div>
+        <div class="pricing-label">High volume</div>
+        <div class="pricing-price">$1,999</div>
+        <div class="pricing-per">per month</div>
+        <ul class="pricing-features">
+          <li class="pricing-feature"><strong>250 posts</strong> per month</li>
+          <li class="pricing-feature"><strong>Unlimited</strong> reach</li>
+          <li class="pricing-feature"><strong>All platforms</strong></li>
+          <li class="pricing-feature">Custom targeting</li>
+          <li class="pricing-feature">Dedicated manager</li>
+        </ul>
+        <a href="#" class="pricing-cta" onclick="openModal('signup'); return false;">Contact Sales</a>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Results -->
+  <section class="results-section">
+    <div class="section-header">
+      <div class="section-tag">The Numbers</div>
+      <h2 class="section-title">Results That Matter</h2>
+    </div>
+    <div class="results-grid">
+      <div class="result-card">
+        <div class="result-value">$0.08</div>
+        <div class="result-label">Avg Cost Per Engagement</div>
+      </div>
+      <div class="result-card">
+        <div class="result-value">4.2%</div>
+        <div class="result-label">Avg Engagement Rate</div>
+      </div>
+      <div class="result-card">
+        <div class="result-value">12x</div>
+        <div class="result-label">ROI vs Traditional Ads</div>
+      </div>
+      <div class="result-card">
+        <div class="result-value">94%</div>
+        <div class="result-label">Brand Satisfaction</div>
+      </div>
+    </div>
+  </section>
+  
+  <!-- CTA -->
+  <section class="cta-section">
+    <h2 class="cta-title serif">Ready to Grow?</h2>
+    <p class="cta-desc">Join 200+ brands using authentic influence to reach their audience. Start your first campaign today.</p>
+    <div class="cta-form">
+      <div class="cta-input-row">
+        <input type="email" class="cta-input" placeholder="Enter your work email" id="ctaEmail">
+        <button class="cta-submit" onclick="submitEmail()">Get Started</button>
+      </div>
+    </div>
+  </section>
+  
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="footer-logo">DAUinfluencers</div>
+    <div class="footer-links">
+      <a href="#" class="footer-link">Terms</a>
+      <a href="#" class="footer-link">Privacy</a>
+      <a href="#" class="footer-link">Contact</a>
+      <a href="/influencers" class="footer-link">For Creators</a>
+    </div>
+  </footer>
+  
+  <!-- Loading -->
+  <div class="loading-overlay" id="loading">
+    <div class="spinner"></div>
+    <div class="loading-text" id="loadingText">Processing...</div>
+  </div>
+  
+  <!-- Signup Modal -->
+  <div class="modal-overlay" id="signupModal">
+    <div class="modal">
+      <div class="modal-header">
+        <div class="modal-title">Start Campaign</div>
+        <button class="modal-close" onclick="closeModal('signup')">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Company Name</label>
+          <input type="text" class="form-input" id="companyName" placeholder="Your company">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Work Email</label>
+          <input type="email" class="form-input" id="workEmail" placeholder="you@company.com">
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Product / Campaign</label>
+          <input type="text" class="form-input" id="productName" placeholder="What are you promoting?">
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Budget</label>
+            <select class="form-input" id="budget">
+              <option value="">Select budget</option>
+              <option value="99">$99 (Starter)</option>
+              <option value="499">$499/mo (Growth)</option>
+              <option value="1999">$1,999/mo (Scale)</option>
+              <option value="custom">Custom</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Platform</label>
+            <select class="form-input" id="platform">
+              <option value="">Select platform</option>
+              <option value="twitter">X / Twitter</option>
+              <option value="instagram">Instagram</option>
+              <option value="tiktok">TikTok</option>
+              <option value="linkedin">LinkedIn</option>
+              <option value="all">All Platforms</option>
+            </select>
+          </div>
+        </div>
+        
+        <div class="form-group">
+          <label class="form-label">Campaign Brief (Optional)</label>
+          <textarea class="form-input" id="brief" rows="3" placeholder="Tell us about your goals..."></textarea>
+        </div>
+        
+        <button class="modal-btn" onclick="submitSignup()">Launch Campaign</button>
+        <p style="text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 16px;">
+          We'll reach out within 24 hours to finalize your campaign.
+        </p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    function showLoading(text) {
+      document.getElementById('loadingText').textContent = text;
+      document.getElementById('loading').classList.add('active');
+    }
+    
+    function hideLoading() {
+      document.getElementById('loading').classList.remove('active');
+    }
+    
+    function openModal(name) {
+      document.getElementById(name + 'Modal').classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+    
+    function closeModal(name) {
+      document.getElementById(name + 'Modal').classList.remove('active');
+      document.body.style.overflow = '';
+    }
+    
+    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+          overlay.classList.remove('active');
+          document.body.style.overflow = '';
+        }
+      });
+    });
+    
+    async function submitSignup() {
+      const company = document.getElementById('companyName').value;
+      const email = document.getElementById('workEmail').value;
+      const product = document.getElementById('productName').value;
+      
+      if (!company || !email || !product) {
+        alert('Please fill in company, email, and product name');
+        return;
+      }
+      
+      showLoading('Creating campaign...');
+      
+      // TODO: Send to backend
+      await new Promise(r => setTimeout(r, 1500));
+      
+      hideLoading();
+      closeModal('signup');
+      alert('🎉 Campaign request submitted! We\'ll reach out within 24 hours.');
+    }
+    
+    function submitEmail() {
+      const email = document.getElementById('ctaEmail').value;
+      if (!email) {
+        alert('Please enter your email');
+        return;
+      }
+      
+      document.getElementById('workEmail').value = email;
+      openModal('signup');
+    }
+  </script>
+</body>
+</html>
