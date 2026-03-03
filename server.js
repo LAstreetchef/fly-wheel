@@ -13,8 +13,10 @@ import { getOrCreateReferralCode, processReferral, getReferralStats, setPool as 
 import influencerRoutes from './server/routes/influencers.js';
 import campaignRoutes from './server/routes/campaigns.js';
 import oauthRoutes from './server/routes/oauth.js';
+import brandRoutes, { handleBrandPayment } from './server/routes/brands.js';
 import { setCreatorPool, initCreatorTables, createMission } from './server/db/influencers.js';
 import { initCampaignTables } from './server/db/campaigns.js';
+import { initBrandTables } from './server/db/brands.js';
 import Stripe from 'stripe';
 import Anthropic from '@anthropic-ai/sdk';
 import { TwitterApi } from 'twitter-api-v2';
@@ -489,6 +491,7 @@ if (usePostgres) {
   initAutoBoostsTable().catch(err => console.error('Auto-boosts table init failed:', err.message));
   initCreatorTables().catch(err => console.error('Creator tables init failed:', err.message));
   initCampaignTables().catch(err => console.error('Campaign tables init failed:', err.message));
+  initBrandTables().catch(err => console.error('Brand tables init failed:', err.message));
 }
 
 // ============================================
@@ -1053,6 +1056,7 @@ app.use('/api/', apiLimiter);
 app.use('/api/influencers', influencerRoutes);
 app.use('/api/campaigns', campaignRoutes);
 app.use('/api/oauth', oauthRoutes);
+app.use('/api/brands', brandRoutes);
 
 // Serve influencer dashboard (must be before catch-all)
 app.get('/influencers', (req, res) => {
@@ -1087,6 +1091,14 @@ app.get('/admin/campaigns', (req, res) => {
   const filePath = process.env.NODE_ENV === 'production' 
     ? join(__dirname, 'dist', 'admin-campaigns.html')
     : join(__dirname, 'public', 'admin-campaigns.html');
+  res.sendFile(filePath);
+});
+
+// Serve brand dashboard
+app.get('/brand-dashboard', (req, res) => {
+  const filePath = process.env.NODE_ENV === 'production' 
+    ? join(__dirname, 'dist', 'brand-dashboard.html')
+    : join(__dirname, 'public', 'brand-dashboard.html');
   res.sendFile(filePath);
 });
 
@@ -6996,6 +7008,17 @@ app.post('/webhook', async (req, res) => {
           });
           console.log(`✅ SXSW: New account created for ${email} | 25 boosts`);
         }
+      }
+      return res.json({ received: true });
+    }
+    
+    // Brand campaign or funds payment
+    if (session.metadata?.type === 'brand_campaign' || session.metadata?.type === 'brand_funds') {
+      try {
+        await handleBrandPayment(session);
+        console.log(`✅ Brand payment processed: ${session.metadata.type}`);
+      } catch (err) {
+        console.error('Brand payment error:', err);
       }
       return res.json({ received: true });
     }

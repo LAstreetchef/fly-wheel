@@ -1083,69 +1083,94 @@
     <div class="loading-text" id="loadingText">Processing...</div>
   </div>
   
-  <!-- Signup Modal -->
+  <!-- Signup Modal - Dead Simple -->
   <div class="modal-overlay" id="signupModal">
     <div class="modal">
       <div class="modal-header">
-        <div class="modal-title">Start Campaign</div>
+        <div class="modal-title">Launch Campaign</div>
         <button class="modal-close" onclick="closeModal('signup')">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
         </button>
       </div>
       <div class="modal-body">
         <div class="form-group">
-          <label class="form-label">Company Name</label>
-          <input type="text" class="form-input" id="companyName" placeholder="Your company">
-        </div>
-        
-        <div class="form-group">
-          <label class="form-label">Work Email</label>
+          <label class="form-label">Your Email</label>
           <input type="email" class="form-input" id="workEmail" placeholder="you@company.com">
         </div>
         
         <div class="form-group">
-          <label class="form-label">Product / Campaign</label>
-          <input type="text" class="form-input" id="productName" placeholder="What are you promoting?">
-        </div>
-        
-        <div class="form-row">
-          <div class="form-group">
-            <label class="form-label">Budget</label>
-            <select class="form-input" id="budget">
-              <option value="">Select budget</option>
-              <option value="99">$99 (Starter)</option>
-              <option value="499">$499/mo (Growth)</option>
-              <option value="1999">$1,999/mo (Scale)</option>
-              <option value="custom">Custom</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label class="form-label">Platform</label>
-            <select class="form-input" id="platform">
-              <option value="">Select platform</option>
-              <option value="twitter">X / Twitter</option>
-              <option value="instagram">Instagram</option>
-              <option value="tiktok">TikTok</option>
-              <option value="linkedin">LinkedIn</option>
-              <option value="all">All Platforms</option>
-            </select>
-          </div>
+          <label class="form-label">What are you promoting?</label>
+          <input type="text" class="form-input" id="productName" placeholder="My App, Album, Product...">
+          <p style="font-size: 11px; color: var(--text-dim); margin-top: 6px;">We handle everything — finding creators, content, posting.</p>
         </div>
         
         <div class="form-group">
-          <label class="form-label">Campaign Brief (Optional)</label>
-          <textarea class="form-input" id="brief" rows="3" placeholder="Tell us about your goals..."></textarea>
+          <label class="form-label">Budget</label>
+          <div class="budget-selector">
+            <button class="budget-btn" data-amount="50" onclick="selectBudget(this)">
+              <span class="budget-amount">$50</span>
+              <span class="budget-posts">~25 posts</span>
+            </button>
+            <button class="budget-btn selected" data-amount="200" onclick="selectBudget(this)">
+              <span class="budget-amount">$200</span>
+              <span class="budget-posts">~100 posts</span>
+            </button>
+            <button class="budget-btn" data-amount="500" onclick="selectBudget(this)">
+              <span class="budget-amount">$500</span>
+              <span class="budget-posts">~250 posts</span>
+            </button>
+          </div>
         </div>
         
-        <button class="modal-btn" onclick="submitSignup()">Launch Campaign</button>
-        <p style="text-align: center; color: var(--text-dim); font-size: 11px; margin-top: 16px;">
-          We'll reach out within 24 hours to finalize your campaign.
-        </p>
+        <button class="modal-btn" onclick="submitSignup()">Continue to Payment →</button>
       </div>
     </div>
   </div>
   
+  <style>
+    .budget-selector {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    .budget-btn {
+      padding: 16px 12px;
+      border: 2px solid var(--border);
+      background: var(--bg);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .budget-btn:hover {
+      border-color: var(--text);
+    }
+    .budget-btn.selected {
+      border-color: var(--text);
+      background: var(--bg-alt);
+    }
+    .budget-amount {
+      font-size: 20px;
+      font-weight: 800;
+    }
+    .budget-posts {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+  </style>
+  
   <script>
+    let selectedBudget = '200';
+    
+    function selectBudget(btn) {
+      document.querySelectorAll('.budget-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      selectedBudget = btn.dataset.amount;
+    }
+    
     function showLoading(text) {
       document.getElementById('loadingText').textContent = text;
       document.getElementById('loading').classList.add('active');
@@ -1175,23 +1200,35 @@
     });
     
     async function submitSignup() {
-      const company = document.getElementById('companyName').value;
-      const email = document.getElementById('workEmail').value;
-      const product = document.getElementById('productName').value;
+      const email = document.getElementById('workEmail').value.trim();
+      const product = document.getElementById('productName').value.trim();
       
-      if (!company || !email || !product) {
-        alert('Please fill in company, email, and product name');
+      if (!email || !product) {
+        alert('Please enter your email and what you\'re promoting');
         return;
       }
       
-      showLoading('Creating campaign...');
+      showLoading('Setting up checkout...');
       
-      // TODO: Send to backend
-      await new Promise(r => setTimeout(r, 1500));
-      
-      hideLoading();
-      closeModal('signup');
-      alert('🎉 Campaign request submitted! We\'ll reach out within 24 hours.');
+      try {
+        const res = await fetch('/api/brands/signup', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, product, budget: selectedBudget })
+        });
+        
+        const data = await res.json();
+        
+        if (data.checkout_url) {
+          window.location.href = data.checkout_url;
+        } else {
+          hideLoading();
+          alert(data.error || 'Something went wrong');
+        }
+      } catch (err) {
+        hideLoading();
+        alert('Network error. Please try again.');
+      }
     }
     
     function submitEmail() {

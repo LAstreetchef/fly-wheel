@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Brand Dashboard | DAUinfluencers</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    
+    :root {
+      --bg: #ffffff;
+      --bg-alt: #f9fafb;
+      --card: #ffffff;
+      --border: #e5e7eb;
+      --text: #111827;
+      --text-dim: #6b7280;
+      --accent: #000000;
+      --green: #10b981;
+      --yellow: #f59e0b;
+    }
+    
+    body {
+      font-family: 'Inter', -apple-system, sans-serif;
+      background: var(--bg-alt);
+      color: var(--text);
+      min-height: 100vh;
+    }
+    
+    /* Header */
+    .header {
+      background: var(--bg);
+      border-bottom: 1px solid var(--border);
+      padding: 16px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .logo {
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-decoration: none;
+      color: var(--text);
+    }
+    
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    
+    .balance-pill {
+      background: var(--bg-alt);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 13px;
+      font-weight: 600;
+    }
+    
+    .balance-pill strong {
+      color: var(--green);
+    }
+    
+    /* Main Content */
+    .main {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 32px 24px;
+    }
+    
+    /* Welcome Card */
+    .welcome-card {
+      background: var(--text);
+      color: white;
+      padding: 32px;
+      margin-bottom: 24px;
+      border-radius: 12px;
+    }
+    
+    .welcome-title {
+      font-size: 24px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+    
+    .welcome-desc {
+      opacity: 0.8;
+      font-size: 14px;
+    }
+    
+    /* Stats Row */
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .stat-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 28px;
+      font-weight: 800;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 4px;
+    }
+    
+    /* Section */
+    .section {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+    
+    .section-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .section-body {
+      padding: 20px;
+    }
+    
+    /* New Campaign Form */
+    .campaign-form {
+      display: grid;
+      gap: 16px;
+    }
+    
+    .form-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    
+    .form-label {
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-dim);
+    }
+    
+    .form-input {
+      padding: 12px 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 15px;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+    
+    .form-input:focus {
+      outline: none;
+      border-color: var(--text);
+    }
+    
+    .form-hint {
+      font-size: 11px;
+      color: var(--text-dim);
+    }
+    
+    /* Budget Selector */
+    .budget-options {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 12px;
+    }
+    
+    .budget-option {
+      padding: 16px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .budget-option:hover {
+      border-color: var(--text);
+    }
+    
+    .budget-option.selected {
+      border-color: var(--text);
+      background: var(--bg-alt);
+    }
+    
+    .budget-amount {
+      font-size: 24px;
+      font-weight: 800;
+    }
+    
+    .budget-posts {
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 4px;
+    }
+    
+    /* Submit Button */
+    .btn {
+      padding: 14px 24px;
+      background: var(--text);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 13px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+    
+    .btn:hover {
+      opacity: 0.9;
+    }
+    
+    .btn:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+    
+    .btn-secondary {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    
+    /* Campaign List */
+    .campaign-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    
+    .campaign-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+    }
+    
+    .campaign-info {
+      flex: 1;
+    }
+    
+    .campaign-name {
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    
+    .campaign-meta {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .campaign-stats {
+      display: flex;
+      gap: 16px;
+      text-align: center;
+    }
+    
+    .campaign-stat-value {
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .campaign-stat-label {
+      font-size: 10px;
+      color: var(--text-dim);
+      text-transform: uppercase;
+    }
+    
+    .status-badge {
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+    }
+    
+    .status-active {
+      background: #dcfce7;
+      color: #166534;
+    }
+    
+    .status-pending {
+      background: #fef3c7;
+      color: #92400e;
+    }
+    
+    /* Empty State */
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-dim);
+    }
+    
+    .empty-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
+    }
+    
+    /* Loading */
+    .loading {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 60px;
+    }
+    
+    .spinner {
+      width: 32px;
+      height: 32px;
+      border: 3px solid var(--border);
+      border-top-color: var(--text);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+    
+    /* Toast */
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      background: var(--text);
+      color: white;
+      padding: 14px 20px;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 500;
+      transform: translateY(100px);
+      opacity: 0;
+      transition: all 0.3s;
+    }
+    
+    .toast.show {
+      transform: translateY(0);
+      opacity: 1;
+    }
+    
+    /* Mobile */
+    @media (max-width: 600px) {
+      .stats-row {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      
+      .budget-options {
+        grid-template-columns: 1fr;
+      }
+      
+      .campaign-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <a href="/brands" class="logo">DAUinfluencers</a>
+    <div class="header-right">
+      <div class="balance-pill" id="balancePill">
+        Balance: <strong>$0</strong>
+      </div>
+    </div>
+  </header>
+  
+  <!-- Main -->
+  <main class="main" id="main">
+    <div class="loading">
+      <div class="spinner"></div>
+    </div>
+  </main>
+  
+  <!-- Toast -->
+  <div class="toast" id="toast"></div>
+  
+  <script>
+    const API = '';
+    let token = null;
+    let brand = null;
+    
+    // Get token from URL
+    const params = new URLSearchParams(window.location.search);
+    token = params.get('token');
+    
+    if (!token) {
+      window.location.href = '/brands';
+    }
+    
+    // Show toast
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+    
+    // Format currency
+    function fmt(cents) {
+      return '$' + (cents / 100).toFixed(0);
+    }
+    
+    // API call
+    async function api(path, options = {}) {
+      const res = await fetch(API + path, {
+        ...options,
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+          ...options.headers
+        }
+      });
+      return res.json();
+    }
+    
+    // Render dashboard
+    function render() {
+      const isNew = params.get('new') === '1';
+      const isFunded = params.get('funded') === '1';
+      
+      document.getElementById('balancePill').innerHTML = 
+        `Balance: <strong>${fmt(brand.balance_cents || 0)}</strong>`;
+      
+      const main = document.getElementById('main');
+      main.innerHTML = `
+        ${isNew ? `
+          <div class="welcome-card">
+            <div class="welcome-title">🎉 Campaign Created!</div>
+            <div class="welcome-desc">Your campaign is live. Influencers will start posting about your product soon.</div>
+          </div>
+        ` : ''}
+        
+        ${isFunded ? `
+          <div class="welcome-card" style="background: var(--green);">
+            <div class="welcome-title">✓ Funds Added!</div>
+            <div class="welcome-desc">Your balance has been updated.</div>
+          </div>
+        ` : ''}
+        
+        <!-- Stats -->
+        <div class="stats-row">
+          <div class="stat-card">
+            <div class="stat-value">${brand.campaigns || 0}</div>
+            <div class="stat-label">Campaigns</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${brand.verified_posts || 0}</div>
+            <div class="stat-label">Posts Live</div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-value">${brand.pending_posts || 0}</div>
+            <div class="stat-label">Pending</div>
+          </div>
+        </div>
+        
+        <!-- New Campaign -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">New Campaign</div>
+          </div>
+          <div class="section-body">
+            <div class="campaign-form">
+              <div class="form-group">
+                <label class="form-label">What are you promoting?</label>
+                <input type="text" class="form-input" id="productInput" placeholder="e.g. My SaaS App, New Album, Product Launch...">
+                <div class="form-hint">We'll handle the rest — finding influencers, creating content, posting.</div>
+              </div>
+              
+              <div class="form-group">
+                <label class="form-label">Budget</label>
+                <div class="budget-options" id="budgetOptions">
+                  <div class="budget-option" data-amount="50">
+                    <div class="budget-amount">$50</div>
+                    <div class="budget-posts">~25 posts</div>
+                  </div>
+                  <div class="budget-option selected" data-amount="200">
+                    <div class="budget-amount">$200</div>
+                    <div class="budget-posts">~100 posts</div>
+                  </div>
+                  <div class="budget-option" data-amount="500">
+                    <div class="budget-amount">$500</div>
+                    <div class="budget-posts">~250 posts</div>
+                  </div>
+                </div>
+              </div>
+              
+              <button class="btn" onclick="launchCampaign()">Launch Campaign</button>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Campaigns -->
+        <div class="section">
+          <div class="section-header">
+            <div class="section-title">Your Campaigns</div>
+          </div>
+          <div class="section-body" id="campaignsList">
+            <div class="loading"><div class="spinner"></div></div>
+          </div>
+        </div>
+      `;
+      
+      // Budget selection
+      document.querySelectorAll('.budget-option').forEach(opt => {
+        opt.onclick = () => {
+          document.querySelectorAll('.budget-option').forEach(o => o.classList.remove('selected'));
+          opt.classList.add('selected');
+        };
+      });
+      
+      // Load campaigns
+      loadCampaigns();
+    }
+    
+    // Load campaigns
+    async function loadCampaigns() {
+      const data = await api('/api/brands/campaigns');
+      const list = document.getElementById('campaignsList');
+      
+      if (!data.campaigns || data.campaigns.length === 0) {
+        list.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-icon">📢</div>
+            <div>No campaigns yet. Launch your first one above!</div>
+          </div>
+        `;
+        return;
+      }
+      
+      list.innerHTML = `
+        <div class="campaign-list">
+          ${data.campaigns.map(c => `
+            <div class="campaign-item">
+              <div class="campaign-info">
+                <div class="campaign-name">${c.name}</div>
+                <div class="campaign-meta">
+                  Budget: ${fmt(c.budget_cents)} · Created ${new Date(c.created_at).toLocaleDateString()}
+                </div>
+              </div>
+              <span class="status-badge status-${c.status === 'active' ? 'active' : 'pending'}">${c.status}</span>
+              <div class="campaign-stats">
+                <div>
+                  <div class="campaign-stat-value">${c.verified_posts || 0}</div>
+                  <div class="campaign-stat-label">Posts</div>
+                </div>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      `;
+    }
+    
+    // Launch campaign
+    async function launchCampaign() {
+      const product = document.getElementById('productInput').value.trim();
+      const budgetEl = document.querySelector('.budget-option.selected');
+      const budget = budgetEl ? budgetEl.dataset.amount : '200';
+      
+      if (!product) {
+        showToast('Enter what you\'re promoting');
+        return;
+      }
+      
+      // Go to checkout
+      const data = await fetch('/api/brands/signup', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: brand.email,
+          product,
+          budget
+        })
+      }).then(r => r.json());
+      
+      if (data.checkout_url) {
+        window.location.href = data.checkout_url;
+      } else {
+        showToast(data.error || 'Something went wrong');
+      }
+    }
+    
+    // Init
+    async function init() {
+      const data = await api('/api/brands/me');
+      
+      if (data.error) {
+        showToast(data.error);
+        setTimeout(() => window.location.href = '/brands', 2000);
+        return;
+      }
+      
+      brand = data.brand;
+      render();
+    }
+    
+    init();
+  </script>
+</body>
+</html>
