@@ -262,7 +262,7 @@
     .mission-icon.instagram { background: linear-gradient(135deg, #f09433, #dc2743, #bc1888); color: white; }
     
     .mission-info { flex: 1; }
-    .mission-brand { font-size: 11px; color: var(--accent); font-weight: 600; text-transform: uppercase; }
+    .mission-brand { font-size: 11px; color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 0.5px; }
     .mission-title { font-size: 15px; font-weight: 600; margin-top: 2px; }
     
     .mission-payout {
@@ -275,6 +275,191 @@
       font-size: 13px;
       color: var(--text-dim);
       line-height: 1.5;
+    }
+    
+    .mission-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border);
+    }
+    
+    .mission-spots {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .mission-spots strong {
+      color: var(--text);
+    }
+    
+    .mission-claim-btn {
+      padding: 10px 20px;
+      background: var(--green);
+      border: none;
+      border-radius: 8px;
+      font-size: 12px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .mission-claim-btn:hover {
+      transform: scale(1.05);
+    }
+    
+    .mission-claim-btn:disabled {
+      background: var(--border);
+      color: var(--text-dim);
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    /* Campaign Detail Modal */
+    .campaign-modal {
+      max-width: 480px;
+    }
+    
+    .campaign-modal-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    
+    .campaign-logo {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      background: var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    
+    .campaign-meta h2 {
+      font-size: 20px;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    
+    .campaign-meta .brand-name {
+      font-size: 13px;
+      color: var(--accent);
+      font-weight: 600;
+    }
+    
+    .campaign-brief {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 20px;
+    }
+    
+    .campaign-brief-label {
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: var(--text-dim);
+      margin-bottom: 8px;
+    }
+    
+    .campaign-brief-text {
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--text);
+    }
+    
+    .campaign-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-bottom: 24px;
+    }
+    
+    .campaign-detail {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      text-align: center;
+    }
+    
+    .campaign-detail-value {
+      font-size: 22px;
+      font-weight: 800;
+    }
+    
+    .campaign-detail-value.green { color: var(--green); }
+    
+    .campaign-detail-label {
+      font-size: 11px;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    
+    .campaign-cta {
+      width: 100%;
+      padding: 18px;
+      background: var(--accent);
+      border: none;
+      border-radius: 14px;
+      font-size: 15px;
+      font-weight: 700;
+      color: white;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    
+    .campaign-cta:hover { opacity: 0.9; }
+    
+    .campaign-cta:disabled {
+      background: var(--border);
+      color: var(--text-dim);
+      cursor: not-allowed;
+    }
+    
+    .campaign-note {
+      text-align: center;
+      font-size: 12px;
+      color: var(--text-dim);
+      margin-top: 12px;
+    }
+    
+    .close-modal {
+      position: absolute;
+      top: 16px;
+      right: 16px;
+      width: 36px;
+      height: 36px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      color: var(--text);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .close-modal:hover { border-color: var(--text); }
+    
+    .empty-market {
+      text-align: center;
+      padding: 40px;
+      color: var(--text-dim);
+    }
+    
+    .empty-market-icon {
+      font-size: 48px;
+      margin-bottom: 16px;
     }
     
     /* Account Cards */
@@ -585,6 +770,20 @@
       </div>
     </div>
     
+    <!-- Influence Market -->
+    <div class="section">
+      <div class="section-header">
+        <h2 class="section-title">🏪 Influence Market</h2>
+        <span style="font-size: 12px; color: var(--text-dim);">Pick campaigns you believe in</span>
+      </div>
+      <div id="marketList">
+        <div class="empty-market">
+          <div class="empty-market-icon">⏳</div>
+          <div>Loading campaigns...</div>
+        </div>
+      </div>
+    </div>
+    
     <!-- Recent Activity -->
     <div class="section">
       <div class="section-header">
@@ -632,6 +831,49 @@
       <div class="form-switch">
         <span id="authSwitch">Don't have an account? <a href="#" onclick="toggleAuthMode()">Sign up</a></span>
       </div>
+    </div>
+  </div>
+  
+  <!-- Campaign Detail Modal -->
+  <div class="modal-overlay" id="campaignModal">
+    <div class="modal campaign-modal" style="position: relative;">
+      <button class="close-modal" onclick="closeCampaignModal()">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+      </button>
+      
+      <div class="campaign-modal-header">
+        <div class="campaign-logo" id="campaignLogo">🚀</div>
+        <div class="campaign-meta">
+          <h2 id="campaignTitle">Campaign Name</h2>
+          <div class="brand-name" id="campaignBrand">Brand</div>
+        </div>
+      </div>
+      
+      <div class="campaign-brief">
+        <div class="campaign-brief-label">What to post</div>
+        <div class="campaign-brief-text" id="campaignBrief">
+          Share your authentic thoughts about this product with your followers.
+        </div>
+      </div>
+      
+      <div class="campaign-details">
+        <div class="campaign-detail">
+          <div class="campaign-detail-value green" id="campaignPayout">$2</div>
+          <div class="campaign-detail-label">Per Post</div>
+        </div>
+        <div class="campaign-detail">
+          <div class="campaign-detail-value" id="campaignSpots">50</div>
+          <div class="campaign-detail-label">Spots Left</div>
+        </div>
+      </div>
+      
+      <button class="campaign-cta" id="campaignClaimBtn" onclick="claimCampaign()">
+        Claim This Mission
+      </button>
+      
+      <p class="campaign-note">
+        Post within 24 hours · Must be original content · Gets verified automatically
+      </p>
     </div>
   </div>
   
@@ -725,6 +967,9 @@
       
       // Load referral info
       loadReferralInfo();
+      
+      // Load influence market
+      loadMarket();
     }
     
     async function loadReferralInfo() {
@@ -765,6 +1010,123 @@
       }
       alert('Withdrawal coming soon! Your balance: $' + (balance/100).toFixed(2));
     }
+    
+    // ============ INFLUENCE MARKET ============
+    let campaigns = [];
+    let selectedCampaign = null;
+    
+    async function loadMarket() {
+      const data = await fetch('/api/campaigns/public/market').then(r => r.json());
+      campaigns = data.campaigns || [];
+      renderMarket();
+    }
+    
+    function renderMarket() {
+      const list = document.getElementById('marketList');
+      
+      if (!campaigns.length) {
+        list.innerHTML = `
+          <div class="empty-market">
+            <div class="empty-market-icon">🔜</div>
+            <div>No campaigns yet. Check back soon!</div>
+          </div>
+        `;
+        return;
+      }
+      
+      list.innerHTML = campaigns.map(c => `
+        <div class="mission-card" onclick="openCampaign(${c.id})">
+          <div class="mission-header">
+            <div class="mission-icon twitter">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </div>
+            <div class="mission-info">
+              <div class="mission-brand">${escapeHtml(c.brand)}</div>
+              <div class="mission-title">${escapeHtml(c.name)}</div>
+            </div>
+            <div class="mission-payout">$${(c.payout_cents / 100).toFixed(0)}</div>
+          </div>
+          <div class="mission-desc">${escapeHtml(c.description || 'Share your thoughts about this product')}</div>
+          <div class="mission-footer">
+            <div class="mission-spots"><strong>${c.spots_left}</strong> spots left</div>
+            <button class="mission-claim-btn" onclick="event.stopPropagation(); openCampaign(${c.id})">
+              View & Claim
+            </button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function openCampaign(id) {
+      selectedCampaign = campaigns.find(c => c.id === id);
+      if (!selectedCampaign) return;
+      
+      const c = selectedCampaign;
+      document.getElementById('campaignLogo').textContent = c.brand[0].toUpperCase();
+      document.getElementById('campaignTitle').textContent = c.name;
+      document.getElementById('campaignBrand').textContent = c.brand;
+      document.getElementById('campaignBrief').textContent = c.content_prompt || c.description || 'Share your authentic thoughts about this product.';
+      document.getElementById('campaignPayout').textContent = '$' + (c.payout_cents / 100).toFixed(0);
+      document.getElementById('campaignSpots').textContent = c.spots_left;
+      
+      const btn = document.getElementById('campaignClaimBtn');
+      if (c.spots_left <= 0) {
+        btn.disabled = true;
+        btn.textContent = 'No Spots Left';
+      } else if (c.already_claimed) {
+        btn.disabled = true;
+        btn.textContent = 'Already Claimed';
+      } else {
+        btn.disabled = false;
+        btn.textContent = 'Claim This Mission';
+      }
+      
+      document.getElementById('campaignModal').classList.add('active');
+    }
+    
+    function closeCampaignModal() {
+      document.getElementById('campaignModal').classList.remove('active');
+      selectedCampaign = null;
+    }
+    
+    async function claimCampaign() {
+      if (!selectedCampaign || !user) return;
+      
+      const btn = document.getElementById('campaignClaimBtn');
+      btn.disabled = true;
+      btn.textContent = 'Claiming...';
+      
+      const data = await api(`/missions/${selectedCampaign.mission_id}/claim`, {
+        method: 'POST'
+      });
+      
+      if (data.error) {
+        alert(data.error);
+        btn.disabled = false;
+        btn.textContent = 'Claim This Mission';
+        return;
+      }
+      
+      btn.textContent = '✓ Claimed! Now post on X';
+      
+      // Refresh market
+      setTimeout(() => {
+        closeCampaignModal();
+        loadMarket();
+        // Redirect to earn widget to complete the mission
+        window.location.href = '/influencers';
+      }, 1500);
+    }
+    
+    function escapeHtml(str) {
+      if (!str) return '';
+      return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+    
+    // Close modal on overlay click
+    document.getElementById('campaignModal').addEventListener('click', (e) => {
+      if (e.target.id === 'campaignModal') closeCampaignModal();
+    });
     
     // Init
     if (token) {

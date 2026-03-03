@@ -15,6 +15,7 @@ import {
   getCompletionsForReview,
   verifyCompletion,
   getAvailableMissions,
+  getMarketCampaigns,
   claimMission,
   submitCompletion,
   getInfluencerCompletions
@@ -216,6 +217,17 @@ router.get('/public/available', async (req, res) => {
   } catch (err) {
     console.error('Get available missions error:', err);
     res.status(500).json({ error: 'Failed to get available missions' });
+  }
+});
+
+// GET /api/campaigns/public/market - Get all active brand campaigns for influence market
+router.get('/public/market', async (req, res) => {
+  try {
+    const campaigns = await getMarketCampaigns();
+    res.json({ campaigns });
+  } catch (err) {
+    console.error('Get market campaigns error:', err);
+    res.status(500).json({ error: 'Failed to get campaigns' });
   }
 });
 
