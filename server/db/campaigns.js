@@ -52,6 +52,17 @@ export async function initCampaignTables() {
     )
   `);
 
+  // Migration: ensure campaign_id column exists (for tables created before this column was added)
+  await pool.query(`
+    DO $$ 
+    BEGIN 
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
+                     WHERE table_name='missions' AND column_name='campaign_id') THEN
+        ALTER TABLE missions ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id) ON DELETE CASCADE;
+      END IF;
+    END $$;
+  `);
+
   await pool.query(`
     CREATE TABLE IF NOT EXISTS mission_completions (
       id SERIAL PRIMARY KEY,
