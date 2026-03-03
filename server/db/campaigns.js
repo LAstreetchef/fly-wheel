@@ -357,32 +357,39 @@ export async function getInfluencerCompletions(influencerId) {
 // ============ INFLUENCE MARKET ============
 
 export async function getMarketCampaigns() {
-  const result = await pool.query(`
-    SELECT 
-      c.id,
-      c.name,
-      c.brand,
-      c.description,
-      c.brief,
-      m.id as mission_id,
-      m.title as mission_title,
-      m.description as mission_description,
-      m.content_prompt,
-      m.payout_cents,
-      m.max_completions,
-      m.current_completions,
-      (m.max_completions - m.current_completions) as spots_left,
-      m.platform
-    FROM campaigns c
-    JOIN missions m ON m.campaign_id = c.id
-    WHERE c.status = 'active'
-      AND m.status = 'active'
-      AND m.current_completions < m.max_completions
-      AND c.brand_id IS NOT NULL
-    ORDER BY m.payout_cents DESC, c.created_at DESC
-    LIMIT 20
-  `);
-  return result.rows;
+  console.log('[getMarketCampaigns] Starting...');
+  try {
+    const result = await pool.query(`
+      SELECT 
+        c.id,
+        c.name,
+        c.brand,
+        c.description,
+        c.brief,
+        m.id as mission_id,
+        m.title as mission_title,
+        m.description as mission_description,
+        m.content_prompt,
+        m.payout_cents,
+        m.max_completions,
+        m.current_completions,
+        (m.max_completions - m.current_completions) as spots_left,
+        m.platform
+      FROM campaigns c
+      JOIN missions m ON m.campaign_id = c.id
+      WHERE c.status = 'active'
+        AND m.status = 'active'
+        AND m.current_completions < m.max_completions
+        AND c.brand_id IS NOT NULL
+      ORDER BY m.payout_cents DESC, c.created_at DESC
+      LIMIT 20
+    `);
+    console.log('[getMarketCampaigns] Found:', result.rows.length, 'campaigns');
+    return result.rows;
+  } catch (err) {
+    console.error('[getMarketCampaigns] Error:', err.message);
+    throw err;
+  }
 }
 
 export { pool };

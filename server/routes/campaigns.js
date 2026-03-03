@@ -226,8 +226,8 @@ router.get('/public/market', async (req, res) => {
     const campaigns = await getMarketCampaigns();
     res.json({ campaigns });
   } catch (err) {
-    console.error('Get market campaigns error:', err);
-    res.status(500).json({ error: 'Failed to get campaigns' });
+    console.error('Get market campaigns error:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to get campaigns', detail: err.message });
   }
 });
 
