@@ -1094,7 +1094,14 @@ app.get('/admin/campaigns', (req, res) => {
   res.sendFile(filePath);
 });
 
-// Serve brand dashboard
+// Serve brand pages
+app.get('/brands', (req, res) => {
+  const filePath = process.env.NODE_ENV === 'production' 
+    ? join(__dirname, 'dist', 'brands.html')
+    : join(__dirname, 'public', 'brands.html');
+  res.sendFile(filePath);
+});
+
 app.get('/brand-dashboard', (req, res) => {
   const filePath = process.env.NODE_ENV === 'production' 
     ? join(__dirname, 'dist', 'brand-dashboard.html')

@@ -7,7 +7,7 @@
     "dev": "vite",
     "server": "node server.js",
     "dev:full": "concurrently \"npm run dev\" \"npm run server\"",
-    "build": "vite build && cp public/influencers.html dist/influencers.html && cp public/earn.html dist/earn.html && cp public/admin-campaigns.html dist/admin-campaigns.html && cp public/dashboard.html dist/dashboard.html",
+    "build": "vite build && cp public/influencers.html dist/influencers.html && cp public/earn.html dist/earn.html && cp public/admin-campaigns.html dist/admin-campaigns.html && cp public/dashboard.html dist/dashboard.html && cp public/brands.html dist/brands.html && cp public/brand-dashboard.html dist/brand-dashboard.html",
     "lint": "eslint .",
     "preview": "vite preview",
     "deploy": "VITE_BASE_PATH=/fly-wheel/ npm run build && gh-pages -d dist",
