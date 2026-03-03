@@ -190,22 +190,38 @@ export async function createBrandCampaign(brandId, data) {
 // ============ BRAND STATS ============
 
 export async function getBrandStats(brandId) {
+  console.log('[getBrandStats] Starting for brandId:', brandId);
+  
   const brand = await getBrandById(brandId);
+  console.log('[getBrandStats] Brand found:', !!brand);
   if (!brand) return null;
   
-  const campaigns = await getBrandCampaigns(brandId);
+  let campaigns = [];
+  try {
+    campaigns = await getBrandCampaigns(brandId);
+    console.log('[getBrandStats] Campaigns:', campaigns.length);
+  } catch (err) {
+    console.error('[getBrandStats] getBrandCampaigns error:', err.message);
+    campaigns = [];
+  }
   
-  const stats = await pool.query(
-    `SELECT 
-       COUNT(DISTINCT mc.id) as total_posts,
-       COALESCE(SUM(CASE WHEN mc.status = 'verified' THEN 1 ELSE 0 END), 0) as verified_posts,
-       COALESCE(SUM(CASE WHEN mc.status = 'pending' THEN 1 ELSE 0 END), 0) as pending_posts
-     FROM campaigns c
-     LEFT JOIN missions m ON m.campaign_id = c.id
-     LEFT JOIN mission_completions mc ON mc.mission_id = m.id
-     WHERE c.brand_id = $1`,
-    [brandId]
-  );
+  let stats = { rows: [{ total_posts: 0, verified_posts: 0, pending_posts: 0 }] };
+  try {
+    stats = await pool.query(
+      `SELECT 
+         COUNT(DISTINCT mc.id) as total_posts,
+         COALESCE(SUM(CASE WHEN mc.status = 'verified' THEN 1 ELSE 0 END), 0) as verified_posts,
+         COALESCE(SUM(CASE WHEN mc.status = 'pending' THEN 1 ELSE 0 END), 0) as pending_posts
+       FROM campaigns c
+       LEFT JOIN missions m ON m.campaign_id = c.id
+       LEFT JOIN mission_completions mc ON mc.mission_id = m.id
+       WHERE c.brand_id = $1`,
+      [brandId]
+    );
+    console.log('[getBrandStats] Stats query success');
+  } catch (err) {
+    console.error('[getBrandStats] Stats query error:', err.message);
+  }
   
   return {
     ...brand,

@@ -131,8 +131,8 @@ router.get('/me', brandAuth, async (req, res) => {
     const stats = await getBrandStats(req.brand.id);
     res.json({ brand: stats });
   } catch (err) {
-    console.error('Get brand error:', err);
-    res.status(500).json({ error: 'Failed to get brand info' });
+    console.error('Get brand error:', err.message, err.stack);
+    res.status(500).json({ error: 'Failed to get brand info', detail: err.message });
   }
 });
 
