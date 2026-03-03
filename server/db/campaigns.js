@@ -52,13 +52,39 @@ export async function initCampaignTables() {
     )
   `);
 
-  // Migration: ensure campaign_id column exists (for tables created before this column was added)
+  // Migration: ensure all mission columns exist (for tables created before these columns were added)
   await pool.query(`
     DO $$ 
     BEGIN 
-      IF NOT EXISTS (SELECT 1 FROM information_schema.columns 
-                     WHERE table_name='missions' AND column_name='campaign_id') THEN
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='campaign_id') THEN
         ALTER TABLE missions ADD COLUMN campaign_id INTEGER REFERENCES campaigns(id) ON DELETE CASCADE;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='title') THEN
+        ALTER TABLE missions ADD COLUMN title VARCHAR(255);
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='description') THEN
+        ALTER TABLE missions ADD COLUMN description TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='content_prompt') THEN
+        ALTER TABLE missions ADD COLUMN content_prompt TEXT;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='mission_type') THEN
+        ALTER TABLE missions ADD COLUMN mission_type VARCHAR(50) DEFAULT 'post';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='payout_cents') THEN
+        ALTER TABLE missions ADD COLUMN payout_cents INTEGER DEFAULT 200;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='max_completions') THEN
+        ALTER TABLE missions ADD COLUMN max_completions INTEGER DEFAULT 100;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='current_completions') THEN
+        ALTER TABLE missions ADD COLUMN current_completions INTEGER DEFAULT 0;
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='requirements') THEN
+        ALTER TABLE missions ADD COLUMN requirements JSONB DEFAULT '{}';
+      END IF;
+      IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name='missions' AND column_name='status') THEN
+        ALTER TABLE missions ADD COLUMN status VARCHAR(50) DEFAULT 'active';
       END IF;
     END $$;
   `);
