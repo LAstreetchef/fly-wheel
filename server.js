@@ -7021,11 +7021,13 @@ app.post('/webhook', async (req, res) => {
     
     // Brand campaign or funds payment
     if (session.metadata?.type === 'brand_campaign' || session.metadata?.type === 'brand_funds') {
+      console.log(`🏢 Brand payment webhook received: ${session.metadata.type}`);
+      console.log(`   brand_id: ${session.metadata.brand_id}, product: ${session.metadata.product}, budget: ${session.metadata.budget_cents}`);
       try {
-        await handleBrandPayment(session);
-        console.log(`✅ Brand payment processed: ${session.metadata.type}`);
+        const result = await handleBrandPayment(session);
+        console.log(`✅ Brand payment processed: ${session.metadata.type}`, result);
       } catch (err) {
-        console.error('Brand payment error:', err);
+        console.error('Brand payment error:', err.message, err.stack);
       }
       return res.json({ received: true });
     }

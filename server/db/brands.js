@@ -148,10 +148,12 @@ export async function getBrandCampaigns(brandId) {
 }
 
 export async function createBrandCampaign(brandId, data) {
+  console.log('[createBrandCampaign] Starting:', { brandId, data });
   const { name, product_url, budget_cents } = data;
   
   // Auto-generate campaign details
   const brand = await getBrandById(brandId);
+  console.log('[createBrandCampaign] Brand found:', !!brand);
   
   const result = await pool.query(
     `INSERT INTO campaigns (
