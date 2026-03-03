@@ -264,16 +264,17 @@ router.post('/admin/fix-missions', async (req, res) => {
     console.log(`Found ${campaigns.rows.length} campaigns without missions`);
     
     for (const c of campaigns.rows) {
+      const contentPrompt = `Create an authentic post sharing your thoughts on ${c.name}. Be genuine and creative!`;
       await pool.query(`
         INSERT INTO missions (
-          campaign_id, platform, mission_type, title, description, 
-          content_prompt, payout_cents, max_completions, status
-        ) VALUES ($1, 'twitter', 'post', $2, $3, $4, 200, $5, 'active')
+          campaign_id, platform, content, payout_cents, status,
+          title, description, content_prompt, max_completions
+        ) VALUES ($1, 'twitter', $2, 200, 'active', $3, $4, $2, $5)
       `, [
         c.id,
+        contentPrompt,
         `Share about ${c.name}`,
         `Post about ${c.name} on X/Twitter`,
-        `Create an authentic post sharing your thoughts on ${c.name}. Be genuine and creative!`,
         Math.floor((c.budget_cents || 5000) / 200)
       ]);
       console.log(`Created mission for campaign ${c.id}: ${c.name}`);
