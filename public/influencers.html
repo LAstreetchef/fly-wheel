@@ -150,22 +150,23 @@
     /* Hero Widget (expanding) */
     .hero-widget {
       margin-top: 40px;
-      border: 2px solid var(--text);
-      max-width: 380px;
+      border: 1px solid var(--border);
+      max-width: 440px;
       background: var(--bg);
       transition: all 0.4s ease;
       overflow: hidden;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
     }
     
     .hero-widget.expanded {
-      max-width: 420px;
+      max-width: 480px;
     }
     
     .hw-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 16px 20px;
+      padding: 20px 24px;
       border-bottom: 1px solid var(--border);
     }
     
@@ -174,35 +175,20 @@
       align-items: center;
     }
     
-    .hw-pulse {
-      width: 8px;
-      height: 8px;
-      background: #00c853;
-      border-radius: 50%;
-      margin-right: 12px;
-      animation: pulseDot 1.5s ease-in-out infinite;
-      box-shadow: 0 0 6px #00c853;
-    }
-    
-    @keyframes pulseDot {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.6; transform: scale(1.3); }
-    }
-    
     .hw-title {
-      font-size: 12px;
+      font-size: 14px;
       font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
+      letter-spacing: 0.5px;
     }
     
     .hw-close {
       width: 28px;
       height: 28px;
-      border: 1px solid var(--border);
+      border: none;
       background: transparent;
-      font-size: 18px;
+      font-size: 20px;
       cursor: pointer;
+      color: var(--text-dim);
       display: flex;
       align-items: center;
       justify-content: center;
@@ -210,13 +196,13 @@
     }
     
     .hw-close:hover {
-      border-color: var(--text);
+      color: var(--text);
     }
     
     /* Steps */
     .hw-step {
       display: none;
-      padding: 20px;
+      padding: 20px 24px 24px;
       animation: stepIn 0.3s ease;
     }
     
@@ -231,51 +217,92 @@
     
     /* Step 1: Connect */
     .hw-desc {
-      font-size: 13px;
+      font-size: 14px;
       color: var(--text-dim);
-      margin-bottom: 16px;
+      margin-bottom: 20px;
       line-height: 1.5;
     }
     
-    .hw-platforms {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-      margin-bottom: 16px;
-    }
-    
-    .hw-platform {
+    .hw-platform-list {
       display: flex;
       flex-direction: column;
+      gap: 12px;
+    }
+    
+    .hw-platform-row {
+      display: flex;
       align-items: center;
-      gap: 6px;
-      padding: 14px 8px;
+      gap: 16px;
+      padding: 16px;
       border: 1px solid var(--border);
       cursor: pointer;
       transition: all 0.2s;
-      font-size: 10px;
+    }
+    
+    .hw-platform-row:hover {
+      border-color: var(--text);
+      background: var(--bg-alt);
+    }
+    
+    .hw-platform-icon {
+      width: 44px;
+      height: 44px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+    
+    .hw-icon-twitter {
+      border: 1px solid var(--border);
+    }
+    
+    .hw-icon-instagram {
+      background: linear-gradient(135deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888);
+      border-radius: 8px;
+      color: white;
+    }
+    
+    .hw-icon-tiktok {
+      border: 1px solid var(--border);
+    }
+    
+    .hw-icon-linkedin {
+      background: #0077b5;
+      border-radius: 6px;
+      color: white;
+    }
+    
+    .hw-platform-info {
+      flex: 1;
+    }
+    
+    .hw-platform-name {
+      font-size: 14px;
       font-weight: 600;
+      margin-bottom: 2px;
+    }
+    
+    .hw-platform-sub {
+      font-size: 12px;
+      color: var(--text-dim);
+    }
+    
+    .hw-platform-price {
+      text-align: right;
+    }
+    
+    .hw-price-value {
+      font-size: 14px;
+      font-weight: 700;
+    }
+    
+    .hw-price-label {
+      font-size: 9px;
+      color: var(--text-dim);
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-    
-    .hw-platform:hover {
-      border-color: var(--text);
-      background: var(--text);
-      color: var(--bg);
-    }
-    
-    .hw-platform:hover svg { fill: var(--bg); }
-    
-    .hw-earn {
-      font-size: 11px;
-      color: var(--text-dim);
-      text-align: center;
-      padding-top: 12px;
-      border-top: 1px solid var(--border);
-    }
-    
-    .hw-earn strong { color: var(--text); }
     
     /* Step 2: Content Selection */
     .hw-connected {
@@ -1277,34 +1304,71 @@
           <!-- Header - always visible -->
           <div class="hw-header">
             <div class="hw-header-left">
-              <span class="hw-pulse"></span>
-              <span class="hw-title">Start Earning</span>
+              <span class="hw-title">CONNECT ACCOUNT</span>
             </div>
             <button class="hw-close" id="hwClose" onclick="resetWidget()" style="display: none;">×</button>
           </div>
           
           <!-- Step 1: Connect -->
           <div class="hw-step hw-step-connect active" id="stepConnect">
-            <p class="hw-desc">Connect your account and get paid for every post.</p>
-            <div class="hw-platforms">
-              <div class="hw-platform" onclick="selectPlatform('twitter')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                <span>X</span>
+            <p class="hw-desc">Choose a platform to connect. We'll verify your followers and calculate your earning rate.</p>
+            <div class="hw-platform-list">
+              <div class="hw-platform-row" onclick="selectPlatform('twitter')">
+                <div class="hw-platform-icon hw-icon-twitter">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                </div>
+                <div class="hw-platform-info">
+                  <div class="hw-platform-name">X / Twitter</div>
+                  <div class="hw-platform-sub">Connect your X account</div>
+                </div>
+                <div class="hw-platform-price">
+                  <div class="hw-price-value">$1–$100+</div>
+                  <div class="hw-price-label">PER POST</div>
+                </div>
               </div>
-              <div class="hw-platform" onclick="selectPlatform('instagram')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/><circle cx="12" cy="12" r="3.5"/></svg>
-                <span>IG</span>
+              
+              <div class="hw-platform-row" onclick="selectPlatform('instagram')">
+                <div class="hw-platform-icon hw-icon-instagram">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/><circle cx="12" cy="12" r="3.5"/></svg>
+                </div>
+                <div class="hw-platform-info">
+                  <div class="hw-platform-name">Instagram</div>
+                  <div class="hw-platform-sub">Connect your Instagram</div>
+                </div>
+                <div class="hw-platform-price">
+                  <div class="hw-price-value">$2–$200+</div>
+                  <div class="hw-price-label">PER POST</div>
+                </div>
               </div>
-              <div class="hw-platform" onclick="selectPlatform('tiktok')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
-                <span>TT</span>
+              
+              <div class="hw-platform-row" onclick="selectPlatform('tiktok')">
+                <div class="hw-platform-icon hw-icon-tiktok">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+                </div>
+                <div class="hw-platform-info">
+                  <div class="hw-platform-name">TikTok</div>
+                  <div class="hw-platform-sub">Connect your TikTok</div>
+                </div>
+                <div class="hw-platform-price">
+                  <div class="hw-price-value">$3–$300+</div>
+                  <div class="hw-price-label">PER VIDEO</div>
+                </div>
               </div>
-              <div class="hw-platform" onclick="selectPlatform('linkedin')">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/></svg>
-                <span>LI</span>
+              
+              <div class="hw-platform-row" onclick="selectPlatform('linkedin')">
+                <div class="hw-platform-icon hw-icon-linkedin">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/></svg>
+                </div>
+                <div class="hw-platform-info">
+                  <div class="hw-platform-name">LinkedIn</div>
+                  <div class="hw-platform-sub">Connect your LinkedIn</div>
+                </div>
+                <div class="hw-platform-price">
+                  <div class="hw-price-value">$2–$150+</div>
+                  <div class="hw-price-label">PER POST</div>
+                </div>
               </div>
             </div>
-            <div class="hw-earn">Earn <strong>$1–$300+</strong> per post</div>
           </div>
           
           <!-- Step 2: Select Content (carousel) -->
@@ -1864,26 +1928,61 @@ The key? Start small. One habit at a time.</p>
     
     function restoreConnectStep() {
       document.getElementById('stepConnect').innerHTML = `
-        <p class="hw-desc">Connect your account and get paid for every post.</p>
-        <div class="hw-platforms">
-          <div class="hw-platform" onclick="selectPlatform('twitter')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-            <span>X</span>
+        <p class="hw-desc">Choose a platform to connect. We'll verify your followers and calculate your earning rate.</p>
+        <div class="hw-platform-list">
+          <div class="hw-platform-row" onclick="selectPlatform('twitter')">
+            <div class="hw-platform-icon hw-icon-twitter">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+            </div>
+            <div class="hw-platform-info">
+              <div class="hw-platform-name">X / Twitter</div>
+              <div class="hw-platform-sub">Connect your X account</div>
+            </div>
+            <div class="hw-platform-price">
+              <div class="hw-price-value">$1–$100+</div>
+              <div class="hw-price-label">PER POST</div>
+            </div>
           </div>
-          <div class="hw-platform" onclick="selectPlatform('instagram')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/><circle cx="12" cy="12" r="3.5"/></svg>
-            <span>IG</span>
+          <div class="hw-platform-row" onclick="selectPlatform('instagram')">
+            <div class="hw-platform-icon hw-icon-instagram">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069z"/><circle cx="12" cy="12" r="3.5"/></svg>
+            </div>
+            <div class="hw-platform-info">
+              <div class="hw-platform-name">Instagram</div>
+              <div class="hw-platform-sub">Connect your Instagram</div>
+            </div>
+            <div class="hw-platform-price">
+              <div class="hw-price-value">$2–$200+</div>
+              <div class="hw-price-label">PER POST</div>
+            </div>
           </div>
-          <div class="hw-platform" onclick="selectPlatform('tiktok')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
-            <span>TT</span>
+          <div class="hw-platform-row" onclick="selectPlatform('tiktok')">
+            <div class="hw-platform-icon hw-icon-tiktok">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1-.1z"/></svg>
+            </div>
+            <div class="hw-platform-info">
+              <div class="hw-platform-name">TikTok</div>
+              <div class="hw-platform-sub">Connect your TikTok</div>
+            </div>
+            <div class="hw-platform-price">
+              <div class="hw-price-value">$3–$300+</div>
+              <div class="hw-price-label">PER VIDEO</div>
+            </div>
           </div>
-          <div class="hw-platform" onclick="selectPlatform('linkedin')">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/></svg>
-            <span>LI</span>
+          <div class="hw-platform-row" onclick="selectPlatform('linkedin')">
+            <div class="hw-platform-icon hw-icon-linkedin">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452z"/></svg>
+            </div>
+            <div class="hw-platform-info">
+              <div class="hw-platform-name">LinkedIn</div>
+              <div class="hw-platform-sub">Connect your LinkedIn</div>
+            </div>
+            <div class="hw-platform-price">
+              <div class="hw-price-value">$2–$150+</div>
+              <div class="hw-price-label">PER POST</div>
+            </div>
           </div>
         </div>
-        <div class="hw-earn">Earn <strong>$1–$300+</strong> per post</div>
       `;
     }
     
