@@ -243,4 +243,47 @@ export async function handleBrandPayment(session) {
   }
 }
 
+// Admin: Fix campaigns missing missions
+router.post('/admin/fix-missions', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || authHeader !== `Bearer ${process.env.ADMIN_API_KEY}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  
+  try {
+    // Import pool from brands db
+    const { pool } = await import('../db/brands.js');
+    
+    // Find campaigns without missions
+    const campaigns = await pool.query(`
+      SELECT c.* FROM campaigns c
+      LEFT JOIN missions m ON m.campaign_id = c.id
+      WHERE m.id IS NULL AND c.brand_id IS NOT NULL
+    `);
+    
+    console.log(`Found ${campaigns.rows.length} campaigns without missions`);
+    
+    for (const c of campaigns.rows) {
+      await pool.query(`
+        INSERT INTO missions (
+          campaign_id, platform, mission_type, title, description, 
+          content_prompt, payout_cents, max_completions, status
+        ) VALUES ($1, 'twitter', 'post', $2, $3, $4, 200, $5, 'active')
+      `, [
+        c.id,
+        `Share about ${c.name}`,
+        `Post about ${c.name} on X/Twitter`,
+        `Create an authentic post sharing your thoughts on ${c.name}. Be genuine and creative!`,
+        Math.floor((c.budget_cents || 5000) / 200)
+      ]);
+      console.log(`Created mission for campaign ${c.id}: ${c.name}`);
+    }
+    
+    res.json({ fixed: campaigns.rows.length });
+  } catch (err) {
+    console.error('Fix missions error:', err);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 export default router;
