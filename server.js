@@ -1088,7 +1088,15 @@ app.get('/earn', (req, res) => {
 // Serve admin dashboard
 app.use('/public', express.static(join(__dirname, 'public')));
 
-// Hot Potato privacy page redirect
+// Hot Potato routes
+app.get('/hotpotato', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'hotpotato', 'index.html'));
+});
+
+app.get('/hotpotato/', (req, res) => {
+  res.sendFile(join(__dirname, 'public', 'hotpotato', 'index.html'));
+});
+
 app.get('/hotpotato/privacy', (req, res) => {
   res.sendFile(join(__dirname, 'public', 'hotpotato', 'privacy.html'));
 });
