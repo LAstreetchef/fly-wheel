@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Privacy Policy — Hot Potato</title>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--black:#0A0A0A;--white:#FAFAF8;--off:#F2F1EE;--rule:#D4D2CC;--muted:#8A8880;--serif:'Instrument Serif',Georgia,serif;--sans:'DM Sans',sans-serif}
+body{font-family:var(--sans);color:var(--black);background:var(--white);line-height:1.7}
+nav{display:flex;align-items:center;justify-content:space-between;padding:16px 40px;border-bottom:1px solid var(--rule)}
+.nav-logo{display:flex;align-items:center;gap:8px;font-family:var(--serif);font-size:18px;font-style:italic}
+.nav-back{font-size:12px;color:var(--muted);text-decoration:none;transition:color 0.15s}
+.nav-back:hover{color:var(--black)}
+.container{max-width:680px;margin:0 auto;padding:60px 24px 80px}
+h1{font-family:var(--serif);font-size:42px;font-style:italic;letter-spacing:-1px;margin-bottom:8px}
+.meta{font-size:12px;color:var(--muted);margin-bottom:48px;padding-bottom:24px;border-bottom:1px solid var(--rule)}
+h2{font-family:var(--serif);font-size:22px;font-style:italic;margin:36px 0 12px;letter-spacing:-0.3px}
+p{font-size:15px;color:#2A2A2A;margin-bottom:14px}
+ul{font-size:15px;color:#2A2A2A;margin:0 0 14px 20px}
+ul li{margin-bottom:6px}
+a{color:var(--black);text-decoration:underline}
+.section{border-top:1px solid var(--rule);padding-top:0}
+footer{border-top:1px solid var(--rule);padding:24px 40px;text-align:center;font-size:11px;color:var(--muted)}
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-logo">
+    <svg width="16" height="20" viewBox="0 0 18 22"><ellipse cx="9" cy="15" rx="7" ry="5.5" fill="#C8914A"/><path d="M8.5 7 Q8 4 7.5 1.5" fill="none" stroke="#4A9A2A" stroke-width="1.5" stroke-linecap="round"/><path d="M7.5 4 Q5 2 3.5 0 Q5.5 1 7.5 3Z" fill="#4A9A2A"/><rect x="4.5" y="11" width="5" height="3.5" rx="2" fill="#111"/><rect x="10" y="11" width="5" height="3.5" rx="2" fill="#111"/><ellipse cx="9" cy="18" rx="3.5" ry="1.5" fill="#CC1A1A"/></svg>
+    Hot Potato
+  </div>
+  <a class="nav-back" href="https://hotpotato.markets">← hotpotato.markets</a>
+</nav>
+
+<div class="container">
+
+  <h1>Privacy Policy</h1>
+  <div class="meta">Effective date: March 16, 2026 · Last updated: March 16, 2026 · Contact: privacy@hotpotato.markets</div>
+
+  <p>Hot Potato ("we", "us", "our") operates the Hot Potato Chrome extension and the hotpotato.markets platform. This Privacy Policy explains what data we collect, how we use it, and your rights regarding that data.</p>
+
+  <h2>1. What we collect</h2>
+  <p>We collect only what is necessary to provide the service:</p>
+  <ul>
+    <li><strong>Wallet address</strong> — your Polygon wallet address, used to identify your account and settle trades in USDC.</li>
+    <li><strong>Platform handle</strong> — your OnlyFans, TikTok, or Instagram username, collected when you connect your creator account.</li>
+    <li><strong>Trading activity</strong> — your open positions, trade history, P&L, and HP Points balance, stored to display your portfolio.</li>
+    <li><strong>Creator profile data</strong> — publicly available follower count and handle scraped from your connected platform profile to populate your HP creator page.</li>
+    <li><strong>Active tab URL</strong> — the extension reads the current tab URL only to detect whether you are on a supported creator platform (OnlyFans, TikTok, Instagram, Twitter/X). The URL is not stored or transmitted.</li>
+  </ul>
+  <p>We do not collect passwords, private messages, payment card numbers, health data, location data, web browsing history, or any data beyond what is listed above.</p>
+
+  <h2>2. How we use your data</h2>
+  <ul>
+    <li>To authenticate your account and maintain your session in the extension</li>
+    <li>To display your portfolio, positions, and HP Points balance</li>
+    <li>To send you notifications about market price movements and Hot Potato round events</li>
+    <li>To populate your creator profile page visible to other users</li>
+    <li>To calculate and distribute the 1% creator fee on markets you have created</li>
+  </ul>
+  <p>We do not sell your data. We do not use your data for advertising. We do not share your data with third parties except as required to operate the service (e.g. Polygon blockchain transactions are publicly visible by nature of the network).</p>
+
+  <h2>3. Blockchain data</h2>
+  <p>Trades on Hot Potato settle in USDC on the Polygon network. Blockchain transactions are public and permanent by design. Your wallet address and transaction amounts are visible on-chain to anyone. We have no ability to delete or modify on-chain data.</p>
+
+  <h2>4. Chrome extension storage</h2>
+  <p>The Hot Potato Chrome extension uses <code>chrome.storage.local</code> to store your wallet address, session state, and portfolio data locally on your device. This data is not synced across devices and is not accessible to us unless you are actively using the extension. You can clear this data at any time by removing the extension from Chrome.</p>
+
+  <h2>5. Content scripts</h2>
+  <p>The extension injects a small UI button on OnlyFans, TikTok, Instagram, and Twitter/X pages when a creator profile is detected. The content script reads the page's creator name and profile photo URL from the DOM to populate the button label. This data is used only in the moment to display the button and is not stored or transmitted to our servers.</p>
+
+  <h2>6. Third-party services</h2>
+  <ul>
+    <li><strong>Polygon network</strong> — trade settlement. Transactions are public.</li>
+    <li><strong>Rabby / MetaMask / Coinbase Wallet</strong> — wallet connection. We access only your public wallet address.</li>
+    <li><strong>TikTok / Instagram APIs</strong> — OAuth authentication when you choose to connect your creator account. We request read-only access to your public profile data only.</li>
+    <li><strong>OnlyFans</strong> — ownership verification via bio code method. We do not retain your OnlyFans credentials.</li>
+  </ul>
+
+  <h2>7. Data retention</h2>
+  <p>We retain your account data for as long as your account is active. If you delete your account, we will delete your personal data within 30 days, except for on-chain transaction records which are permanent by nature of the blockchain.</p>
+
+  <h2>8. Your rights</h2>
+  <p>You have the right to access, correct, export, or delete your personal data at any time. To exercise these rights, contact us at <a href="mailto:privacy@hotpotato.markets">privacy@hotpotato.markets</a>. We will respond within 30 days.</p>
+
+  <h2>9. Children</h2>
+  <p>Hot Potato is not directed at children under 18. We do not knowingly collect data from anyone under 18. If you believe a minor has provided us with personal data, contact us and we will delete it promptly.</p>
+
+  <h2>10. Changes to this policy</h2>
+  <p>We may update this policy as the platform evolves. We will notify users of material changes via the extension or by email if provided. Continued use of Hot Potato after changes constitutes acceptance of the updated policy.</p>
+
+  <h2>11. Contact</h2>
+  <p>Hot Potato Markets<br>
+  Email: <a href="mailto:privacy@hotpotato.markets">privacy@hotpotato.markets</a><br>
+  Web: <a href="https://hotpotato.markets">hotpotato.markets</a></p>
+
+</div>
+
+<footer>© 2026 Hot Potato Markets · <a href="https://hotpotato.markets">hotpotato.markets</a> · <a href="mailto:privacy@hotpotato.markets">privacy@hotpotato.markets</a></footer>
+
+</body>
+</html>
