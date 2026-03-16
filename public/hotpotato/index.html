@@ -819,51 +819,6 @@ setInterval(() => {
     <button class="cm-next-btn" onclick="previewMarket()">Create Market →</button>
   </div>
 
-  <!-- ── STEP 4: PREVIEW + PUBLISH ── -->
-  <div class="cm-pane" id="cp-4" style="display:none">
-    <div class="cm-eyebrow">04 — Share &amp; earn</div>
-    <div class="cm-headline">Your market<br><em>is live.</em></div>
-
-    <!-- MARKET PREVIEW CARD -->
-    <div class="cm-preview-card">
-      <div class="cm-preview-top">
-        <div class="cm-preview-av">
-          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=focalpoint&fp-y=0.3&auto=format&q=80" referrerpolicy="no-referrer" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
-        </div>
-        <div>
-          <div class="cm-preview-name" id="cm-prev-name">Nova Reyes</div>
-          <div class="cm-preview-handle" id="cm-prev-handle">@novareyes</div>
-        </div>
-        <div class="cm-preview-badge">LIVE</div>
-      </div>
-      <div class="cm-preview-q" id="cm-prev-q">"Will I hit 5M followers by August?"</div>
-      <div class="cm-preview-bar-row">
-        <div class="cm-preview-bar"><div class="cm-preview-fill" id="cm-prev-fill" style="width:60%"></div></div>
-        <span class="cm-preview-yes" id="cm-prev-yes">YES 60%</span>
-        <span class="cm-preview-no" id="cm-prev-no">NO 40%</span>
-      </div>
-      <div class="cm-preview-fee">You earn 1% of every trade · forever</div>
-    </div>
-
-    <!-- SHARE BUTTONS -->
-    <div class="cm-share-row">
-      <button class="cm-share-btn cm-share-of" onclick="shareMarket('onlyfans')">
-        <svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/></svg>
-        Post to OF
-      </button>
-      <button class="cm-share-btn cm-share-tt" onclick="shareMarket('tiktok')">
-        <svg width="14" height="14" viewBox="0 0 18 18" fill="white"><path d="M14 4.5a3.5 3.5 0 01-2.2-.8 3.5 3.5 0 01-1.3-2.7H8v10a2 2 0 11-2.4-1.95V7A5 5 0 1010 12V8a6.5 6.5 0 002.7.6V6.2A3.5 3.5 0 0114 4.5z"/></svg>
-        Post to TikTok
-      </button>
-      <button class="cm-share-btn cm-share-copy" onclick="copyLink()">
-        ↗ Copy link
-      </button>
-    </div>
-
-    <div class="cm-earn-note">+500 HP Points bonus for your first market 🥔</div>
-    <button class="cm-next-btn" onclick="closeCM()">Done — view my markets →</button>
-  </div>
-
   <!-- CLOSE -->
   <button class="cm-close" onclick="closeCM()">✕</button>
 </div>
