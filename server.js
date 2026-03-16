@@ -1015,6 +1015,32 @@ if (process.env.NODE_ENV === 'production') {
   });
 }
 
+// Hot Potato API proxy (must be before rate limiter)
+console.log('🥔 Setting up Hot Potato API proxy');
+app.all('/api/hotpotato/*', async (req, res) => {
+  const targetPath = req.url.replace('/api/hotpotato', '/api');
+  const targetUrl = `http://localhost:3030${targetPath}`;
+  console.log('🥔 Manual proxy:', req.method, req.url, '→', targetUrl);
+  
+  try {
+    const response = await fetch(targetUrl, {
+      method: req.method,
+      headers: {
+        ...req.headers,
+        host: 'localhost:3030'
+      },
+      body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined
+    });
+    
+    const data = await response.text();
+    res.status(response.status).send(data);
+  } catch (err) {
+    console.error('🥔 Proxy error:', err.message);
+    res.status(500).json({ error: 'Proxy failed' });
+  }
+});
+console.log('🥔 Hot Potato API proxy → localhost:3030');
+
 // Rate limiting
 const apiLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
@@ -1080,28 +1106,6 @@ app.get('/earn', (req, res) => {
     : join(__dirname, 'public', 'earn.html');
   res.sendFile(filePath);
 });
-
-// Hot Potato API routes (inline)
-// Note: Backend runs on localhost:3030, proxy forwards requests
-if (process.env.NODE_ENV === 'production' || process.env.HP_BACKEND_URL) {
-  app.use('/api/hotpotato', createProxyMiddleware({
-    target: process.env.HP_BACKEND_URL || 'http://localhost:3030',
-    changeOrigin: true,
-    pathRewrite: { '^/api/hotpotato': '/api' },
-    onProxyReq: (proxyReq, req, res) => {
-      if (req.headers.cookie) {
-        proxyReq.setHeader('cookie', req.headers.cookie);
-      }
-    }
-  }));
-} else {
-  // Dev: direct proxy to localhost
-  app.use('/api/hotpotato', createProxyMiddleware({
-    target: 'http://localhost:3030',
-    changeOrigin: true,
-    pathRewrite: { '^/api/hotpotato': '/api' }
-  }));
-}
 
 // Serve admin dashboard
 app.use('/public', express.static(join(__dirname, 'public')));
