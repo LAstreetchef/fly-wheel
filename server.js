@@ -2,6 +2,7 @@ import 'dotenv/config';
 import express from 'express';
 import cors from 'cors';
 import rateLimit from 'express-rate-limit';
+import { createProxyMiddleware } from 'http-proxy-middleware';
 import { sanitizeBody, sanitizeQuery } from './server/middleware/sanitize.js';
 import { requireAdmin } from './server/middleware/auth.js';
 import { queueBoost, getQueueStats, setOrderStore } from './server/jobs/processBoost.js';
@@ -1082,7 +1083,6 @@ app.get('/earn', (req, res) => {
 
 // Hot Potato API routes (inline)
 // Note: Backend runs on localhost:3030, proxy forwards requests
-const { createProxyMiddleware } = require('http-proxy-middleware');
 if (process.env.NODE_ENV === 'production' || process.env.HP_BACKEND_URL) {
   app.use('/api/hotpotato', createProxyMiddleware({
     target: process.env.HP_BACKEND_URL || 'http://localhost:3030',
