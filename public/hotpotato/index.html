@@ -1,0 +1,713 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="referrer" content="no-referrer">
+<base href="https://hotpotato.markets/">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hot Potato — Trade What Happens Next</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+:root{
+  --black:#0A0A0A;--white:#FAFAF8;--off:#F2F1EE;--mid:#E8E6E1;--rule:#D4D2CC;
+  --muted:#8A8880;--dim:#B8B6B0;--red:#CC1A1A;
+  --green:#1A7A3C;--red-loss:#B83232;--gold:#8B6914;
+  --serif:'Instrument Serif',Georgia,serif;
+  --sans:'DM Sans',sans-serif;
+  --mono:'DM Mono',monospace;
+}
+html{background:var(--white);scroll-behavior:smooth}
+body{font-family:var(--sans);color:var(--black);overflow-x:hidden}
+
+/* ── NAV ── */
+nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,250,248,0.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;padding:14px 32px}
+.nav-logo{display:flex;align-items:center;gap:8px}
+.nav-logo-text{font-family:var(--serif);font-size:20px;font-style:italic;letter-spacing:-0.3px}
+.nav-links{display:flex;align-items:center;gap:28px}
+.nav-link{font-size:12px;font-weight:500;color:var(--muted);letter-spacing:0.3px;cursor:pointer;transition:color 0.15s;text-decoration:none}
+.nav-link:hover{color:var(--black)}
+.nav-cta{padding:8px 20px;background:var(--black);color:var(--white);font-size:12px;font-weight:600;cursor:pointer;border:none;font-family:var(--sans);letter-spacing:0.3px;transition:all 0.15s}
+.nav-cta:hover{background:#2a2a2a}
+
+/* ── TICKER TAPE ── */
+.ticker-wrap{background:var(--black);overflow:hidden;padding:8px 0;border-bottom:1px solid #1a1a1a;margin-top:49px}
+.ticker-inner{display:flex;gap:0;animation:ticker 40s linear infinite;width:max-content}
+.ticker-item{display:flex;align-items:center;gap:8px;padding:0 28px;border-right:1px solid #2a2a2a;white-space:nowrap}
+.ti-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:#666}
+.ti-val{font-family:var(--mono);font-size:11px;color:var(--white)}
+.ti-chg{font-family:var(--mono);font-size:10px;font-weight:500}
+.ti-chg.up{color:#39C26A}
+.ti-chg.dn{color:#E05050}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── HERO ── */
+.hero{min-height:100vh;display:grid;grid-template-columns:1fr 1fr;gap:0;padding-top:0}
+.hero-left{padding:80px 48px 60px;display:flex;flex-direction:column;justify-content:center;border-right:1px solid var(--rule)}
+.hero-eyebrow{font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:20px;display:flex;align-items:center;gap:8px}
+.hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
+.hero-headline{font-family:var(--serif);font-size:clamp(42px,5vw,72px);font-style:italic;line-height:1.05;letter-spacing:-2px;margin-bottom:20px}
+.hero-headline em{font-style:normal;position:relative;display:inline-block}
+.hero-headline em::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:2px;background:var(--black)}
+.hero-sub{font-size:16px;line-height:1.7;color:var(--muted);max-width:400px;margin-bottom:36px;font-weight:300}
+.hero-actions{display:flex;gap:10px;margin-bottom:48px}
+.btn-primary{padding:14px 28px;background:var(--black);color:var(--white);border:none;font-family:var(--sans);font-size:14px;font-weight:600;cursor:pointer;letter-spacing:0.3px;transition:all 0.15s}
+.btn-primary:hover{background:#2a2a2a}
+.btn-ghost{padding:14px 28px;background:transparent;color:var(--black);border:1px solid var(--rule);font-family:var(--sans);font-size:14px;font-weight:500;cursor:pointer;letter-spacing:0.3px;transition:all 0.15s}
+.btn-ghost:hover{border-color:var(--black)}
+.hero-stats{display:flex;gap:32px}
+.hstat{display:flex;flex-direction:column;gap:3px}
+.hstat-val{font-family:var(--serif);font-size:28px;font-style:italic;letter-spacing:-0.5px}
+.hstat-lbl{font-size:10px;font-weight:500;letter-spacing:2px;text-transform:uppercase;color:var(--muted)}
+
+/* ── HERO RIGHT — LIVE MARKET CARDS ── */
+.hero-right{background:var(--off);overflow:hidden;position:relative;display:flex;flex-direction:column}
+.hero-right-label{padding:20px 24px 14px;border-bottom:1px solid var(--rule);font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:6px;background:var(--white)}
+.live-dot{width:5px;height:5px;border-radius:50%;background:#39C26A;animation:pulse 1.5s infinite}
+.market-cards-scroll{flex:1;overflow-y:auto;scrollbar-width:none;padding:0}
+.market-cards-scroll::-webkit-scrollbar{display:none}
+
+/* INFLUENCER MARKET CARD */
+.mcard{border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.15s;background:var(--white)}
+.mcard:hover{background:var(--off)}
+.mcard-photo-row{display:flex;gap:0}
+.mcard-photo{width:90px;height:90px;flex-shrink:0;overflow:hidden;position:relative;background:var(--off)}
+.mcard-photo img{width:100%;height:100%;object-fit:cover;object-position:center top;display:block}
+.mcard-photo-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:32px;font-style:italic;color:var(--rule)}
+.mcard-body{flex:1;padding:12px 14px;min-width:0}
+.mcard-top{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:6px;gap:8px}
+.mcard-creator{font-size:13px;font-weight:600}
+.mcard-handle{font-size:10px;color:var(--muted);margin-top:1px;font-family:var(--mono)}
+.mcard-q{font-size:12px;line-height:1.4;color:var(--black);margin-bottom:8px;font-style:italic;font-family:var(--serif)}
+.mcard-bottom{display:flex;align-items:center;gap:8px}
+.mcard-bar{flex:1;height:3px;background:var(--mid);overflow:hidden}
+.mcard-fill{height:100%;background:var(--black)}
+.mcard-yes{font-size:11px;font-weight:600;font-family:var(--mono);color:var(--green)}
+.mcard-no{font-size:11px;font-family:var(--mono);color:var(--muted)}
+.mcard-vol{font-size:9px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:var(--dim);margin-left:auto}
+.mcard-badge{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:2px 6px;flex-shrink:0}
+.mcard-badge.hot{background:var(--black);color:var(--white)}
+.mcard-badge.new{background:var(--off);color:var(--muted);border:1px solid var(--rule)}
+
+/* CRYPTO/POLY CARD */
+.mini-card{display:flex;align-items:center;gap:12px;padding:12px 14px;border-bottom:1px solid var(--rule);background:var(--white);cursor:pointer;transition:background 0.15s}
+.mini-card:hover{background:var(--off)}
+.mini-card-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;border:1px solid var(--rule)}
+.mini-card-info{flex:1;min-width:0}
+.mini-card-name{font-size:12px;font-weight:600}
+.mini-card-q{font-size:10px;color:var(--muted);margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-family:var(--mono)}
+.mini-card-right{text-align:right;flex-shrink:0}
+.mini-card-pct{font-size:14px;font-weight:600;font-family:var(--mono)}
+.mini-card-pct.yes{color:var(--green)}
+.mini-card-pct.no{color:var(--red-loss)}
+.mini-card-vol{font-size:9px;color:var(--muted);margin-top:1px;font-family:var(--mono)}
+
+/* SECTION DIVIDER */
+.section-divider{display:flex;align-items:center;gap:16px;padding:40px 48px 0;background:var(--white)}
+.sd-label{font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);white-space:nowrap}
+.sd-line{flex:1;height:1px;background:var(--rule)}
+
+/* ── HOW IT WORKS ── */
+.how-section{padding:60px 48px;background:var(--white);border-top:1px solid var(--rule)}
+.how-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--rule)}
+.how-cell{padding:32px 28px;border-right:1px solid var(--rule)}
+.how-cell:last-child{border-right:none}
+.how-num{font-family:var(--serif);font-size:48px;font-style:italic;color:var(--rule);margin-bottom:12px;line-height:1}
+.how-title{font-size:16px;font-weight:600;margin-bottom:8px;letter-spacing:-0.2px}
+.how-desc{font-size:13px;color:var(--muted);line-height:1.7}
+
+/* ── CREATOR STRIP ── */
+.creator-strip{padding:60px 0;border-top:1px solid var(--rule);overflow:hidden;background:var(--off)}
+.cs-label{text-align:center;font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:32px}
+.cs-scroll{display:flex;gap:0;animation:scroll-x 30s linear infinite;width:max-content}
+.cs-scroll:hover{animation-play-state:paused}
+.creator-tile{width:180px;padding:20px 16px;text-align:center;border-right:1px solid var(--rule);flex-shrink:0;cursor:pointer;transition:background 0.15s}
+.creator-tile:hover{background:var(--white)}
+.ct-photo{width:64px;height:64px;border-radius:50%;margin:0 auto 10px;overflow:hidden;background:var(--mid);border:1px solid var(--rule)}
+.ct-photo img{width:100%;height:100%;object-fit:cover;object-position:center top}
+.ct-photo-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-family:var(--serif);font-size:24px;font-style:italic;color:var(--muted)}
+.ct-name{font-size:13px;font-weight:600;margin-bottom:2px}
+.ct-handle{font-size:10px;color:var(--muted);font-family:var(--mono);margin-bottom:8px}
+.ct-vol{font-size:11px;font-weight:600;color:var(--green)}
+@keyframes scroll-x{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── MARKET FEED SECTION ── */
+.feed-section{padding:60px 48px;border-top:1px solid var(--rule);background:var(--white)}
+.feed-header{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:24px}
+.feed-title{font-family:var(--serif);font-size:32px;font-style:italic;letter-spacing:-0.5px}
+.feed-tabs{display:flex;gap:0;border:1px solid var(--rule)}
+.ftab{padding:7px 16px;font-size:11px;font-weight:600;letter-spacing:1px;text-transform:uppercase;cursor:pointer;color:var(--muted);transition:all 0.15s;border-right:1px solid var(--rule)}
+.ftab:last-child{border-right:none}
+.ftab.on{background:var(--black);color:var(--white)}
+.feed-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:0;border:1px solid var(--rule)}
+
+/* FEED CARD */
+.fcard{border-right:1px solid var(--rule);border-bottom:1px solid var(--rule);cursor:pointer;transition:background 0.15s;position:relative;overflow:hidden}
+.fcard:nth-child(3n){border-right:none}
+.fcard:nth-last-child(-n+3){border-bottom:none}
+.fcard:hover{background:var(--off)}
+.fcard-img{width:100%;height:140px;overflow:hidden;position:relative;background:var(--off)}
+.fcard-img img{width:100%;height:100%;object-fit:cover;object-position:center 20%;display:block;transition:transform 0.3s ease}
+.fcard:hover .fcard-img img{transform:scale(1.03)}
+.fcard-img-fallback{width:100%;height:100%;display:flex;align-items:center;justify-content:center}
+.fcard-img-letter{font-family:var(--serif);font-size:48px;font-style:italic;color:rgba(255,255,255,0.3)}
+.fcard-img-grad{position:absolute;bottom:0;left:0;right:0;height:60px;background:linear-gradient(0deg,rgba(10,10,10,0.7),transparent)}
+.fcard-img-pct{position:absolute;bottom:8px;right:10px;font-family:var(--mono);font-size:13px;font-weight:500;color:white}
+.fcard-img-pct.yes{color:#5FD991}
+.fcard-img-pct.no{color:#FF7070}
+.fcard-body{padding:12px 14px}
+.fcard-source{display:flex;align-items:center;gap:6px;margin-bottom:6px}
+.fcard-av{width:20px;height:20px;border-radius:50%;overflow:hidden;background:var(--mid);flex-shrink:0}
+.fcard-av img{width:100%;height:100%;object-fit:cover;object-position:center top}
+.fcard-creator-name{font-size:10px;font-weight:600;color:var(--muted)}
+.fcard-q{font-size:13px;font-family:var(--serif);font-style:italic;line-height:1.35;margin-bottom:8px}
+.fcard-meta{display:flex;align-items:center;justify-content:space-between}
+.fcard-vol{font-size:10px;color:var(--muted);font-family:var(--mono)}
+.fcard-tag{font-size:8px;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;padding:2px 6px;background:var(--black);color:var(--white)}
+.fcard-tag.crypto{background:var(--off);color:var(--muted);border:1px solid var(--rule)}
+.fcard-tag.poly{background:var(--off);color:var(--muted);border:1px solid var(--rule)}
+
+/* ── STATS BAR ── */
+.stats-bar{display:grid;grid-template-columns:repeat(4,1fr);border-top:1px solid var(--rule);border-bottom:1px solid var(--rule);background:var(--black)}
+.stat-cell{padding:28px 32px;border-right:1px solid #1a1a1a;text-align:center}
+.stat-cell:last-child{border-right:none}
+.stat-val{font-family:var(--serif);font-size:36px;font-style:italic;color:var(--white);letter-spacing:-1px;display:block;margin-bottom:4px}
+.stat-lbl{font-size:9px;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;color:#444}
+
+/* ── CTA SECTION ── */
+.cta-section{padding:80px 48px;background:var(--white);border-top:1px solid var(--rule);display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:center}
+.cta-left{}
+.cta-eyebrow{font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:16px}
+.cta-headline{font-family:var(--serif);font-size:40px;font-style:italic;letter-spacing:-1px;line-height:1.1;margin-bottom:16px}
+.cta-sub{font-size:14px;color:var(--muted);line-height:1.7;margin-bottom:28px;max-width:380px}
+.cta-platforms{display:flex;gap:8px;margin-bottom:28px}
+.plat-btn{display:flex;align-items:center;gap:7px;padding:10px 16px;border:1px solid var(--rule);font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s;background:var(--white)}
+.plat-btn:hover{border-color:var(--black);background:var(--off)}
+.plat-btn svg{width:16px;height:16px;flex-shrink:0}
+.cta-right{position:relative}
+
+/* MOCKUP PHONE */
+.phone-mock{width:260px;margin:0 auto;border:1.5px solid var(--black);background:var(--white);padding:0;position:relative}
+.phone-top-bar{background:var(--black);padding:8px 16px;display:flex;align-items:center;justify-content:space-between}
+.phone-logo{font-family:var(--serif);font-size:13px;font-style:italic;color:var(--white)}
+.phone-bal{font-family:var(--serif);font-size:15px;font-style:italic;color:var(--white)}
+.phone-nav{display:flex;border-bottom:1px solid var(--rule);background:var(--white)}
+.phone-nav-item{flex:1;padding:7px 4px;font-size:8px;font-weight:700;letter-spacing:1px;text-transform:uppercase;text-align:center;color:var(--dim);border-bottom:2px solid transparent}
+.phone-nav-item.on{color:var(--black);border-bottom-color:var(--black)}
+.phone-card{height:240px;background:var(--off);position:relative;overflow:hidden}
+.phone-card img{width:100%;height:100%;object-fit:cover;object-position:center 20%}
+.phone-card-fallback{width:100%;height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px}
+.phone-card-letter{font-family:var(--serif);font-size:72px;font-style:italic;color:var(--rule)}
+.phone-grad{position:absolute;inset:0;background:linear-gradient(0deg,rgba(10,10,10,0.9) 0%,rgba(10,10,10,0.2) 60%,transparent 100%)}
+.phone-card-info{position:absolute;bottom:0;left:0;right:0;padding:14px}
+.phone-card-name{font-family:var(--serif);font-size:20px;font-style:italic;color:white;margin-bottom:2px}
+.phone-card-handle{font-size:9px;color:rgba(255,255,255,0.5);margin-bottom:8px}
+.phone-mkt{display:flex;align-items:center;justify-content:space-between;padding:6px 8px;background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.12)}
+.phone-mkt-q{font-size:9px;color:rgba(255,255,255,0.8)}
+.phone-mkt-pct{font-size:10px;font-weight:600;color:#5FD991;font-family:var(--mono)}
+.phone-swipe-row{display:flex;justify-content:center;gap:10px;padding:10px 0;border-top:1px solid var(--rule);background:var(--white)}
+.phone-sw{width:36px;height:36px;border:1px solid var(--rule);display:flex;align-items:center;justify-content:center;font-size:13px}
+.phone-sw.trade{background:var(--black);border-color:var(--black);color:var(--white);width:44px;height:44px;font-size:16px}
+
+/* ── FOOTER ── */
+footer{padding:32px 48px;border-top:1px solid var(--rule);display:flex;align-items:center;justify-content:space-between;background:var(--white)}
+.footer-logo{font-family:var(--serif);font-size:16px;font-style:italic}
+.footer-links{display:flex;gap:24px}
+.footer-link{font-size:11px;color:var(--muted);cursor:pointer;letter-spacing:0.3px;transition:color 0.15s}
+.footer-link:hover{color:var(--black)}
+.footer-right{font-size:10px;color:var(--dim);font-family:var(--mono)}
+
+.hero-plat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.hero-plat-btn{display:flex;align-items:center;gap:7px;padding:11px 18px;border:none;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;letter-spacing:0.2px}
+.hero-plat-btn.of{background:#00AFF0;color:white}
+.hero-plat-btn.of:hover{background:#009fd8}
+.hero-plat-btn.tt{background:#000000;color:white}
+.hero-plat-btn.tt:hover{background:#1a1a1a}
+.hero-plat-btn.ig{background:linear-gradient(135deg,#f09433,#e6683c,#dc2743,#cc2366,#bc1888);color:white}
+.hero-plat-btn.ig:hover{opacity:0.9}
+.hero-plat-btn.wallet{background:var(--black);color:white;border:none}
+.hero-plat-btn.wallet:hover{background:#2a2a2a}
+.hero-plat-note{font-size:12px;color:var(--muted);margin-bottom:32px}
+/* ANIMATIONS */
+.fade-up{opacity:0;transform:translateY(20px);transition:opacity 0.5s ease,transform 0.5s ease}
+.fade-up.visible{opacity:1;transform:translateY(0)}
+
+@media(max-width:768px){
+  .hero{grid-template-columns:1fr}
+  .hero-right{display:none}
+  .how-grid{grid-template-columns:1fr}
+  .how-cell{border-right:none;border-bottom:1px solid var(--rule)}
+  .feed-grid{grid-template-columns:1fr 1fr}
+  .stats-bar{grid-template-columns:1fr 1fr}
+  .cta-section{grid-template-columns:1fr}
+  nav{padding:12px 20px}
+  .hero-left{padding:60px 24px 40px}
+  .feed-section,.how-section{padding:40px 24px}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">
+    <svg width="18" height="22" viewBox="0 0 18 22"><ellipse cx="9" cy="15" rx="7" ry="5.5" fill="#C8914A"/><path d="M8.5 7 Q8 4 7.5 1.5" fill="none" stroke="#4A9A2A" stroke-width="1.5" stroke-linecap="round"/><path d="M7.5 4 Q5 2 3.5 0 Q5.5 1 7.5 3Z" fill="#4A9A2A"/><rect x="4.5" y="11" width="5" height="3.5" rx="2" fill="#111"/><rect x="10" y="11" width="5" height="3.5" rx="2" fill="#111"/><rect x="8.5" y="12.5" width="2.5" height="1" rx="0.5" fill="white" opacity="0.8"/><ellipse cx="9" cy="18" rx="3.5" ry="1.5" fill="#CC1A1A"/></svg>
+    <span class="nav-logo-text">Hot Potato</span>
+  </div>
+  <div class="nav-links">
+    <a class="nav-link" href="#markets">Markets</a>
+    <a class="nav-link" href="#how">How it works</a>
+    <a class="nav-link" href="#creators">Creators</a>
+    <a class="nav-link" href="#token">$POTATO</a>
+  </div>
+  <button class="nav-cta" onclick="document.getElementById('join').scrollIntoView({behavior:'smooth'})">Join Free →</button>
+</nav>
+
+<!-- TICKER TAPE -->
+<div class="ticker-wrap">
+  <div class="ticker-inner" id="ticker">
+    <!-- items duplicated for loop -->
+    <div class="ticker-item"><span class="ti-label">Nova Reyes</span><span class="ti-val">74% YES</span><span class="ti-chg up">▲ +6%</span></div>
+    <div class="ticker-item"><span class="ti-label">BTC</span><span class="ti-val">$84,210</span><span class="ti-chg up">▲ +2.4%</span></div>
+    <div class="ticker-item"><span class="ti-label">US Election</span><span class="ti-val">52% Dem</span><span class="ti-chg dn">▼ −1%</span></div>
+    <div class="ticker-item"><span class="ti-label">Zara Moon</span><span class="ti-val">52% NO</span><span class="ti-chg dn">▼ −3%</span></div>
+    <div class="ticker-item"><span class="ti-label">ETH</span><span class="ti-val">$2,840</span><span class="ti-chg up">▲ +1.8%</span></div>
+    <div class="ticker-item"><span class="ti-label">Fed Rate Cut</span><span class="ti-val">68% YES</span><span class="ti-chg up">▲ +4%</span></div>
+    <div class="ticker-item"><span class="ti-label">Jake Vega</span><span class="ti-val">61% YES</span><span class="ti-chg up">▲ +2%</span></div>
+    <div class="ticker-item"><span class="ti-label">DOGE</span><span class="ti-val">$0.182</span><span class="ti-chg up">▲ +5.1%</span></div>
+    <div class="ticker-item"><span class="ti-label">Mia Chen</span><span class="ti-val">67% YES</span><span class="ti-chg up">▲ +9%</span></div>
+    <div class="ticker-item"><span class="ti-label">SOL</span><span class="ti-val">$142</span><span class="ti-chg dn">▼ −0.8%</span></div>
+    <div class="ticker-item"><span class="ti-label">AI Reg Bill</span><span class="ti-val">38% YES</span><span class="ti-chg dn">▼ −5%</span></div>
+    <!-- duplicate for seamless loop -->
+    <div class="ticker-item"><span class="ti-label">Nova Reyes</span><span class="ti-val">74% YES</span><span class="ti-chg up">▲ +6%</span></div>
+    <div class="ticker-item"><span class="ti-label">BTC</span><span class="ti-val">$84,210</span><span class="ti-chg up">▲ +2.4%</span></div>
+    <div class="ticker-item"><span class="ti-label">US Election</span><span class="ti-val">52% Dem</span><span class="ti-chg dn">▼ −1%</span></div>
+    <div class="ticker-item"><span class="ti-label">Zara Moon</span><span class="ti-val">52% NO</span><span class="ti-chg dn">▼ −3%</span></div>
+    <div class="ticker-item"><span class="ti-label">ETH</span><span class="ti-val">$2,840</span><span class="ti-chg up">▲ +1.8%</span></div>
+    <div class="ticker-item"><span class="ti-label">Fed Rate Cut</span><span class="ti-val">68% YES</span><span class="ti-chg up">▲ +4%</span></div>
+    <div class="ticker-item"><span class="ti-label">Jake Vega</span><span class="ti-val">61% YES</span><span class="ti-chg up">▲ +2%</span></div>
+    <div class="ticker-item"><span class="ti-label">DOGE</span><span class="ti-val">$0.182</span><span class="ti-chg up">▲ +5.1%</span></div>
+    <div class="ticker-item"><span class="ti-label">Mia Chen</span><span class="ti-val">67% YES</span><span class="ti-chg up">▲ +9%</span></div>
+    <div class="ticker-item"><span class="ti-label">SOL</span><span class="ti-val">$142</span><span class="ti-chg dn">▼ −0.8%</span></div>
+    <div class="ticker-item"><span class="ti-label">AI Reg Bill</span><span class="ti-val">38% YES</span><span class="ti-chg dn">▼ −5%</span></div>
+  </div>
+</div>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="hero-left">
+    <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>Live prediction markets</div>
+    <h1 class="hero-headline">Trade what<br>happens <em>next</em><br>to your faves.</h1>
+    <p class="hero-sub">Connect, share, trade.</p>
+
+    <div class="hero-plat-row">
+      <button class="hero-plat-btn of" onclick="alert('OnlyFans connect coming soon')">
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/></svg>
+        OnlyFans
+      </button>
+      <button class="hero-plat-btn tt" onclick="alert('TikTok connect coming soon')">
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="white"><path d="M14 4.5a3.5 3.5 0 01-2.2-.8 3.5 3.5 0 01-1.3-2.7H8v10a2 2 0 11-2.4-1.95V7A5 5 0 1010 12V8a6.5 6.5 0 002.7.6V6.2A3.5 3.5 0 0114 4.5z"/></svg>
+        TikTok
+      </button>
+      <button class="hero-plat-btn ig" onclick="alert('Instagram connect coming soon')">
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="none"><rect x="2" y="2" width="14" height="14" rx="4" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/><circle cx="13" cy="5" r="1" fill="white"/></svg>
+        Instagram
+      </button>
+      <button class="hero-plat-btn wallet" onclick="alert('Wallet connect coming soon')">
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="none"><rect x="1" y="4" width="16" height="11" rx="2" stroke="white" stroke-width="1.8"/><path d="M1 7h16" stroke="white" stroke-width="1.8"/><circle cx="13.5" cy="11" r="1.5" fill="white"/></svg>
+        Wallet
+      </button>
+    </div>
+
+    <div class="hero-plat-note">or <span onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})" style="text-decoration:underline;cursor:pointer;color:var(--black)">browse markets as a trader →</span></div>
+
+    <div class="hero-stats">
+      <div class="hstat"><span class="hstat-val">$4.2M</span><span class="hstat-lbl">Volume</span></div>
+      <div class="hstat"><span class="hstat-val">847</span><span class="hstat-lbl">Creators</span></div>
+      <div class="hstat"><span class="hstat-val">12K</span><span class="hstat-lbl">Traders</span></div>
+    </div>
+  </div>
+
+  <div class="hero-right" id="markets">
+    <div class="hero-right-label"><span class="live-dot"></span>Live markets</div>
+    <div class="market-cards-scroll">
+
+      <!-- INFLUENCER CARDS -->
+      <div class="mcard" onclick="alert('Open Nova market')">
+        <div class="mcard-photo-row">
+          <div class="mcard-photo">
+            <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=180&h=180&fit=crop&crop=focalpoint&fp-y=0.3&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+            <div class="mcard-photo-fallback" style="display:none">N</div>
+          </div>
+          <div class="mcard-body">
+            <div class="mcard-top">
+              <div><div class="mcard-creator">Nova Reyes</div><div class="mcard-handle">@novareyes · 4.2M</div></div>
+              <span class="mcard-badge hot">Hot</span>
+            </div>
+            <div class="mcard-q">"Hits 5M followers by August?"</div>
+            <div class="mcard-bottom">
+              <div class="mcard-bar"><div class="mcard-fill" style="width:74%"></div></div>
+              <span class="mcard-yes">74%</span>
+              <span class="mcard-no">26%</span>
+              <span class="mcard-vol">$91K vol</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mcard" onclick="alert('Open Mia market')">
+        <div class="mcard-photo-row">
+          <div class="mcard-photo">
+            <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=180&h=180&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+          </div>
+          <div class="mcard-body">
+            <div class="mcard-top">
+              <div><div class="mcard-creator">Mia Chen</div><div class="mcard-handle">@miachen · 3.1M</div></div>
+              <span class="mcard-badge hot">Hot</span>
+            </div>
+            <div class="mcard-q">"Goes platinum before June?"</div>
+            <div class="mcard-bottom">
+              <div class="mcard-bar"><div class="mcard-fill" style="width:67%"></div></div>
+              <span class="mcard-yes">67%</span>
+              <span class="mcard-no">33%</span>
+              <span class="mcard-vol">$44K vol</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mcard" onclick="alert('Open Zara market')">
+        <div class="mcard-photo-row">
+          <div class="mcard-photo">
+            <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=180&h=180&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+          </div>
+          <div class="mcard-body">
+            <div class="mcard-top">
+              <div><div class="mcard-creator">Zara Moon</div><div class="mcard-handle">@zaramoon · 2.1M</div></div>
+              <span class="mcard-badge new">New</span>
+            </div>
+            <div class="mcard-q">"Drops Sony collab this year?"</div>
+            <div class="mcard-bottom">
+              <div class="mcard-bar"><div class="mcard-fill" style="width:48%"></div></div>
+              <span class="mcard-yes">48%</span>
+              <span class="mcard-no">52%</span>
+              <span class="mcard-vol">$28K vol</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mcard" onclick="alert('Open Jake market')">
+        <div class="mcard-photo-row">
+          <div class="mcard-photo">
+            <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=180&h=180&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+          </div>
+          <div class="mcard-body">
+            <div class="mcard-top">
+              <div><div class="mcard-creator">Jake Vega</div><div class="mcard-handle">@jakevega · 890K</div></div>
+              <span class="mcard-badge new">New</span>
+            </div>
+            <div class="mcard-q">"Lands brand deal over $500K?"</div>
+            <div class="mcard-bottom">
+              <div class="mcard-bar"><div class="mcard-fill" style="width:61%"></div></div>
+              <span class="mcard-yes">61%</span>
+              <span class="mcard-no">39%</span>
+              <span class="mcard-vol">$19K vol</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIVIDER -->
+      <div style="padding:8px 14px;background:var(--off);border-bottom:1px solid var(--rule)">
+        <span style="font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)">Crypto markets</span>
+      </div>
+
+      <!-- CRYPTO MARKETS -->
+      <div class="mini-card"><div class="mini-card-icon" style="background:#F7931A;font-size:12px;color:white;font-weight:700;border:none">₿</div><div class="mini-card-info"><div class="mini-card-name">Bitcoin above $100K</div><div class="mini-card-q">Will BTC hit $100K before July?</div></div><div class="mini-card-right"><div class="mini-card-pct yes">62%</div><div class="mini-card-vol">$2.1M vol</div></div></div>
+      <div class="mini-card"><div class="mini-card-icon" style="background:#627EEA;font-size:11px;color:white;font-weight:700;border:none">Ξ</div><div class="mini-card-info"><div class="mini-card-name">ETH ETF net positive</div><div class="mini-card-q">Ethereum ETF net positive Q2?</div></div><div class="mini-card-right"><div class="mini-card-pct yes">71%</div><div class="mini-card-vol">$840K vol</div></div></div>
+      <div class="mini-card"><div class="mini-card-icon" style="background:#8247E5;font-size:10px;color:white;font-weight:700;border:none">◎</div><div class="mini-card-info"><div class="mini-card-name">DOGE above $0.25</div><div class="mini-card-q">Will DOGE hold above $0.25?</div></div><div class="mini-card-right"><div class="mini-card-pct no">31%</div><div class="mini-card-vol">$220K vol</div></div></div>
+
+      <!-- DIVIDER -->
+      <div style="padding:8px 14px;background:var(--off);border-bottom:1px solid var(--rule)">
+        <span style="font-size:9px;font-weight:700;letter-spacing:2.5px;text-transform:uppercase;color:var(--muted)">World markets</span>
+      </div>
+
+      <!-- POLYMARKET-STYLE -->
+      <div class="mini-card"><div class="mini-card-icon" style="background:var(--off);font-size:13px">🇺🇸</div><div class="mini-card-info"><div class="mini-card-name">Fed rate cut in May</div><div class="mini-card-q">Will Fed cut rates at May meeting?</div></div><div class="mini-card-right"><div class="mini-card-pct yes">68%</div><div class="mini-card-vol">$5.2M vol</div></div></div>
+      <div class="mini-card"><div class="mini-card-icon" style="background:var(--off);font-size:13px">🤖</div><div class="mini-card-info"><div class="mini-card-name">AI regulation bill passes</div><div class="mini-card-q">US AI regulation bill passes 2025?</div></div><div class="mini-card-right"><div class="mini-card-pct no">38%</div><div class="mini-card-vol">$1.8M vol</div></div></div>
+      <div class="mini-card"><div class="mini-card-icon" style="background:var(--off);font-size:13px">⚽</div><div class="mini-card-info"><div class="mini-card-name">Man City win Premier League</div><div class="mini-card-q">Man City wins PL title 2024/25?</div></div><div class="mini-card-right"><div class="mini-card-pct yes">54%</div><div class="mini-card-vol">$920K vol</div></div></div>
+
+    </div>
+  </div>
+</section>
+
+<!-- STATS BAR -->
+<div class="stats-bar">
+  <div class="stat-cell"><span class="stat-val">$4.2M</span><span class="stat-lbl">Total Volume</span></div>
+  <div class="stat-cell"><span class="stat-val">847</span><span class="stat-lbl">Creators</span></div>
+  <div class="stat-cell"><span class="stat-val">12,400</span><span class="stat-lbl">Active traders</span></div>
+  <div class="stat-cell"><span class="stat-val">1%</span><span class="stat-lbl">Creator fee forever</span></div>
+</div>
+
+<!-- HOW IT WORKS -->
+<section class="how-section" id="how">
+  <div style="margin-bottom:32px">
+    <div style="font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:12px">How it works</div>
+    <div style="font-family:var(--serif);font-size:36px;font-style:italic;letter-spacing:-0.5px">Simple as a swipe.<br>Powerful as a market.</div>
+  </div>
+  <div class="how-grid fade-up">
+    <div class="how-cell">
+      <div class="how-num">01</div>
+      <div class="how-title">Connect your account</div>
+      <div class="how-desc">Sign in with OnlyFans, TikTok, or Instagram. Your existing audience becomes your HP profile in 30 seconds. No wallet required to start.</div>
+    </div>
+    <div class="how-cell">
+      <div class="how-num">02</div>
+      <div class="how-title">Trade creator markets</div>
+      <div class="how-desc">Swipe through creator cards like Tinder. Spot a prediction — YES or NO, set your amount, confirm. Every trade settles in USDC on Polygon.</div>
+    </div>
+    <div class="how-cell">
+      <div class="how-num">03</div>
+      <div class="how-title">Creators earn forever</div>
+      <div class="how-desc">When you create a market, you earn 1% of every trade on it — forever, regardless of outcome. Post once, earn every time your fans trade.</div>
+    </div>
+  </div>
+</section>
+
+<!-- CREATOR STRIP -->
+<section style="border-top:1px solid var(--rule);overflow:hidden;background:var(--off);padding:40px 0" id="creators">
+  <div style="text-align:center;font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:28px">Top creators this week</div>
+  <div style="display:flex;gap:0;animation:scroll-x 28s linear infinite;width:max-content">
+    <!-- set 1 -->
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.3&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Nova Reyes</div><div class="ct-handle">@novareyes</div><div class="ct-vol">$91K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Mia Chen</div><div class="ct-handle">@miachen</div><div class="ct-vol">$44K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Zara Moon</div><div class="ct-handle">@zaramoon</div><div class="ct-vol">$28K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Leo Salva</div><div class="ct-handle">@leosalva</div><div class="ct-vol">$21K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Jake Vega</div><div class="ct-handle">@jakevega</div><div class="ct-vol">$19K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Rio Santos</div><div class="ct-handle">@riosantos</div><div class="ct-vol">$16K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Alex Rivera</div><div class="ct-handle">@alexrivera</div><div class="ct-vol">$12K vol</div></div>
+    <!-- set 2 (duplicate for seamless loop) -->
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.3&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Nova Reyes</div><div class="ct-handle">@novareyes</div><div class="ct-vol">$91K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Mia Chen</div><div class="ct-handle">@miachen</div><div class="ct-vol">$44K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Zara Moon</div><div class="ct-handle">@zaramoon</div><div class="ct-vol">$28K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Leo Salva</div><div class="ct-handle">@leosalva</div><div class="ct-vol">$21K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Jake Vega</div><div class="ct-handle">@jakevega</div><div class="ct-vol">$19K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1531746020798-e6953c6e8e04?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Rio Santos</div><div class="ct-handle">@riosantos</div><div class="ct-vol">$16K vol</div></div>
+    <div class="creator-tile"><div class="ct-photo"><img src="https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=128&h=128&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><div class="ct-name">Alex Rivera</div><div class="ct-handle">@alexrivera</div><div class="ct-vol">$12K vol</div></div>
+  </div>
+</section>
+
+<!-- MARKET FEED -->
+<section class="feed-section">
+  <div class="feed-header">
+    <div class="feed-title">All markets</div>
+    <div class="feed-tabs">
+      <div class="ftab on" onclick="filterTab(this,'all')">All</div>
+      <div class="ftab" onclick="filterTab(this,'creators')">Creators</div>
+      <div class="ftab" onclick="filterTab(this,'crypto')">Crypto</div>
+      <div class="ftab" onclick="filterTab(this,'world')">World</div>
+    </div>
+  </div>
+  <div class="feed-grid" id="feed-grid">
+
+    <div class="fcard" data-cat="creators">
+      <div class="fcard-img" style="background:#2A1020">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=280&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+        <div class="fcard-img-grad"></div>
+        <span class="fcard-img-pct yes">74%</span>
+      </div>
+      <div class="fcard-body">
+        <div class="fcard-source"><div class="fcard-av"><img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=40&h=40&fit=crop&crop=focalpoint&fp-y=0.3&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><span class="fcard-creator-name">Nova Reyes</span></div>
+        <div class="fcard-q">"Hits 5M followers by August?"</div>
+        <div class="fcard-meta"><span class="fcard-vol">$91K · 847 traders</span><span class="fcard-tag">Creator</span></div>
+      </div>
+    </div>
+
+    <div class="fcard" data-cat="creators">
+      <div class="fcard-img" style="background:#2A1828">
+        <img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=400&h=280&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+        <div class="fcard-img-grad"></div>
+        <span class="fcard-img-pct yes">67%</span>
+      </div>
+      <div class="fcard-body">
+        <div class="fcard-source"><div class="fcard-av"><img src="https://images.unsplash.com/photo-1517841905240-472988babdf9?w=40&h=40&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><span class="fcard-creator-name">Mia Chen</span></div>
+        <div class="fcard-q">"Goes platinum before June?"</div>
+        <div class="fcard-meta"><span class="fcard-vol">$44K · 412 traders</span><span class="fcard-tag">Creator</span></div>
+      </div>
+    </div>
+
+    <div class="fcard" data-cat="crypto">
+      <div class="fcard-img" style="background:#1A1200;display:flex;align-items:center;justify-content:center">
+        <div class="fcard-img-fallback" style="background:linear-gradient(135deg,#F7931A,#FFB84D);width:100%;height:100%;display:flex;align-items:center;justify-content:center">
+          <span style="font-size:56px;font-weight:700;color:white;font-family:var(--mono)">₿</span>
+        </div>
+        <div class="fcard-img-grad"></div>
+        <span class="fcard-img-pct yes">62%</span>
+      </div>
+      <div class="fcard-body">
+        <div class="fcard-source"><div class="fcard-av" style="background:#F7931A;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;color:white">₿</div><span class="fcard-creator-name">Crypto</span></div>
+        <div class="fcard-q">"Bitcoin above $100K before July?"</div>
+        <div class="fcard-meta"><span class="fcard-vol">$2.1M · 14K traders</span><span class="fcard-tag crypto">Crypto</span></div>
+      </div>
+    </div>
+
+    <div class="fcard" data-cat="creators">
+      <div class="fcard-img" style="background:#2C1A10">
+        <img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=400&h=280&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+        <div class="fcard-img-grad"></div>
+        <span class="fcard-img-pct no">48%</span>
+      </div>
+      <div class="fcard-body">
+        <div class="fcard-source"><div class="fcard-av"><img src="https://images.unsplash.com/photo-1524504388940-b1c1722653e1?w=40&h=40&fit=crop&crop=focalpoint&fp-y=0.2&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><span class="fcard-creator-name">Zara Moon</span></div>
+        <div class="fcard-q">"Drops Sony collab this year?"</div>
+        <div class="fcard-meta"><span class="fcard-vol">$28K · 231 traders</span><span class="fcard-tag">Creator</span></div>
+      </div>
+    </div>
+
+    <div class="fcard" data-cat="world">
+      <div class="fcard-img" style="background:#1A1A2A;display:flex;align-items:center;justify-content:center">
+        <div style="background:linear-gradient(135deg,#1a2a6c,#b21f1f,#fdbb2d);width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-size:72px">🇺🇸</div>
+        <div class="fcard-img-grad"></div>
+        <span class="fcard-img-pct yes">68%</span>
+      </div>
+      <div class="fcard-body">
+        <div class="fcard-source"><div class="fcard-av" style="font-size:13px;display:flex;align-items:center;justify-content:center;background:var(--off)">🏛️</div><span class="fcard-creator-name">Politics</span></div>
+        <div class="fcard-q">"Fed cuts rates at May meeting?"</div>
+        <div class="fcard-meta"><span class="fcard-vol">$5.2M · 32K traders</span><span class="fcard-tag poly">World</span></div>
+      </div>
+    </div>
+
+    <div class="fcard" data-cat="creators">
+      <div class="fcard-img" style="background:#1A2030">
+        <img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=280&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+        <div class="fcard-img-grad"></div>
+        <span class="fcard-img-pct yes">61%</span>
+      </div>
+      <div class="fcard-body">
+        <div class="fcard-source"><div class="fcard-av"><img src="https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=40&h=40&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt=""></div><span class="fcard-creator-name">Jake Vega</span></div>
+        <div class="fcard-q">"Lands brand deal over $500K?"</div>
+        <div class="fcard-meta"><span class="fcard-vol">$19K · 180 traders</span><span class="fcard-tag">Creator</span></div>
+      </div>
+    </div>
+
+  </div>
+  <div style="text-align:center;padding:28px 0 0">
+    <button class="btn-ghost" onclick="alert('Sign up to see all markets')">View all 200+ markets →</button>
+  </div>
+</section>
+
+<!-- CTA -->
+<section class="cta-section" id="token">
+  <div class="cta-left fade-up">
+    <div class="cta-eyebrow">For creators</div>
+    <div class="cta-headline">Your audience<br>is your market.</div>
+    <div class="cta-sub">Connect, share, trade. Your audience is already there — now give them something to bet on. Earn 1% of every transaction on your markets, forever.</div>
+    <div class="cta-platforms">
+      <div class="plat-btn">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="6" stroke="#00AFF0" stroke-width="1.5"/><circle cx="8" cy="8" r="3" stroke="#00AFF0" stroke-width="1.5"/></svg>
+        OnlyFans
+      </div>
+      <div class="plat-btn">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M13 4a3 3 0 01-1.9-.7A3 3 0 019.7 1H7v9a1.7 1.7 0 11-2-1.65V6a4.5 4.5 0 104.5 4.5V7.5a5.8 5.8 0 002.4.5V5.6A3 3 0 0113 4z" fill="#000"/></svg>
+        TikTok
+      </div>
+      <div class="plat-btn">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3.5" stroke="url(#ig-g)" stroke-width="1.5" fill="none"/><circle cx="8" cy="8" r="3" stroke="url(#ig-g)" stroke-width="1.5" fill="none"/><circle cx="11.5" cy="4.5" r="1" fill="#E1306C"/><defs><linearGradient id="ig-g" x1="2" y1="2" x2="14" y2="14"><stop stop-color="#f09433"/><stop offset="0.5" stop-color="#e6683c"/><stop offset="1" stop-color="#bc1888"/></linearGradient></defs></svg>
+        Instagram
+      </div>
+    </div>
+    <button class="btn-primary" onclick="alert('Creator sign up coming soon!')">Become a creator →</button>
+  </div>
+  <div class="cta-right">
+    <!-- Phone mockup -->
+    <div class="phone-mock">
+      <div class="phone-top-bar">
+        <span class="phone-logo">Hot Potato</span>
+        <span class="phone-bal">$1,247</span>
+      </div>
+      <div class="phone-nav">
+        <div class="phone-nav-item on">Discover</div>
+        <div class="phone-nav-item">Positions</div>
+        <div class="phone-nav-item" style="font-size:12px">🥔</div>
+        <div class="phone-nav-item">Create</div>
+        <div class="phone-nav-item">Me</div>
+      </div>
+      <div class="phone-card">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=520&h=480&fit=crop&crop=focalpoint&fp-y=0.25&auto=format&q=80" referrerpolicy="no-referrer" alt="">
+        <div class="phone-grad"></div>
+        <div class="phone-card-info">
+          <div style="display:inline-flex;align-items:center;gap:4px;padding:2px 6px;border:1px solid rgba(255,255,255,0.2);font-size:8px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,0.6);margin-bottom:6px;text-transform:uppercase"><span style="width:4px;height:4px;border-radius:50%;background:#CC1A1A;display:inline-block"></span>On Fire</div>
+          <div class="phone-card-name">Nova Reyes</div>
+          <div class="phone-card-handle">@novareyes · 4.2M</div>
+          <div class="phone-mkt">
+            <span class="phone-mkt-q">Hits 5M followers by August?</span>
+            <span class="phone-mkt-pct">74%</span>
+          </div>
+        </div>
+      </div>
+      <div class="phone-swipe-row">
+        <div class="phone-sw">✕</div>
+        <div class="phone-sw">⚡</div>
+        <div class="phone-sw trade">💸</div>
+        <div class="phone-sw">↗</div>
+      </div>
+      <div style="padding:10px 12px;background:var(--white);border-top:1px solid var(--rule)">
+        <div style="display:flex;gap:6px">
+          <div style="flex:1;padding:7px 10px;border:1px solid var(--rule);text-align:center;font-size:11px;font-weight:600;color:var(--green);font-family:var(--mono)">YES 74¢</div>
+          <div style="flex:1;padding:7px 10px;border:1px solid var(--rule);text-align:center;font-size:11px;font-weight:600;color:var(--red-loss);font-family:var(--mono)">NO 26¢</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer>
+  <div class="footer-logo">Hot Potato</div>
+  <div class="footer-links">
+    <span class="footer-link">Markets</span>
+    <span class="footer-link">Creators</span>
+    <span class="footer-link">$POTATO</span>
+    <span class="footer-link">Docs</span>
+    <span class="footer-link">Terms</span>
+    <span class="footer-link">Privacy</span>
+  </div>
+  <div class="footer-right">© 2025 Hot Potato · Polygon</div>
+</footer>
+
+<script>
+// Intersection observer for fade-up animations
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if(e.isIntersecting) e.target.classList.add('visible'); });
+}, {threshold: 0.15});
+document.querySelectorAll('.fade-up').forEach(el => observer.observe(el));
+
+// Feed tab filter
+function filterTab(el, cat) {
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.fcard').forEach(card => {
+    if(cat === 'all' || card.dataset.cat === cat) {
+      card.style.display = '';
+    } else {
+      card.style.display = 'none';
+    }
+  });
+}
+
+// Live price tick simulation
+const prices = {btc:84210, eth:2840, doge:0.182, sol:142};
+setInterval(() => {
+  Object.keys(prices).forEach(k => {
+    const delta = (Math.random() - 0.5) * (k === 'btc' ? 200 : k === 'eth' ? 8 : k === 'sol' ? 1 : 0.002);
+    prices[k] = Math.max(0.001, prices[k] + delta);
+  });
+  // Could update ticker items here for live feel
+}, 3000);
+</script>
+
+</body>
+</html>
