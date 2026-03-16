@@ -726,7 +726,7 @@ footer{padding:32px 48px;border-top:1px solid var(--rule);display:flex;align-ite
         Instagram
       </div>
     </div>
-    <button class="btn-primary" onclick="alert('Creator sign up coming soon!')">Become a creator →</button>
+    <button class="btn-primary" onclick="alert('Creator sign up coming soon!')">Trade Now →</button>
   </div>
   <div class="cta-right">
     <!-- Phone mockup -->
@@ -1152,7 +1152,7 @@ function shareMarket(platform) {
 }
 
 function copyLink() {
-  navigator.clipboard.writeText('https://hotpotato.markets/m/nova-reyes-5m').catch(function(){});
+  navigator.clipboard.writeText('https://daufinder.com/hotpotato/').catch(function(){});
   var btn = document.querySelector('.cm-share-copy');
   btn.textContent = '✓ Copied';
   setTimeout(function(){ btn.textContent = '↗ Copy link'; }, 2000);
@@ -1161,7 +1161,7 @@ function copyLink() {
 // Hook "Become a creator" button on landing page to open modal
 document.addEventListener('DOMContentLoaded', function(){
   document.querySelectorAll('.btn-primary, .cta-left .btn-primary').forEach(function(btn){
-    if(btn.textContent.includes('creator')) {
+    if(btn.textContent.includes('Trade Now')) {
       btn.onclick = function(){ openCM(); return false; };
     }
   });
