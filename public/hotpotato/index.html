@@ -1066,7 +1066,9 @@ setInterval(() => {
 </style>
 
 <script>
+const API_URL = '/api/hotpotato';
 var cmPlatform = '';
+var cmUser = null;
 
 function openCM() {
   document.getElementById('cm-modal').classList.add('open');
@@ -1074,7 +1076,19 @@ function openCM() {
   // Set default date to 3 months from now
   var d = new Date(); d.setMonth(d.getMonth()+3);
   document.getElementById('cm-date').value = d.toISOString().split('T')[0];
+  
+  // Check if already logged in
+  fetch(API_URL + '/auth/me', { credentials: 'include' })
+    .then(r => r.json())
+    .then(data => {
+      if (data.user) {
+        cmUser = data.user;
+        goStep(2); // Skip to profile step
+      }
+    })
+    .catch(() => {});
 }
+
 function closeCM() {
   document.getElementById('cm-modal').classList.remove('open');
   document.body.style.overflow = '';
@@ -1092,23 +1106,39 @@ function selectPlatform(p, btn) {
   cmPlatform = p;
   document.querySelectorAll('.cm-plat-btn').forEach(b=>b.classList.remove('selected'));
   btn.classList.add('selected');
-  var row = document.getElementById('cm-verify-row');
-  row.style.display = 'block';
-  var inp = document.getElementById('cm-url');
-  var placeholders = {onlyfans:'onlyfans.com/yourname',tiktok:'tiktok.com/@yourname',instagram:'instagram.com/yourname'};
-  inp.placeholder = placeholders[p] || 'paste your profile URL';
+  
+  // Open OAuth popup
+  const authUrls = {
+    onlyfans: API_URL + '/auth/onlyfans',
+    tiktok: API_URL + '/auth/tiktok',
+    instagram: API_URL + '/auth/instagram'
+  };
+  
+  const url = authUrls[p];
+  const popup = window.open(url, 'hotpotato-auth', 'width=600,height=700');
+  
+  // Poll for popup close and check auth status
+  const checkAuth = setInterval(() => {
+    if (popup.closed) {
+      clearInterval(checkAuth);
+      fetch(API_URL + '/auth/me', { credentials: 'include' })
+        .then(r => r.json())
+        .then(data => {
+          if (data.user) {
+            cmUser = data.user;
+            document.getElementById('cm-display').value = data.user.name;
+            goStep(2);
+          }
+        })
+        .catch(err => {
+          alert('Auth failed. Please try again.');
+        });
+    }
+  }, 500);
 }
 
 function verifyProfile() {
-  var url = document.getElementById('cm-url').value.trim();
-  var hint = document.getElementById('cm-verify-hint');
-  if (!url) { hint.className='cm-verify-hint err'; hint.textContent='Please enter your profile URL'; return; }
-  hint.className='cm-verify-hint'; hint.textContent='Verifying…';
-  setTimeout(function(){
-    hint.className='cm-verify-hint ok';
-    hint.textContent='✓ Profile verified — 4.2M followers found';
-    document.getElementById('cm-next-1').style.display='block';
-  }, 1400);
+  // No longer used - OAuth handles verification
 }
 
 function pickCat(el) {
@@ -1133,13 +1163,40 @@ function previewMarket() {
   var q = document.getElementById('cm-q').value.trim();
   if (!q) { alert('Add your market question first'); return; }
   var odds = document.getElementById('cm-odds').value;
+  var resolveDate = document.getElementById('cm-date').value;
   var name = document.getElementById('cm-display').value || 'You';
+  
+  // Show preview
   document.getElementById('cm-prev-q').textContent = '"Will I '+q+'"';
   document.getElementById('cm-prev-name').textContent = name;
   document.getElementById('cm-prev-yes').textContent = 'YES '+odds+'%';
   document.getElementById('cm-prev-no').textContent = 'NO '+(100-odds)+'%';
   document.getElementById('cm-prev-fill').style.width = odds+'%';
-  goStep(4);
+  
+  // Create market via API
+  fetch(API_URL + '/markets/create', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({
+      question: 'Will I ' + q,
+      yesOdds: parseInt(odds),
+      resolveDate: resolveDate
+    })
+  })
+  .then(r => r.json())
+  .then(data => {
+    if (data.success) {
+      console.log('Market created:', data.market);
+      goStep(4);
+    } else {
+      alert('Failed to create market: ' + (data.error || 'Unknown error'));
+    }
+  })
+  .catch(err => {
+    console.error('Market creation failed:', err);
+    alert('Failed to create market. Please try again.');
+  });
 }
 
 function shareMarket(platform) {

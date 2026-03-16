@@ -1080,6 +1080,20 @@ app.get('/earn', (req, res) => {
   res.sendFile(filePath);
 });
 
+// Hot Potato API proxy
+const { createProxyMiddleware } = require('http-proxy-middleware');
+app.use('/api/hotpotato', createProxyMiddleware({
+  target: 'http://localhost:3030',
+  changeOrigin: true,
+  pathRewrite: { '^/api/hotpotato': '/api' },
+  onProxyReq: (proxyReq, req, res) => {
+    // Forward cookies for session management
+    if (req.headers.cookie) {
+      proxyReq.setHeader('cookie', req.headers.cookie);
+    }
+  }
+}));
+
 // Serve admin dashboard
 app.use('/public', express.static(join(__dirname, 'public')));
 
