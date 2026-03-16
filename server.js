@@ -1080,19 +1080,28 @@ app.get('/earn', (req, res) => {
   res.sendFile(filePath);
 });
 
-// Hot Potato API proxy
+// Hot Potato API routes (inline)
+// Note: Backend runs on localhost:3030, proxy forwards requests
 const { createProxyMiddleware } = require('http-proxy-middleware');
-app.use('/api/hotpotato', createProxyMiddleware({
-  target: 'http://localhost:3030',
-  changeOrigin: true,
-  pathRewrite: { '^/api/hotpotato': '/api' },
-  onProxyReq: (proxyReq, req, res) => {
-    // Forward cookies for session management
-    if (req.headers.cookie) {
-      proxyReq.setHeader('cookie', req.headers.cookie);
+if (process.env.NODE_ENV === 'production' || process.env.HP_BACKEND_URL) {
+  app.use('/api/hotpotato', createProxyMiddleware({
+    target: process.env.HP_BACKEND_URL || 'http://localhost:3030',
+    changeOrigin: true,
+    pathRewrite: { '^/api/hotpotato': '/api' },
+    onProxyReq: (proxyReq, req, res) => {
+      if (req.headers.cookie) {
+        proxyReq.setHeader('cookie', req.headers.cookie);
+      }
     }
-  }
-}));
+  }));
+} else {
+  // Dev: direct proxy to localhost
+  app.use('/api/hotpotato', createProxyMiddleware({
+    target: 'http://localhost:3030',
+    changeOrigin: true,
+    pathRewrite: { '^/api/hotpotato': '/api' }
+  }));
+}
 
 // Serve admin dashboard
 app.use('/public', express.static(join(__dirname, 'public')));
