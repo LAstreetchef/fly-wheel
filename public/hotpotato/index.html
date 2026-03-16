@@ -325,21 +325,9 @@ footer{padding:32px 48px;border-top:1px solid var(--rule);display:flex;align-ite
     <div class="hero-headline-row">
       <h1 class="hero-headline">You are the <em>market</em> now.</h1>
       <div class="hero-plat-row">
-        <button class="hero-plat-btn of" onclick="openCM()">
-          <svg viewBox="0 0 18 18" width="12" height="12" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/></svg>
-          OnlyFans
-        </button>
-        <button class="hero-plat-btn tt" onclick="openCM()">
-          <svg viewBox="0 0 18 18" width="12" height="12" fill="white"><path d="M14 4.5a3.5 3.5 0 01-2.2-.8 3.5 3.5 0 01-1.3-2.7H8v10a2 2 0 11-2.4-1.95V7A5 5 0 1010 12V8a6.5 6.5 0 002.7.6V6.2A3.5 3.5 0 0114 4.5z"/></svg>
-          TikTok
-        </button>
-        <button class="hero-plat-btn ig" onclick="openCM()">
-          <svg viewBox="0 0 18 18" width="12" height="12" fill="none"><rect x="2" y="2" width="14" height="14" rx="4" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/><circle cx="13" cy="5" r="1" fill="white"/></svg>
-          Instagram
-        </button>
         <button class="hero-plat-btn wallet" onclick="openCM()">
           <svg viewBox="0 0 18 18" width="12" height="12" fill="none"><rect x="1" y="4" width="16" height="11" rx="2" stroke="white" stroke-width="1.8"/><path d="M1 7h16" stroke="white" stroke-width="1.8"/><circle cx="13.5" cy="11" r="1.5" fill="white"/></svg>
-          Wallet
+          Connect Wallet
         </button>
       </div>
     </div>
@@ -752,32 +740,23 @@ setInterval(() => {
 
   <!-- ── STEP 1: CONNECT ── -->
   <div class="cm-pane" id="cp-1">
-    <div class="cm-eyebrow">01 — Connect</div>
-    <div class="cm-headline">Connect your<br><em>creator account</em></div>
-    <div class="cm-sub">Your existing audience becomes your Hot Potato profile. No wallet needed to start.</div>
-    <div class="cm-plats">
-      <button class="cm-plat-btn cm-of" onclick="selectPlatform('onlyfans',this)">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/></svg>
-        OnlyFans
-      </button>
-      <button class="cm-plat-btn cm-tt" onclick="selectPlatform('tiktok',this)">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M14 4.5a3.5 3.5 0 01-2.2-.8 3.5 3.5 0 01-1.3-2.7H8v10a2 2 0 11-2.4-1.95V7A5 5 0 1010 12V8a6.5 6.5 0 002.7.6V6.2A3.5 3.5 0 0114 4.5z"/></svg>
-        TikTok
-      </button>
-      <button class="cm-plat-btn cm-ig" onclick="selectPlatform('instagram',this)">
-        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="4" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/><circle cx="13" cy="5" r="1" fill="white"/></svg>
-        Instagram
-      </button>
+    <div class="cm-eyebrow">01 — Get Started</div>
+    <div class="cm-headline">Create your<br><em>account</em></div>
+    <div class="cm-sub">Enter your email or connect a wallet to start trading.</div>
+    
+    <div class="cm-field-row">
+      <div class="cm-field-label">Email Address</div>
+      <input class="cm-field-inp" id="cm-email" type="email" placeholder="you@example.com">
     </div>
-    <div class="cm-verify-row" id="cm-verify-row" style="display:none">
-      <div class="cm-verify-label">Paste your profile URL</div>
-      <div class="cm-url-row">
-        <input class="cm-url-inp" id="cm-url" type="text" placeholder="onlyfans.com/yourname">
-        <button class="cm-url-btn" onclick="verifyProfile()">Verify →</button>
-      </div>
-      <div class="cm-verify-hint" id="cm-verify-hint"></div>
-    </div>
-    <button class="cm-next-btn" id="cm-next-1" style="display:none" onclick="goStep(2)">Continue →</button>
+    
+    <div style="text-align:center;margin:16px 0;color:var(--muted);font-size:12px;">— OR —</div>
+    
+    <button class="cm-next-btn" style="background:var(--black);color:white;width:100%;margin-bottom:12px" onclick="connectWallet()">
+      <svg width="16" height="16" viewBox="0 0 18 18" fill="none" style="display:inline-block;margin-right:6px"><rect x="1" y="4" width="16" height="11" rx="2" stroke="white" stroke-width="1.8"/><path d="M1 7h16" stroke="white" stroke-width="1.8"/><circle cx="13.5" cy="11" r="1.5" fill="white"/></svg>
+      Connect Wallet
+    </button>
+    
+    <button class="cm-next-btn" onclick="startWithEmail()">Continue →</button>
   </div>
 
   <!-- ── STEP 2: PROFILE ── -->
@@ -1020,43 +999,38 @@ function goStep(n) {
   }
 }
 
-function selectPlatform(p, btn) {
-  cmPlatform = p;
-  document.querySelectorAll('.cm-plat-btn').forEach(b=>b.classList.remove('selected'));
-  btn.classList.add('selected');
+function startWithEmail() {
+  const email = document.getElementById('cm-email').value.trim();
+  if (!email || !email.includes('@')) {
+    alert('Please enter a valid email address');
+    return;
+  }
   
-  // Open OAuth popup
-  const authUrls = {
-    onlyfans: API_URL + '/auth/onlyfans',
-    tiktok: API_URL + '/auth/tiktok',
-    instagram: API_URL + '/auth/instagram'
-  };
-  
-  const url = authUrls[p];
-  const popup = window.open(url, 'hotpotato-auth', 'width=600,height=700');
-  
-  // Poll for popup close and check auth status
-  const checkAuth = setInterval(() => {
-    if (popup.closed) {
-      clearInterval(checkAuth);
-      fetch(API_URL + '/auth/me', { credentials: 'include' })
-        .then(r => r.json())
-        .then(data => {
-          if (data.user) {
-            cmUser = data.user;
-            document.getElementById('cm-display').value = data.user.name;
-            goStep(2);
-          }
-        })
-        .catch(err => {
-          alert('Auth failed. Please try again.');
-        });
-    }
-  }, 500);
+  // Store email in localStorage
+  localStorage.setItem('hp_email', email);
+  cmUser = { email, name: email.split('@')[0] };
+  document.getElementById('cm-display').value = cmUser.name;
+  goStep(2);
 }
 
-function verifyProfile() {
-  // No longer used - OAuth handles verification
+async function connectWallet() {
+  if (typeof window.ethereum === 'undefined') {
+    alert('Please install MetaMask to connect a wallet');
+    return;
+  }
+  
+  try {
+    const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+    const wallet = accounts[0];
+    
+    // Store wallet in localStorage
+    localStorage.setItem('hp_wallet', wallet);
+    cmUser = { wallet, name: wallet.slice(0, 6) + '...' + wallet.slice(-4) };
+    document.getElementById('cm-display').value = cmUser.name;
+    goStep(2);
+  } catch (err) {
+    alert('Failed to connect wallet: ' + err.message);
+  }
 }
 
 function pickCat(el) {
