@@ -1016,30 +1016,8 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Hot Potato API proxy (must be before rate limiter)
-console.log('🥔 Setting up Hot Potato API proxy');
-app.all('/api/hotpotato/*', async (req, res) => {
-  const targetPath = req.url.replace('/api/hotpotato', '/api');
-  const targetUrl = `http://localhost:3030${targetPath}`;
-  console.log('🥔 Manual proxy:', req.method, req.url, '→', targetUrl);
-  
-  try {
-    const response = await fetch(targetUrl, {
-      method: req.method,
-      headers: {
-        ...req.headers,
-        host: 'localhost:3030'
-      },
-      body: ['POST', 'PUT', 'PATCH'].includes(req.method) ? JSON.stringify(req.body) : undefined
-    });
-    
-    const data = await response.text();
-    res.status(response.status).send(data);
-  } catch (err) {
-    console.error('🥔 Proxy error:', err.message);
-    res.status(500).json({ error: 'Proxy failed' });
-  }
-});
-console.log('🥔 Hot Potato API proxy → localhost:3030');
+// Disabled - backend not running yet
+// console.log('🥔 Hot Potato API proxy disabled until backend is deployed');
 
 // Rate limiting
 const apiLimiter = rateLimit({
