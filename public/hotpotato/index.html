@@ -45,11 +45,10 @@ nav{position:fixed;top:0;left:0;right:0;z-index:100;background:rgba(250,250,248,
 /* ── HERO ── */
 .hero{min-height:auto;display:grid;grid-template-columns:1fr 1fr;gap:0;padding-top:0;align-items:start}
 .hero-left{padding:40px 48px 40px;display:flex;flex-direction:column;justify-content:flex-start;border-right:1px solid var(--rule)}
-.hero-top-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;gap:16px;flex-wrap:wrap}
-.hero-eyebrow{font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.hero-eyebrow{font-size:10px;font-weight:600;letter-spacing:3px;text-transform:uppercase;color:var(--muted);margin-bottom:12px;display:flex;align-items:center;gap:8px}
 .hero-eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--red);animation:pulse 2s infinite}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.3}}
-.hero-headline{font-family:var(--serif);font-size:clamp(32px,4vw,48px);font-style:italic;line-height:1.1;letter-spacing:-1.5px;margin-bottom:10px}
+.hero-headline{font-family:var(--serif);font-size:clamp(42px,5vw,72px);font-style:italic;line-height:1.05;letter-spacing:-2px;margin-bottom:10px}
 .hero-headline em{font-style:normal;position:relative;display:inline-block}
 .hero-headline em::after{content:'';position:absolute;bottom:-4px;left:0;right:0;height:2px;background:var(--black)}
 .hero-sub{font-size:16px;line-height:1.7;color:var(--muted);max-width:400px;margin-bottom:16px;font-weight:300}
@@ -220,8 +219,8 @@ footer{padding:32px 48px;border-top:1px solid var(--rule);display:flex;align-ite
 .footer-link:hover{color:var(--black)}
 .footer-right{font-size:10px;color:var(--dim);font-family:var(--mono)}
 
-.hero-plat-row{display:flex;gap:6px;flex-wrap:wrap}
-.hero-plat-btn{display:flex;align-items:center;gap:5px;padding:6px 12px;border:none;font-family:var(--sans);font-size:10px;font-weight:600;cursor:pointer;transition:all 0.15s;letter-spacing:0.2px}
+.hero-plat-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+.hero-plat-btn{display:flex;align-items:center;gap:7px;padding:11px 18px;border:none;font-family:var(--sans);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;letter-spacing:0.2px}
 .hero-plat-btn.of{background:#00AFF0;color:white}
 .hero-plat-btn.of:hover{background:#009fd8}
 .hero-plat-btn.tt{background:#000000;color:white}
@@ -329,28 +328,8 @@ footer{padding:32px 48px;border-top:1px solid var(--rule);display:flex;align-ite
 <!-- HERO -->
 <section class="hero">
   <div class="hero-left">
-    <div class="hero-top-bar">
-      <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>Live prediction markets</div>
-      <div class="hero-plat-row">
-        <button class="hero-plat-btn of" onclick="alert('OnlyFans connect coming soon')">
-          <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/></svg>
-          OnlyFans
-        </button>
-        <button class="hero-plat-btn tt" onclick="alert('TikTok connect coming soon')">
-          <svg viewBox="0 0 18 18" width="14" height="14" fill="white"><path d="M14 4.5a3.5 3.5 0 01-2.2-.8 3.5 3.5 0 01-1.3-2.7H8v10a2 2 0 11-2.4-1.95V7A5 5 0 1010 12V8a6.5 6.5 0 002.7.6V6.2A3.5 3.5 0 0114 4.5z"/></svg>
-          TikTok
-        </button>
-        <button class="hero-plat-btn ig" onclick="alert('Instagram connect coming soon')">
-          <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><rect x="2" y="2" width="14" height="14" rx="4" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/><circle cx="13" cy="5" r="1" fill="white"/></svg>
-          Instagram
-        </button>
-        <button class="hero-plat-btn wallet" onclick="alert('Wallet connect coming soon')">
-          <svg viewBox="0 0 18 18" width="14" height="14" fill="none"><rect x="1" y="4" width="16" height="11" rx="2" stroke="white" stroke-width="1.8"/><path d="M1 7h16" stroke="white" stroke-width="1.8"/><circle cx="13.5" cy="11" r="1.5" fill="white"/></svg>
-          Wallet
-        </button>
-      </div>
-    </div>
-    <h1 class="hero-headline">You are the <em>market</em> now.</h1>
+    <div class="hero-eyebrow"><span class="hero-eyebrow-dot"></span>Live prediction markets</div>
+    <h1 class="hero-headline">You are the<br><em>market</em> now.</h1>
     <p class="hero-sub">Connect, share, trade.</p>
 
     <!-- DIAGRAM -->
@@ -429,6 +408,27 @@ footer{padding:32px 48px;border-top:1px solid var(--rule);display:flex;align-ite
       </div>
 
     </div>
+
+    <div class="hero-plat-row">
+      <button class="hero-plat-btn of" onclick="alert('OnlyFans connect coming soon')">
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/></svg>
+        OnlyFans
+      </button>
+      <button class="hero-plat-btn tt" onclick="alert('TikTok connect coming soon')">
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="white"><path d="M14 4.5a3.5 3.5 0 01-2.2-.8 3.5 3.5 0 01-1.3-2.7H8v10a2 2 0 11-2.4-1.95V7A5 5 0 1010 12V8a6.5 6.5 0 002.7.6V6.2A3.5 3.5 0 0114 4.5z"/></svg>
+        TikTok
+      </button>
+      <button class="hero-plat-btn ig" onclick="alert('Instagram connect coming soon')">
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="none"><rect x="2" y="2" width="14" height="14" rx="4" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/><circle cx="13" cy="5" r="1" fill="white"/></svg>
+        Instagram
+      </button>
+      <button class="hero-plat-btn wallet" onclick="alert('Wallet connect coming soon')">
+        <svg viewBox="0 0 18 18" width="16" height="16" fill="none"><rect x="1" y="4" width="16" height="11" rx="2" stroke="white" stroke-width="1.8"/><path d="M1 7h16" stroke="white" stroke-width="1.8"/><circle cx="13.5" cy="11" r="1.5" fill="white"/></svg>
+        Wallet
+      </button>
+    </div>
+
+    <div class="hero-plat-note">or <span onclick="document.getElementById('how').scrollIntoView({behavior:'smooth'})" style="text-decoration:underline;cursor:pointer;color:var(--black)">browse markets as a trader →</span></div>
 
     <div class="hero-stats">
       <div class="hstat"><span class="hstat-val">$4.2M</span><span class="hstat-lbl">Volume</span></div>
@@ -814,6 +814,358 @@ setInterval(() => {
   });
   // Could update ticker items here for live feel
 }, 3000);
+</script>
+
+
+<!-- ═══ CREATE MARKET MODAL ═══ -->
+<div class="cm-bg" id="cm-modal" onclick="if(event.target===this)closeCM()">
+<div class="cm-sheet">
+
+  <!-- STEP INDICATOR -->
+  <div class="cm-steps" id="cm-steps">
+    <div class="cm-step on" id="cstep-1">01</div>
+    <div class="cm-step-line"></div>
+    <div class="cm-step" id="cstep-2">02</div>
+    <div class="cm-step-line"></div>
+    <div class="cm-step" id="cstep-3">03</div>
+    <div class="cm-step-line"></div>
+    <div class="cm-step" id="cstep-4">04</div>
+  </div>
+
+  <!-- ── STEP 1: CONNECT ── -->
+  <div class="cm-pane" id="cp-1">
+    <div class="cm-eyebrow">01 — Connect</div>
+    <div class="cm-headline">Connect your<br><em>creator account</em></div>
+    <div class="cm-sub">Your existing audience becomes your Hot Potato profile. No wallet needed to start.</div>
+    <div class="cm-plats">
+      <button class="cm-plat-btn cm-of" onclick="selectPlatform('onlyfans',this)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/></svg>
+        OnlyFans
+      </button>
+      <button class="cm-plat-btn cm-tt" onclick="selectPlatform('tiktok',this)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="white"><path d="M14 4.5a3.5 3.5 0 01-2.2-.8 3.5 3.5 0 01-1.3-2.7H8v10a2 2 0 11-2.4-1.95V7A5 5 0 1010 12V8a6.5 6.5 0 002.7.6V6.2A3.5 3.5 0 0114 4.5z"/></svg>
+        TikTok
+      </button>
+      <button class="cm-plat-btn cm-ig" onclick="selectPlatform('instagram',this)">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none"><rect x="2" y="2" width="14" height="14" rx="4" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/><circle cx="13" cy="5" r="1" fill="white"/></svg>
+        Instagram
+      </button>
+    </div>
+    <div class="cm-verify-row" id="cm-verify-row" style="display:none">
+      <div class="cm-verify-label">Paste your profile URL</div>
+      <div class="cm-url-row">
+        <input class="cm-url-inp" id="cm-url" type="text" placeholder="onlyfans.com/yourname">
+        <button class="cm-url-btn" onclick="verifyProfile()">Verify →</button>
+      </div>
+      <div class="cm-verify-hint" id="cm-verify-hint"></div>
+    </div>
+    <button class="cm-next-btn" id="cm-next-1" style="display:none" onclick="goStep(2)">Continue →</button>
+  </div>
+
+  <!-- ── STEP 2: PROFILE ── -->
+  <div class="cm-pane" id="cp-2" style="display:none">
+    <div class="cm-eyebrow">02 — Your profile</div>
+    <div class="cm-headline">Looking good,<br><em>creator.</em></div>
+    <div class="cm-profile-card" id="cm-profile-card">
+      <div class="cm-profile-av" id="cm-profile-av">
+        <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=focalpoint&fp-y=0.3&auto=format&q=80" referrerpolicy="no-referrer" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+      </div>
+      <div class="cm-profile-info">
+        <div class="cm-profile-name" id="cm-profile-name">Nova Reyes</div>
+        <div class="cm-profile-handle" id="cm-profile-handle">@novareyes · 4.2M followers</div>
+        <div class="cm-profile-plat" id="cm-profile-plat">OnlyFans ✓</div>
+      </div>
+    </div>
+    <div class="cm-field-row">
+      <div class="cm-field-label">Display name</div>
+      <input class="cm-field-inp" id="cm-display" type="text" value="Nova Reyes">
+    </div>
+    <div class="cm-field-row">
+      <div class="cm-field-label">Category</div>
+      <div class="cm-cats">
+        <div class="cm-cat on" onclick="pickCat(this)">Creator</div>
+        <div class="cm-cat" onclick="pickCat(this)">Music</div>
+        <div class="cm-cat" onclick="pickCat(this)">Sports</div>
+        <div class="cm-cat" onclick="pickCat(this)">Gaming</div>
+        <div class="cm-cat" onclick="pickCat(this)">Fashion</div>
+        <div class="cm-cat" onclick="pickCat(this)">Other</div>
+      </div>
+    </div>
+    <button class="cm-next-btn" onclick="goStep(3)">Create my first market →</button>
+  </div>
+
+  <!-- ── STEP 3: CREATE MARKET ── -->
+  <div class="cm-pane" id="cp-3" style="display:none">
+    <div class="cm-eyebrow">03 — Create market</div>
+    <div class="cm-headline">What will you<br><em>do next?</em></div>
+    <div class="cm-sub">Pick a template or write your own. Your fans will trade YES or NO.</div>
+
+    <!-- TEMPLATES -->
+    <div class="cm-templates">
+      <div class="cm-tpl" onclick="pickTemplate(this,'Will I hit 1M followers by ')">📈 Milestone</div>
+      <div class="cm-tpl" onclick="pickTemplate(this,'Will I drop new content this ')">🎬 Content drop</div>
+      <div class="cm-tpl" onclick="pickTemplate(this,'Will I land a brand deal this ')">💼 Brand deal</div>
+      <div class="cm-tpl" onclick="pickTemplate(this,'Will I go live every day this ')">📡 Consistency</div>
+      <div class="cm-tpl" onclick="pickTemplate(this,'Will I collab with ')">🤝 Collab</div>
+      <div class="cm-tpl" onclick="pickTemplate(this,'')">✏️ Custom</div>
+    </div>
+
+    <!-- QUESTION INPUT -->
+    <div class="cm-q-wrap">
+      <div class="cm-q-prefix">Will I…</div>
+      <input class="cm-q-inp" id="cm-q" type="text" placeholder="hit 5M followers by August?">
+    </div>
+
+    <!-- ADVANCED OPTIONS -->
+    <div class="cm-adv-row">
+      <div class="cm-adv-item">
+        <div class="cm-adv-label">Starting odds</div>
+        <div class="cm-odds-row">
+          <input type="range" id="cm-odds" min="10" max="90" value="60" oninput="updateOdds(this.value)" style="flex:1">
+          <span class="cm-odds-val" id="cm-odds-val">YES 60%</span>
+        </div>
+      </div>
+      <div class="cm-adv-item">
+        <div class="cm-adv-label">Resolves</div>
+        <input class="cm-field-inp" type="date" id="cm-date" style="width:100%">
+      </div>
+    </div>
+
+    <button class="cm-next-btn" onclick="previewMarket()">Preview market →</button>
+  </div>
+
+  <!-- ── STEP 4: PREVIEW + PUBLISH ── -->
+  <div class="cm-pane" id="cp-4" style="display:none">
+    <div class="cm-eyebrow">04 — Share &amp; earn</div>
+    <div class="cm-headline">Your market<br><em>is live.</em></div>
+
+    <!-- MARKET PREVIEW CARD -->
+    <div class="cm-preview-card">
+      <div class="cm-preview-top">
+        <div class="cm-preview-av">
+          <img src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=120&h=120&fit=crop&crop=focalpoint&fp-y=0.3&auto=format&q=80" referrerpolicy="no-referrer" alt="" style="width:100%;height:100%;object-fit:cover;border-radius:50%">
+        </div>
+        <div>
+          <div class="cm-preview-name" id="cm-prev-name">Nova Reyes</div>
+          <div class="cm-preview-handle" id="cm-prev-handle">@novareyes</div>
+        </div>
+        <div class="cm-preview-badge">LIVE</div>
+      </div>
+      <div class="cm-preview-q" id="cm-prev-q">"Will I hit 5M followers by August?"</div>
+      <div class="cm-preview-bar-row">
+        <div class="cm-preview-bar"><div class="cm-preview-fill" id="cm-prev-fill" style="width:60%"></div></div>
+        <span class="cm-preview-yes" id="cm-prev-yes">YES 60%</span>
+        <span class="cm-preview-no" id="cm-prev-no">NO 40%</span>
+      </div>
+      <div class="cm-preview-fee">You earn 1% of every trade · forever</div>
+    </div>
+
+    <!-- SHARE BUTTONS -->
+    <div class="cm-share-row">
+      <button class="cm-share-btn cm-share-of" onclick="shareMarket('onlyfans')">
+        <svg width="14" height="14" viewBox="0 0 18 18" fill="none"><circle cx="9" cy="9" r="7" stroke="white" stroke-width="1.8"/><circle cx="9" cy="9" r="3.5" stroke="white" stroke-width="1.8"/></svg>
+        Post to OF
+      </button>
+      <button class="cm-share-btn cm-share-tt" onclick="shareMarket('tiktok')">
+        <svg width="14" height="14" viewBox="0 0 18 18" fill="white"><path d="M14 4.5a3.5 3.5 0 01-2.2-.8 3.5 3.5 0 01-1.3-2.7H8v10a2 2 0 11-2.4-1.95V7A5 5 0 1010 12V8a6.5 6.5 0 002.7.6V6.2A3.5 3.5 0 0114 4.5z"/></svg>
+        Post to TikTok
+      </button>
+      <button class="cm-share-btn cm-share-copy" onclick="copyLink()">
+        ↗ Copy link
+      </button>
+    </div>
+
+    <div class="cm-earn-note">+500 HP Points bonus for your first market 🥔</div>
+    <button class="cm-next-btn" onclick="closeCM()">Done — view my markets →</button>
+  </div>
+
+  <!-- CLOSE -->
+  <button class="cm-close" onclick="closeCM()">✕</button>
+</div>
+</div>
+
+<style>
+.cm-bg{position:fixed;inset:0;background:rgba(10,10,10,0.6);z-index:1000;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity 0.25s}
+.cm-bg.open{opacity:1;pointer-events:all}
+.cm-sheet{background:#FAFAF8;width:100%;max-width:560px;max-height:88vh;overflow-y:auto;scrollbar-width:none;padding:32px 36px 40px;position:relative;transform:translateY(40px);transition:transform 0.3s cubic-bezier(0.32,0.72,0,1);border-top:2px solid #0A0A0A}
+.cm-sheet::-webkit-scrollbar{display:none}
+.cm-bg.open .cm-sheet{transform:translateY(0)}
+.cm-close{position:absolute;top:16px;right:16px;background:none;border:none;font-size:16px;cursor:pointer;color:#8A8880;width:28px;height:28px;display:flex;align-items:center;justify-content:center}
+.cm-close:hover{color:#0A0A0A}
+.cm-steps{display:flex;align-items:center;margin-bottom:28px}
+.cm-step{width:28px;height:28px;border:1px solid #D4D2CC;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;letter-spacing:1px;color:#8A8880;flex-shrink:0;transition:all 0.2s}
+.cm-step.on{background:#0A0A0A;color:#FAFAF8;border-color:#0A0A0A}
+.cm-step.done{background:#1A7A3C;color:#FAFAF8;border-color:#1A7A3C}
+.cm-step-line{flex:1;height:1px;background:#D4D2CC}
+.cm-eyebrow{font-size:9px;font-weight:700;letter-spacing:3px;text-transform:uppercase;color:#8A8880;margin-bottom:10px}
+.cm-headline{font-family:'Instrument Serif',Georgia,serif;font-size:34px;font-style:italic;letter-spacing:-1px;line-height:1.1;margin-bottom:10px;color:#0A0A0A}
+.cm-headline em{font-style:normal}
+.cm-sub{font-size:13px;color:#8A8880;line-height:1.6;margin-bottom:20px}
+.cm-plats{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px}
+.cm-plat-btn{display:flex;align-items:center;gap:8px;padding:11px 18px;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;opacity:0.7}
+.cm-plat-btn.selected{opacity:1;outline:2px solid #0A0A0A;outline-offset:2px}
+.cm-plat-btn:hover{opacity:1}
+.cm-of{background:#00AFF0;color:white}
+.cm-tt{background:#000;color:white}
+.cm-ig{background:linear-gradient(135deg,#f09433,#dc2743,#bc1888);color:white}
+.cm-verify-row{margin-bottom:16px}
+.cm-verify-label{font-size:11px;font-weight:600;letter-spacing:0.5px;color:#0A0A0A;margin-bottom:8px}
+.cm-url-row{display:flex;gap:8px}
+.cm-url-inp{flex:1;border:none;border-bottom:1.5px solid #0A0A0A;padding:7px 0;font-family:'DM Sans',sans-serif;font-size:14px;background:transparent;outline:none;color:#0A0A0A}
+.cm-url-btn{padding:7px 16px;background:#0A0A0A;color:#FAFAF8;border:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer}
+.cm-verify-hint{font-size:11px;margin-top:6px;min-height:18px}
+.cm-verify-hint.ok{color:#1A7A3C}
+.cm-verify-hint.err{color:#B83232}
+.cm-next-btn{width:100%;padding:13px;background:#0A0A0A;color:#FAFAF8;border:none;font-family:'DM Sans',sans-serif;font-size:13px;font-weight:600;cursor:pointer;margin-top:20px;transition:background 0.15s}
+.cm-next-btn:hover{background:#2a2a2a}
+.cm-profile-card{display:flex;align-items:center;gap:14px;padding:14px;border:1px solid #D4D2CC;margin-bottom:20px}
+.cm-profile-av{width:52px;height:52px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#F2F1EE}
+.cm-profile-name{font-size:15px;font-weight:600}
+.cm-profile-handle{font-size:11px;color:#8A8880;margin-top:2px}
+.cm-profile-plat{font-size:10px;font-weight:600;color:#1A7A3C;margin-top:3px;letter-spacing:0.5px}
+.cm-field-row{margin-bottom:14px}
+.cm-field-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8A8880;margin-bottom:6px}
+.cm-field-inp{width:100%;border:none;border-bottom:1px solid #D4D2CC;padding:7px 0;font-family:'DM Sans',sans-serif;font-size:14px;background:transparent;outline:none;color:#0A0A0A;transition:border-color 0.15s}
+.cm-field-inp:focus{border-bottom-color:#0A0A0A}
+.cm-cats{display:flex;gap:6px;flex-wrap:wrap}
+.cm-cat{padding:5px 12px;border:1px solid #D4D2CC;font-size:11px;font-weight:600;cursor:pointer;color:#8A8880;transition:all 0.15s}
+.cm-cat.on{background:#0A0A0A;color:#FAFAF8;border-color:#0A0A0A}
+.cm-cat:hover{border-color:#0A0A0A;color:#0A0A0A}
+.cm-templates{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:18px}
+.cm-tpl{padding:8px 10px;border:1px solid #D4D2CC;font-size:11px;font-weight:500;cursor:pointer;text-align:center;transition:all 0.15s;color:#0A0A0A}
+.cm-tpl:hover,.cm-tpl.on{border-color:#0A0A0A;background:#F2F1EE}
+.cm-q-wrap{display:flex;align-items:baseline;gap:8px;margin-bottom:18px;border-bottom:2px solid #0A0A0A;padding-bottom:8px}
+.cm-q-prefix{font-family:'Instrument Serif',Georgia,serif;font-size:20px;font-style:italic;color:#8A8880;white-space:nowrap}
+.cm-q-inp{flex:1;border:none;font-family:'Instrument Serif',Georgia,serif;font-size:20px;font-style:italic;background:transparent;outline:none;color:#0A0A0A}
+.cm-q-inp::placeholder{color:#D4D2CC}
+.cm-adv-row{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:4px}
+.cm-adv-item{}
+.cm-adv-label{font-size:10px;font-weight:600;letter-spacing:1px;text-transform:uppercase;color:#8A8880;margin-bottom:8px}
+.cm-odds-row{display:flex;align-items:center;gap:8px}
+.cm-odds-val{font-size:11px;font-weight:600;color:#1A7A3C;white-space:nowrap;min-width:52px}
+.cm-preview-card{border:1px solid #D4D2CC;padding:16px;margin-bottom:18px}
+.cm-preview-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+.cm-preview-av{width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;background:#F2F1EE}
+.cm-preview-name{font-size:13px;font-weight:600}
+.cm-preview-handle{font-size:10px;color:#8A8880}
+.cm-preview-badge{margin-left:auto;font-size:8px;font-weight:700;letter-spacing:2px;padding:3px 7px;background:#CC1A1A;color:white}
+.cm-preview-q{font-family:'Instrument Serif',Georgia,serif;font-size:16px;font-style:italic;margin-bottom:10px;line-height:1.4}
+.cm-preview-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.cm-preview-bar{flex:1;height:3px;background:#E8E6E1;overflow:hidden}
+.cm-preview-fill{height:100%;background:#0A0A0A;transition:width 0.3s}
+.cm-preview-yes{font-size:12px;font-weight:600;color:#1A7A3C}
+.cm-preview-no{font-size:12px;color:#8A8880}
+.cm-preview-fee{font-size:10px;color:#8B6914;font-weight:500;letter-spacing:0.3px}
+.cm-share-row{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+.cm-share-btn{display:flex;align-items:center;gap:6px;padding:10px 16px;border:none;font-family:'DM Sans',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:all 0.15s}
+.cm-share-of{background:#00AFF0;color:white}
+.cm-share-tt{background:#000;color:white}
+.cm-share-copy{background:#F2F1EE;color:#0A0A0A;border:1px solid #D4D2CC}
+.cm-share-copy:hover{border-color:#0A0A0A}
+.cm-earn-note{font-size:11px;color:#8A8880;text-align:center;margin-bottom:4px}
+</style>
+
+<script>
+var cmPlatform = '';
+
+function openCM() {
+  document.getElementById('cm-modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  // Set default date to 3 months from now
+  var d = new Date(); d.setMonth(d.getMonth()+3);
+  document.getElementById('cm-date').value = d.toISOString().split('T')[0];
+}
+function closeCM() {
+  document.getElementById('cm-modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+function goStep(n) {
+  for(var i=1;i<=4;i++){
+    document.getElementById('cp-'+i).style.display = i===n?'block':'none';
+    var s = document.getElementById('cstep-'+i);
+    s.className = 'cm-step' + (i<n?' done':i===n?' on':'');
+  }
+}
+
+function selectPlatform(p, btn) {
+  cmPlatform = p;
+  document.querySelectorAll('.cm-plat-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  var row = document.getElementById('cm-verify-row');
+  row.style.display = 'block';
+  var inp = document.getElementById('cm-url');
+  var placeholders = {onlyfans:'onlyfans.com/yourname',tiktok:'tiktok.com/@yourname',instagram:'instagram.com/yourname'};
+  inp.placeholder = placeholders[p] || 'paste your profile URL';
+}
+
+function verifyProfile() {
+  var url = document.getElementById('cm-url').value.trim();
+  var hint = document.getElementById('cm-verify-hint');
+  if (!url) { hint.className='cm-verify-hint err'; hint.textContent='Please enter your profile URL'; return; }
+  hint.className='cm-verify-hint'; hint.textContent='Verifying…';
+  setTimeout(function(){
+    hint.className='cm-verify-hint ok';
+    hint.textContent='✓ Profile verified — 4.2M followers found';
+    document.getElementById('cm-next-1').style.display='block';
+  }, 1400);
+}
+
+function pickCat(el) {
+  document.querySelectorAll('.cm-cat').forEach(c=>c.classList.remove('on'));
+  el.classList.add('on');
+}
+
+function pickTemplate(el, text) {
+  document.querySelectorAll('.cm-tpl').forEach(t=>t.classList.remove('on'));
+  el.classList.add('on');
+  var inp = document.getElementById('cm-q');
+  inp.value = text;
+  inp.focus();
+  inp.setSelectionRange(text.length, text.length);
+}
+
+function updateOdds(v) {
+  document.getElementById('cm-odds-val').textContent = 'YES '+v+'%';
+}
+
+function previewMarket() {
+  var q = document.getElementById('cm-q').value.trim();
+  if (!q) { alert('Add your market question first'); return; }
+  var odds = document.getElementById('cm-odds').value;
+  var name = document.getElementById('cm-display').value || 'You';
+  document.getElementById('cm-prev-q').textContent = '"Will I '+q+'"';
+  document.getElementById('cm-prev-name').textContent = name;
+  document.getElementById('cm-prev-yes').textContent = 'YES '+odds+'%';
+  document.getElementById('cm-prev-no').textContent = 'NO '+(100-odds)+'%';
+  document.getElementById('cm-prev-fill').style.width = odds+'%';
+  goStep(4);
+}
+
+function shareMarket(platform) {
+  var q = document.getElementById('cm-q').value;
+  var msgs = {
+    onlyfans: 'Opening OnlyFans to share your market…',
+    tiktok: 'Opening TikTok to share your market…',
+  };
+  alert(msgs[platform] || 'Link copied!');
+}
+
+function copyLink() {
+  navigator.clipboard.writeText('https://hotpotato.markets/m/nova-reyes-5m').catch(function(){});
+  var btn = document.querySelector('.cm-share-copy');
+  btn.textContent = '✓ Copied';
+  setTimeout(function(){ btn.textContent = '↗ Copy link'; }, 2000);
+}
+
+// Hook "Become a creator" button on landing page to open modal
+document.addEventListener('DOMContentLoaded', function(){
+  document.querySelectorAll('.btn-primary, .cta-left .btn-primary').forEach(function(btn){
+    if(btn.textContent.includes('creator')) {
+      btn.onclick = function(){ openCM(); return false; };
+    }
+  });
+});
 </script>
 
 </body>
