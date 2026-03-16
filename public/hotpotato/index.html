@@ -816,7 +816,7 @@ setInterval(() => {
       </div>
     </div>
 
-    <button class="cm-next-btn" onclick="previewMarket()">Preview market →</button>
+    <button class="cm-next-btn" onclick="previewMarket()">Create Market →</button>
   </div>
 
   <!-- ── STEP 4: PREVIEW + PUBLISH ── -->
@@ -980,7 +980,7 @@ function closeCM() {
 }
 
 function goStep(n) {
-  for(var i=1;i<=4;i++){
+  for(var i=1;i<=3;i++){
     document.getElementById('cp-'+i).style.display = i===n?'block':'none';
     var s = document.getElementById('cstep-'+i);
     s.className = 'cm-step' + (i<n?' done':i===n?' on':'');
@@ -1046,37 +1046,29 @@ function previewMarket() {
   var resolveDate = document.getElementById('cm-date').value;
   var name = document.getElementById('cm-display').value || 'You';
   
-  // Show preview
-  document.getElementById('cm-prev-q').textContent = '"Will I '+q+'"';
-  document.getElementById('cm-prev-name').textContent = name;
-  document.getElementById('cm-prev-yes').textContent = 'YES '+odds+'%';
-  document.getElementById('cm-prev-no').textContent = 'NO '+(100-odds)+'%';
-  document.getElementById('cm-prev-fill').style.width = odds+'%';
+  // Create market object
+  const market = {
+    id: Date.now(),
+    question: 'Will I ' + q,
+    creator: name,
+    email: cmUser?.email || null,
+    wallet: cmUser?.wallet || null,
+    yesOdds: parseInt(odds),
+    noOdds: 100 - parseInt(odds),
+    resolveDate: resolveDate,
+    createdAt: new Date().toISOString()
+  };
   
-  // Create market via API
-  fetch(API_URL + '/markets/create', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    credentials: 'include',
-    body: JSON.stringify({
-      question: 'Will I ' + q,
-      yesOdds: parseInt(odds),
-      resolveDate: resolveDate
-    })
-  })
-  .then(r => r.json())
-  .then(data => {
-    if (data.success) {
-      console.log('Market created:', data.market);
-      goStep(4);
-    } else {
-      alert('Failed to create market: ' + (data.error || 'Unknown error'));
-    }
-  })
-  .catch(err => {
-    console.error('Market creation failed:', err);
-    alert('Failed to create market. Please try again.');
-  });
+  // Store in localStorage
+  const markets = JSON.parse(localStorage.getItem('hp_markets') || '[]');
+  markets.unshift(market);
+  localStorage.setItem('hp_markets', JSON.stringify(markets));
+  
+  // Close modal and show success
+  closeCM();
+  alert('🎉 Market created! (Mock - will save to backend when deployed)');
+  
+  // Could reload page to show new market, or dynamically add it to the feed
 }
 
 function shareMarket(platform) {
