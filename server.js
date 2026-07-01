@@ -1301,7 +1301,7 @@ If you're working in this space, check out ${productData.name} — it might be e
   }
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 400,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -1365,7 +1365,7 @@ Check out ${productData.name} if you're into this!
   }
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 300,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -1431,7 +1431,7 @@ Listen now: [TRACK_LINK]
   }
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 300,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -1490,7 +1490,7 @@ Listen now: [EPISODE_LINK]
   }
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 300,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -1535,7 +1535,7 @@ Worth your commute time. 👇
   }
 
   const message = await anthropic.messages.create({
-    model: 'claude-sonnet-4-20250514',
+    model: 'claude-sonnet-4-6',
     max_tokens: 400,
     messages: [{ role: 'user', content: prompt }],
   });
@@ -2565,7 +2565,7 @@ async function getUserByUsername(username, accountName = 'flywheelsquad') {
 async function generateReply(tweetText, authorHandle) {
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 150,
       messages: [{
         role: 'user',
@@ -2624,7 +2624,7 @@ async function quoteTweet(tweetId, quoteText, accountName = 'flywheelsquad') {
 async function generateQuoteText(blogTitle, blogUrl, keywords = '') {
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 100,
       messages: [{
         role: 'user',
@@ -2667,7 +2667,7 @@ Reply with ONLY the quote text.`
 async function generateThreadContent(blogTitle, blogUrl, productName, keywords = '') {
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 400,
       messages: [{
         role: 'user',
@@ -5818,7 +5818,7 @@ app.post('/api/greentruck/follow', async (req, res) => {
 async function generateGreentruckContent(product, blog, keywords) {
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 250,
       messages: [{
         role: 'user',
@@ -5851,7 +5851,7 @@ Reply with ONLY the tweet text.`
 async function generateGreentruckThread(blogTitle, blogUrl, keywords) {
   try {
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 400,
       messages: [{
         role: 'user',

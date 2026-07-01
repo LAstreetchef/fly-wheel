@@ -368,7 +368,7 @@ export async function generateContent(productType, productData) {
     console.log(`🤖 Calling Claude for ${productType} generation...`);
     
     const response = await anthropic.messages.create({
-      model: 'claude-sonnet-4-20250514',
+      model: 'claude-sonnet-4-6',
       max_tokens: 1024,
       messages: [
         {
