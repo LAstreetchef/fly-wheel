@@ -5188,6 +5188,40 @@ app.get('/api/admin/orders', async (req, res) => {
   res.json(allOrders);
 });
 
+// Requeue a failed/stuck boost (admin)
+app.post('/api/admin/requeue/:sessionId', async (req, res) => {
+  const authHeader = req.headers.authorization;
+  const adminKey = process.env.ADMIN_API_KEY;
+  if (!adminKey || authHeader !== `Bearer ${adminKey}`) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+  const { sessionId } = req.params;
+  const order = await orderStore.get(sessionId);
+  if (!order) return res.status(404).json({ error: 'Order not found' });
+  if (order.status === 'published') return res.status(400).json({ error: 'Already published', tweetUrl: order.tweetUrl });
+
+  const parse = (v) => (typeof v === 'string' ? JSON.parse(v) : v);
+  const productData = parse(order.productData);
+  const blog = parse(order.blog);
+
+  order.status = 'queued';
+  order.error = null;
+  await orderStore.set(sessionId, order);
+
+  queueBoost({
+    sessionId,
+    email: order.email,
+    productData,
+    blog,
+    content: order.content,
+    source: order.source || 'paid',
+    priority: 1,
+  });
+
+  console.log('🔁 Admin requeued boost:', sessionId);
+  res.json({ requeued: true, sessionId });
+});
+
 app.post('/api/admin/send-followups', async (req, res) => {
   const authHeader = req.headers.authorization;
   const adminKey = process.env.ADMIN_API_KEY;
