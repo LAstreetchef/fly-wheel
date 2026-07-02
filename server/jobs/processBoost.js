@@ -50,11 +50,13 @@ boostQueue.process('publish', async (data, job) => {
     if (!finalContent && productData && finalBlog) {
       console.log(`[Boost ${sessionId}] Generating content...`);
       finalContent = await generateBoostContent(productData, finalBlog);
-      
-      // Replace placeholders
+    }
+
+    // Replace placeholders — must run for BOTH generated and pre-generated content
+    if (finalContent) {
       finalContent = finalContent
-        .replace('[BLOG_LINK]', finalBlog.url)
-        .replace('[PRODUCT_LINK]', productData.productUrl || '');
+        .replace('[BLOG_LINK]', finalBlog?.url || '')
+        .replace('[PRODUCT_LINK]', productData?.productUrl || '');
     }
 
     // Step 3: Update order with content before posting (in case tweet fails)
