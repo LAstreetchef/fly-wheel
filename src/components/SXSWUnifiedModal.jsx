@@ -7,8 +7,8 @@ const PACKS = {
   startup: {
     id: 'startup',
     name: 'Startup Pack',
-    tagline: 'Get Noticed at SXSW',
-    description: "AI-targeted boosts reaching Austin's tech, music & startup crowd — all week long.",
+    tagline: 'Get Noticed During the World Cup',
+    description: "AI-targeted boosts riding the biggest sports moment on Earth — through the Final on July 19.",
     price: 7.99,
     originalPrice: 39.75,
     boosts: 25,
@@ -16,16 +16,16 @@ const PACKS = {
     gradient: 'from-yellow-400 to-orange-500',
     icon: '🚀',
     perks: [
-      "25 AI-powered boosts over 5 festival days",
-      "SXSW keyword targeting (#SXSW2026, Austin)",
-      "Tech & startup blog targeting",
+      "25 AI-powered boosts through the World Cup Final",
+      "World Cup keyword targeting (#WorldCup2026, #FIFAWorldCup)",
+      "Sports, tech & culture blog targeting",
       "Priority scheduling during peak hours",
       "Real-time performance dashboard"
     ],
     slides: [
-      { url: "https://images.unsplash.com/photo-1531218150217-54595bc2b934?w=800&q=75", caption: "Austin, TX" },
-      { url: "https://images.unsplash.com/photo-1540575467063-178a50c2df87?w=800&q=75", caption: "10,000+ Industry Attendees" },
-      { url: "https://images.unsplash.com/photo-1559136555-9303baea8ebd?w=800&q=75", caption: "Tech Capital" },
+      { url: "https://images.unsplash.com/photo-1522778119026-d647f0596c20?w=800&q=75", caption: "World Cup 2026" },
+      { url: "https://images.unsplash.com/photo-1431324155629-1a6deb1dec8d?w=800&q=75", caption: "Millions Watching" },
+      { url: "https://images.unsplash.com/photo-1508098682722-e99c43a406b2?w=800&q=75", caption: "USA · Canada · Mexico" },
     ],
     fields: ['product', 'keywords', 'email'],
     endpoint: '/api/checkout/sxsw',
@@ -33,8 +33,8 @@ const PACKS = {
   artist: {
     id: 'artist',
     name: 'Artist Pack',
-    tagline: 'Get Heard at SXSW',
-    description: "25 Concert Pitch boosts targeting music blogs, playlist curators & SXSW attendees.",
+    tagline: 'Get Heard During the World Cup',
+    description: "25 Concert Pitch boosts targeting music blogs, playlist curators & World Cup fan culture.",
     price: 44.00,
     originalPrice: 110.00,
     boosts: 25,
@@ -42,16 +42,16 @@ const PACKS = {
     gradient: 'from-purple-500 to-pink-500',
     icon: '🎵',
     perks: [
-      "25 Concert Pitch boosts during SXSW",
+      "25 Concert Pitch boosts during the World Cup",
       "Music blog & playlist curator targeting",
-      "#SXSW2026 #AustinMusic hashtag focus",
-      "Peak festival hours scheduling",
+      "#WorldCup2026 #FanAnthem hashtag focus",
+      "Match-day peak hours scheduling",
       "Genre-specific audience reach"
     ],
     slides: [
       { url: "https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=800&q=75", caption: "Live Performance" },
       { url: "https://images.unsplash.com/photo-1516450360452-9312f5e86fc7?w=800&q=75", caption: "Festival Stage" },
-      { url: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=75", caption: "Live Music Capital" },
+      { url: "https://images.unsplash.com/photo-1470229722913-7c0e2dbbafd3?w=800&q=75", caption: "Fan Anthems" },
     ],
     fields: ['artist', 'trackUrl', 'genre', 'email'],
     endpoint: '/api/checkout/sxsw-artist',
@@ -59,8 +59,8 @@ const PACKS = {
   podcast: {
     id: 'podcast',
     name: 'Podcast Pack',
-    tagline: 'Get Heard at SXSW',
-    description: "25 Podcast Boosts targeting podcast blogs, listeners & SXSW media coverage.",
+    tagline: 'Get Heard During the World Cup',
+    description: "25 Podcast Boosts targeting podcast blogs, listeners & World Cup media coverage.",
     price: 29.99,
     originalPrice: 74.75,
     boosts: 25,
@@ -68,16 +68,16 @@ const PACKS = {
     gradient: 'from-emerald-500 to-teal-500',
     icon: '🎙️',
     perks: [
-      "25 Podcast Boosts during SXSW week",
+      "25 Podcast Boosts through the World Cup",
       "Podcast blog & newsletter targeting",
-      "#SXSW2026 #Podcasting hashtag focus",
+      "#WorldCup2026 #Podcasting hashtag focus",
       "LinkedIn cross-posting available",
       "Guest tagging for amplification"
     ],
     slides: [
       { url: "https://images.unsplash.com/photo-1478737270239-2f02b77fc618?w=800&q=75", caption: "Podcast Studio" },
       { url: "https://images.unsplash.com/photo-1590602847861-f357a9332bbc?w=800&q=75", caption: "Live Recording" },
-      { url: "https://images.unsplash.com/photo-1511671782779-c97d3d27a1d4?w=800&q=75", caption: "SXSW Conversations" },
+      { url: "https://images.unsplash.com/photo-1553778263-73a83bab9b0c?w=800&q=75", caption: "Match-Day Conversations" },
     ],
     fields: ['showName', 'episodeUrl', 'category', 'email'],
     endpoint: '/api/checkout/sxsw-podcast',
@@ -122,7 +122,7 @@ function Slider({ slides, color }) {
       <div className="absolute inset-0 bg-gradient-to-b from-black/10 to-black/80" />
       <div className="absolute top-3 left-3 flex gap-2 items-center">
         <span className={`${colorClasses[color]} text-[10px] font-black px-2 py-0.5 rounded`}>LIMITED OFFER</span>
-        <span className={`${textColors[color]} text-[10px] font-bold tracking-wider`}>⚡ SOUTH BY SOUTHWEST 2026</span>
+        <span className={`${textColors[color]} text-[10px] font-bold tracking-wider`}>⚽ FIFA WORLD CUP 2026</span>
       </div>
       <span className="absolute bottom-8 left-3 text-white/60 text-[11px]">📍 {slides[idx].caption}</span>
       <div className="absolute bottom-3 left-1/2 -translate-x-1/2 flex gap-1.5">
@@ -144,7 +144,7 @@ function Countdown({ color }) {
   
   useEffect(() => {
     const calc = () => {
-      const diff = new Date("2026-03-13T00:00:00-06:00") - new Date();
+      const diff = new Date("2026-07-19T15:00:00-04:00") - new Date();
       if (diff <= 0) return setT({ expired: true });
       setT({
         d: Math.floor(diff / 86400000),
@@ -169,7 +169,7 @@ function Countdown({ color }) {
     emerald: 'border-emerald-500/30',
   };
   
-  if (t.expired) return <p className={`${textColors[color]} font-bold`}>🎸 SXSW is live!</p>;
+  if (t.expired) return <p className={`${textColors[color]} font-bold`}>⚽ The Final is here!</p>;
   
   return (
     <div className="flex gap-2 justify-center">
@@ -290,7 +290,7 @@ export default function SXSWUnifiedModal() {
       onClick={() => setOpen(true)}
       className={`fixed bottom-6 right-6 z-50 bg-gradient-to-r ${gradientClasses[currentPack]} ${buttonTextClasses[currentPack]} font-black text-sm px-5 py-3 rounded-full shadow-lg hover:scale-105 transition-transform`}
     >
-      {pack.icon} SXSW {pack.name}
+      {pack.icon} World Cup {pack.name}
     </button>
   );
 
@@ -321,7 +321,7 @@ export default function SXSWUnifiedModal() {
               <div className="flex items-baseline gap-2 mb-5">
                 <span className="text-gray-600 line-through text-base">${pack.originalPrice}</span>
                 <span className={`text-${pack.color}-400 text-5xl font-black leading-none`}>${pack.price}</span>
-                <span className="text-gray-600 text-sm">/ festival week</span>
+                <span className="text-gray-600 text-sm">/ tournament run</span>
               </div>
               
               <ul className="space-y-2 mb-5">
@@ -332,7 +332,7 @@ export default function SXSWUnifiedModal() {
                 ))}
               </ul>
               
-              <p className="text-gray-600 text-[10px] font-bold tracking-widest text-center mb-2">SXSW 2026 STARTS IN</p>
+              <p className="text-gray-600 text-[10px] font-bold tracking-widest text-center mb-2">WORLD CUP FINAL IN</p>
               <Countdown color={pack.color} />
               
               <button 
@@ -341,7 +341,7 @@ export default function SXSWUnifiedModal() {
               >
                 Claim {pack.name} →
               </button>
-              <p className="text-center text-gray-700 text-xs mt-3">One-time charge · No subscription · Perfect for SXSW</p>
+              <p className="text-center text-gray-700 text-xs mt-3">One-time charge · No subscription · Perfect for the World Cup</p>
             </>
           )}
 

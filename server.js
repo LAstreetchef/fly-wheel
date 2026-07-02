@@ -944,7 +944,7 @@ const BRAVE_API_KEY = process.env.BRAVE_API_KEY;
 // ============================================
 const PRIME_TIERS = {
   sxsw: {
-    name: 'SXSW Festival Pack',
+    name: 'World Cup 2026 Boost Pack',
     boosts: 25,
     price: 799, // $7.99 one-time
     isOneTime: true,
@@ -3494,8 +3494,8 @@ app.post('/api/checkout/sxsw', checkoutLimiter, async (req, res) => {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: 'SXSW 2026 Festival Pack',
-            description: '25 AI-powered boosts for SXSW week (March 13-17, 2026)',
+            name: 'World Cup 2026 Boost Pack',
+            description: '25 AI-powered boosts through the World Cup Final (July 19, 2026)',
           },
           unit_amount: SXSW_PACK_PRICE,
         },
@@ -3540,8 +3540,8 @@ app.post('/api/checkout/sxsw-artist', checkoutLimiter, async (req, res) => {
         price_data: {
           currency: 'usd',
           product_data: {
-            name: 'SXSW 2026 Artist Pack',
-            description: '25 Concert Pitch boosts for SXSW week - Music blogs & playlist curators',
+            name: 'World Cup 2026 Artist Pack',
+            description: '25 Concert Pitch boosts during the World Cup - Music blogs & playlist curators',
           },
           unit_amount: SXSW_ARTIST_PACK_PRICE,
         },
@@ -3586,8 +3586,8 @@ app.post('/api/checkout/sxsw-podcast', checkoutLimiter, sanitizeBody(['email'], 
         price_data: {
           currency: 'usd',
           product_data: {
-            name: 'SXSW 2026 Podcast Pack',
-            description: '25 Podcast Boosts for SXSW week (March 13-17, 2026)',
+            name: 'World Cup 2026 Podcast Pack',
+            description: '25 Podcast Boosts through the World Cup Final (July 19, 2026)',
           },
           unit_amount: SXSW_PODCAST_PACK_PRICE,
         },
