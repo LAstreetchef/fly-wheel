@@ -34,6 +34,7 @@ const PACKS = {
   artist: {
     id: 'artist',
     name: 'Artist Pack',
+    tab: 'Promote Artist',
     tagline: 'Get Heard During the World Cup',
     description: "25 Concert Pitch boosts targeting music blogs, playlist curators & World Cup fan culture.",
     price: 44.00,
@@ -60,6 +61,7 @@ const PACKS = {
   podcast: {
     id: 'podcast',
     name: 'Podcast Pack',
+    tab: 'Promote Podcast',
     tagline: 'Get Heard During the World Cup',
     description: "25 Podcast Boosts targeting podcast blogs, listeners & World Cup media coverage.",
     price: 29.99,
