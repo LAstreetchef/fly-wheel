@@ -7,7 +7,7 @@ const PACKS = {
   startup: {
     id: 'startup',
     name: 'Startup Pack',
-    tab: 'Sell Your Product',
+    tab: 'Sell Product',
     tagline: 'Get Noticed During the World Cup',
     description: "AI-targeted boosts riding the biggest sports moment on Earth — through the Final on July 19.",
     price: 7.99,
