@@ -3,7 +3,8 @@
 
 import { searchBlogs } from '../services/brave.js';
 import { generateBoostContent } from '../services/claude.js';
-import { postTweet, crossEngage } from '../services/twitter.js';
+import { postTweet, crossEngage, uploadTwitterMedia } from '../services/twitter.js';
+import { generateGeminiImage } from '../services/gemini.js';
 import { JobQueue } from './queue.js';
 
 // Create the boost queue
@@ -69,9 +70,35 @@ boostQueue.process('publish', async (data, job) => {
       }
     }
 
+    // Step 3.5: Prepare media (AI-generated or user-uploaded image)
+    let mediaIds = null;
+    try {
+      const imageOption = productData?.imageOption || 'none';
+      let img = null;
+      if (imageOption === 'ai') {
+        console.log(`[Boost ${sessionId}] Generating AI image...`);
+        const kw = (productData?.keywords || '').split(/[,\s]+/).filter(Boolean);
+        img = await generateGeminiImage(finalBlog?.title || productData?.name || 'product promotion', kw);
+      } else if (imageOption === 'upload' && productData?.imageData) {
+        const m = productData.imageData.match(/^data:(image\/(?:jpeg|png|webp));base64,(.+)$/s);
+        if (m) {
+          img = { buffer: Buffer.from(m[2], 'base64'), mimeType: m[1] };
+          console.log(`[Boost ${sessionId}] Using uploaded image (${img.buffer.length} bytes)`);
+        } else {
+          console.warn(`[Boost ${sessionId}] Uploaded image has invalid format, skipping`);
+        }
+      }
+      if (img?.buffer) {
+        const mediaId = await uploadTwitterMedia(img.buffer, img.mimeType, 'flywheelsquad');
+        if (mediaId) mediaIds = [mediaId];
+      }
+    } catch (imgErr) {
+      console.error(`[Boost ${sessionId}] Image step failed (posting without image):`, imgErr.message);
+    }
+
     // Step 4: Post the tweet (uses multi-account with fallback)
     console.log(`[Boost ${sessionId}] Posting tweet...`);
-    const tweet = await postTweet(finalContent);
+    const tweet = await postTweet(finalContent, 'flywheelsquad', { mediaIds });
 
     // Step 5: Post to LinkedIn (Kam's account - dual platform boost)
     let linkedinPostId = null;

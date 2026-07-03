@@ -26,6 +26,8 @@ export default function App() {
   const [blogs, setBlogs] = useState([])
   const [selectedBlog, setSelectedBlog] = useState(null)
   const [content, setContent] = useState(null)
+  const [imageOption, setImageOption] = useState('none') // none | upload | ai (+$0.98)
+  const [imageData, setImageData] = useState(null) // dataURL of resized upload
   const [result, setResult] = useState(null)
   
   // Prime state
@@ -613,6 +615,36 @@ export default function App() {
     }
   }
 
+  const handleImageFile = (file) => {
+    if (!file) return
+    const img = new Image()
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      img.onload = () => {
+        const MAX = 1600
+        let { width, height } = img
+        if (width > MAX || height > MAX) {
+          const scale = MAX / Math.max(width, height)
+          width = Math.round(width * scale)
+          height = Math.round(height * scale)
+        }
+        const canvas = document.createElement('canvas')
+        canvas.width = width
+        canvas.height = height
+        canvas.getContext('2d').drawImage(img, 0, 0, width, height)
+        const dataUrl = canvas.toDataURL('image/jpeg', 0.85)
+        if (dataUrl.length > 2_800_000) {
+          setError('Image too large even after compression — try a smaller photo')
+          return
+        }
+        setImageData(dataUrl)
+        setError(null)
+      }
+      img.src = e.target.result
+    }
+    reader.readAsDataURL(file)
+  }
+
   const checkout = async () => {
     setLoading(true)
     try {
@@ -637,7 +669,11 @@ export default function App() {
         }
       } else {
         endpoint = `${API_URL}/api/checkout`
-        payload = { productData, blog: selectedBlog, content }
+        payload = { 
+          productData, blog: selectedBlog, content,
+          imageOption,
+          ...(imageOption === 'upload' && imageData ? { imageData } : {}),
+        }
       }
       
       const res = await fetch(endpoint, {
@@ -1566,6 +1602,39 @@ export default function App() {
                     />
                   </div>
                 )}
+                {!podcastMode && !artistMode && (
+                  <div>
+                    <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>Boost Image <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(optional)</span></label>
+                    <div className="flex gap-2">
+                      {[
+                        { id: 'none', label: 'No image' },
+                        { id: 'upload', label: '📷 Your photo' },
+                        { id: 'ai', label: '✨ AI photo +$0.98' },
+                      ].map(opt => (
+                        <button
+                          key={opt.id} type="button"
+                          onClick={() => { setImageOption(opt.id); if (opt.id !== 'upload') setImageData(null) }}
+                          className={`flex-1 py-2 px-2 rounded-xl text-xs font-bold border transition-all ${imageOption === opt.id ? 'border-orange-500 bg-orange-500/15 text-orange-400' : darkMode ? 'border-gray-600 bg-gray-800 text-gray-400 hover:border-gray-500' : 'border-gray-300 bg-gray-50 text-gray-600 hover:border-gray-400'}`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                    {imageOption === 'upload' && (
+                      <div className="mt-2">
+                        <input
+                          type="file" accept="image/jpeg,image/png,image/webp"
+                          onChange={(e) => handleImageFile(e.target.files?.[0])}
+                          className={`w-full text-xs rounded-xl px-3 py-2 ${darkMode ? 'bg-gray-800 border border-gray-600 text-gray-300' : 'bg-gray-50 border border-gray-300 text-gray-700'}`}
+                        />
+                        {imageData && <img src={imageData} alt="preview" className="mt-2 rounded-xl max-h-32 object-cover" />}
+                      </div>
+                    )}
+                    {imageOption === 'ai' && (
+                      <p className={`mt-1 text-xs ${darkMode ? 'text-gray-500' : 'text-gray-400'}`}>We'll generate a custom graphic for your boost</p>
+                    )}
+                  </div>
+                )}
                 <div>
                   <label className={`block text-sm mb-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                     Your Email * <span className={darkMode ? 'text-gray-500' : 'text-gray-400'}>(for performance stats)</span>
@@ -1676,11 +1745,11 @@ export default function App() {
                   </button>
                   {!primeAccount ? (
                     <button onClick={checkout} disabled={loading} className={`flex-[2] py-3 rounded-xl font-bold text-lg disabled:opacity-50 ${podcastMode ? 'bg-gradient-to-r from-emerald-500 to-teal-500 text-white' : artistMode ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white' : 'bg-gradient-to-r from-orange-500 to-yellow-500 text-black'}`}>
-                      {loading ? 'Loading...' : podcastMode ? 'Pay $4.99 & Post →' : artistMode ? 'Pay $4.40 & Post →' : 'Pay $1.99 & Post →'}
+                      {loading ? 'Loading...' : podcastMode ? 'Pay $4.99 & Post →' : artistMode ? 'Pay $4.40 & Post →' : imageOption === 'ai' ? 'Pay $2.97 & Post →' : 'Pay $1.99 & Post →'}
                     </button>
                   ) : (
                     <button onClick={checkout} disabled={loading} className={`flex-[2] py-3 rounded-xl font-bold text-lg disabled:opacity-50 ${darkMode ? 'bg-gray-600 hover:bg-gray-500 text-white' : 'bg-gray-200 hover:bg-gray-300 text-gray-900'}`}>
-                      {loading ? 'Loading...' : podcastMode ? 'Or Pay $4.99 →' : artistMode ? 'Or Pay $4.40 →' : 'Or Pay $1.99 →'}
+                      {loading ? 'Loading...' : podcastMode ? 'Or Pay $4.99 →' : artistMode ? 'Or Pay $4.40 →' : imageOption === 'ai' ? 'Or Pay $2.97 →' : 'Or Pay $1.99 →'}
                     </button>
                   )}
                 </div>

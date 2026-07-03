@@ -1003,7 +1003,7 @@ app.use((req, res, next) => {
   next();
 });
 app.use('/webhook', express.raw({ type: 'application/json' }));
-app.use(express.json());
+app.use(express.json({ limit: '3mb' })); // raised for boost image uploads (base64)
 
 // --- Force HTTPS on Render ---
 if (process.env.NODE_ENV === 'production') {
@@ -3405,7 +3405,18 @@ app.post('/api/referral/redeem', sanitizeBody(['referralCode', 'email'], 200), a
 // Support both old and new endpoint paths
 app.post(['/api/checkout', '/api/boost/checkout'], checkoutLimiter, sanitizeBody(['email'], 500), async (req, res) => {
   try {
-    const { productData, blog, content } = req.body;
+    const { productData, blog, content, imageOption: rawImageOption, imageData } = req.body;
+    
+    // Image option: none | upload | ai (+$0.98)
+    const imageOption = ['none', 'upload', 'ai'].includes(rawImageOption) ? rawImageOption : 'none';
+    if (imageOption === 'upload') {
+      const valid = typeof imageData === 'string'
+        && /^data:image\/(jpeg|png|webp);base64,/.test(imageData)
+        && imageData.length <= 2_800_000; // ~2MB decoded
+      if (!valid) {
+        return res.status(400).json({ error: 'Invalid or oversized image (JPEG/PNG/WebP, max ~2MB)' });
+      }
+    }
     
     console.log('📥 Checkout request received:');
     console.log('   productData:', JSON.stringify(productData));
@@ -3434,9 +3445,9 @@ app.post(['/api/checkout', '/api/boost/checkout'], checkoutLimiter, sanitizeBody
           currency: 'usd',
           product_data: {
             name: 'DAUfinder',
-            description: `Promote "${productData.name}" on X`,
+            description: `Promote "${productData.name}" on X${imageOption === 'ai' ? ' + AI image' : imageOption === 'upload' ? ' + photo' : ''}`,
           },
-          unit_amount: BOOST_PRICE,
+          unit_amount: BOOST_PRICE + (imageOption === 'ai' ? 98 : 0),
         },
         quantity: 1,
       }],
@@ -3448,12 +3459,17 @@ app.post(['/api/checkout', '/api/boost/checkout'], checkoutLimiter, sanitizeBody
         blog: blogMeta,
         content: truncate(content, 500),
         email: productData.email || '',
+        imageOption,
       },
     });
     
     await orders.set(session.id, {
       status: 'pending',
-      productData,
+      productData: {
+        ...productData,
+        imageOption,
+        ...(imageOption === 'upload' && imageData ? { imageData } : {}),
+      },
       blog,
       content,
       email: productData.email || '',
@@ -7094,9 +7110,12 @@ app.post('/webhook', async (req, res) => {
     if (order) {
       console.log('   Order email:', order.email || '(none)');
       try {
-        const blog = JSON.parse(session.metadata.blog);
-        const productData = JSON.parse(session.metadata.productData);
-        const content = session.metadata.content;
+        // Prefer full order data from DB (has imageOption/imageData, untruncated fields);
+        // fall back to Stripe metadata (truncated) if DB fields are missing
+        const parseJ = (v) => (typeof v === 'string' ? JSON.parse(v) : v);
+        const blog = (order.blog && parseJ(order.blog)) || JSON.parse(session.metadata.blog);
+        const productData = (order.productData && parseJ(order.productData)) || JSON.parse(session.metadata.productData);
+        const content = order.content || session.metadata.content;
         
         // Mark as queued and queue for background processing
         order.status = 'queued';
