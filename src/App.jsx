@@ -107,8 +107,10 @@ export default function App() {
   
   const PODCAST_CATEGORIES = ['True Crime', 'Comedy', 'News & Politics', 'Business', 'Technology', 'Health & Wellness', 'Sports', 'Music', 'Society & Culture', 'Education', 'Science', 'History', 'Arts', 'Religion', 'Kids & Family', 'Fiction', 'Other']
 
-  // Load ElevenLabs widget
+  // Load ElevenLabs widget (disabled — flip ENABLE_STELLA to true to restore)
+  const ENABLE_STELLA = false
   useEffect(() => {
+    if (!ENABLE_STELLA) return
     const script = document.createElement('script')
     script.src = 'https://unpkg.com/@elevenlabs/convai-widget-embed'
     script.async = true
@@ -1819,7 +1821,8 @@ export default function App() {
               </div>
             </div>
 
-            {/* Ask Stella */}
+            {/* Ask Stella (gated by ENABLE_STELLA) */}
+            {ENABLE_STELLA && (
             <div className="mt-8 pt-6 border-t border-gray-700">
               <p className="text-gray-300 mb-4">
                 Questions? <span className="font-bold text-orange-400">Ask Stella!</span>
@@ -1828,6 +1831,7 @@ export default function App() {
                 dangerouslySetInnerHTML={{ __html: `<elevenlabs-convai agent-id="${ELEVENLABS_AGENT_ID}"></elevenlabs-convai>` }} 
               />
             </div>
+            )}
           </div>
         </div>
       </main>
