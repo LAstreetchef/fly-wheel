@@ -1722,7 +1722,7 @@ The image should be eye-catching in a Twitter feed and communicate value instant
     if (!response.ok) {
       const error = await response.text();
       console.error('❌ Gemini API error:', response.status, error);
-      return { error: `Gemini API ${response.status}: ${error.substring(0, 200)}` };
+      return null; // error already logged; never return truthy non-image
     }
 
     const data = await response.json();
