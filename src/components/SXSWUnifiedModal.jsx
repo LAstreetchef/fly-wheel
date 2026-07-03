@@ -7,6 +7,7 @@ const PACKS = {
   startup: {
     id: 'startup',
     name: 'Startup Pack',
+    tab: 'Sell Your Product',
     tagline: 'Get Noticed During the World Cup',
     description: "AI-targeted boosts riding the biggest sports moment on Earth — through the Final on July 19.",
     price: 7.99,
@@ -200,7 +201,7 @@ function PackSelector({ currentPack, onSelect }) {
             onClick={() => onSelect(packId)}
             className={`flex-1 py-2 px-2 rounded-lg text-xs font-bold transition-all ${bgClasses[packId]}`}
           >
-            {pack.icon} {pack.name.split(' ')[0]}
+            {pack.icon} {pack.tab || pack.name.split(' ')[0]}
           </button>
         );
       })}
